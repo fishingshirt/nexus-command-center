@@ -657,9 +657,15 @@
           </div>
           <div class="phone-tab-panel active" id="phone-panel-compose">
             <div class="phone-compose">
-              <input type="text" id="phone-to" placeholder="Phone number" autocomplete="off">
+              <input type="text" id="phone-to" placeholder="Phone number" autocomplete="off" inputmode="tel">
               <textarea id="phone-body" rows="3" placeholder="Message..."></textarea>
-              <button class="btn-primary" id="phone-send-btn">Send</button>
+              <div class="phone-compose-counter-wrap" id="phone-compose-counter-wrap">
+                <div class="phone-compose-counter-bar"><div class="phone-compose-counter-fill" id="phone-compose-counter-fill"></div></div>
+                <span class="phone-compose-counter-text" id="phone-compose-counter">0 / 160</span>
+              </div>
+              <div class="phone-compose-actions">
+                <button class="btn-primary" id="phone-send-btn">Send</button>
+              </div>
             </div>
           </div>
           <div class="phone-tab-panel" id="phone-panel-inbox">

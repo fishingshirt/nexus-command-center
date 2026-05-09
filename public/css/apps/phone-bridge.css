@@ -46,19 +46,42 @@
 
 /* Compose */
 .phone-compose {
-  display: flex; flex-direction: column; gap: 0.5rem;
+  display: flex; flex-direction: column; gap: 0.75rem;
 }
 .phone-compose input, .phone-compose textarea {
   background: var(--bg); border: 1px solid var(--card-border); color: var(--text);
-  border-radius: 6px; padding: 0.5rem 0.7rem; font-size: 0.9rem;
+  border-radius: 6px; padding: 0.65rem 0.75rem; font-size: clamp(0.9rem, 4vw, 1rem);
+  width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;
 }
-.phone-compose textarea { resize: vertical; min-height: 80px; }
+.phone-compose textarea {
+  resize: vertical; min-height: 80px; font-size: clamp(0.9rem, 4vw, 1rem);
+}
 
-/* Character counter */
-.phone-compose-counter {
-  font-size: 0.75rem; opacity: 0.6; text-align: right; margin-top: -0.2rem;
+/* New counter bar row */
+.phone-compose-counter-wrap {
+  display: flex; align-items: center; gap: 0.5rem; width: 100%; box-sizing: border-box;
 }
-.phone-compose-counter.over-limit { color: #ef4444; opacity: 1; font-weight: 600; }
+.phone-compose-counter-bar {
+  flex: 1; height: 4px; background: #0000001a; border-radius: 2px; overflow: hidden;
+}
+.phone-compose-counter-fill {
+  height: 100%; background: #22c55e; border-radius: 2px; transition: width 0.2s ease;
+}
+.phone-compose-counter-wrap.over-limit .phone-compose-counter-fill { background: #ef4444; }
+.phone-compose-counter-text {
+  font-size: 0.75rem; opacity: 0.6; min-width: 3.2rem; text-align: right; font-weight: 500;
+}
+.phone-compose-counter-wrap.over-limit .phone-compose-counter-text {
+  color: #ef4444; opacity: 1; font-weight: 600;
+}
+
+/* Send button + counter row */
+.phone-compose-actions {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.phone-compose-actions .btn-primary {
+  flex: 1; min-width: 0; white-space: nowrap;
+}
 
 /* Inbox / Thread */
 .phone-empty { text-align: center; opacity: 0.5; padding: 2rem 0; font-size: 0.9rem; }

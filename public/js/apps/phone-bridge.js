@@ -30,15 +30,14 @@ export function initPhoneBridge() {
   // Character counter for compose
   bodyInp?.addEventListener('input', () => {
     const len = bodyInp.value.length;
-    let counter = document.getElementById('phone-compose-counter');
-    if (!counter) {
-      counter = document.createElement('div');
-      counter.id = 'phone-compose-counter';
-      counter.className = 'phone-compose-counter';
-      bodyInp.parentNode.insertBefore(counter, sendBtn);
-    }
-    counter.textContent = `${len}/160`;
-    counter.classList.toggle('over-limit', len > 160);
+    const counter = document.getElementById('phone-compose-counter');
+    const fill = document.getElementById('phone-compose-counter-fill');
+    const wrap = document.getElementById('phone-compose-counter-wrap');
+    const text = `${len} / 160`;
+    const pct = Math.min((len / 160) * 100, 100);
+    if (counter) counter.textContent = text;
+    if (fill) fill.style.width = `${pct}%`;
+    if (wrap) wrap.classList.toggle('over-limit', len > 160);
   });
 
   // View switchers
