@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="css/apps/auth.css">
     <link rel="stylesheet" href="css/apps/phone-bridge.css">
     <link rel="stylesheet" href="css/welcome.css">
+    <link rel="stylesheet" href="css/apps/arcade.css">
   <style>
     /* CRITICAL: hide app before any CSS/JS loads. Zero flash. */
     #app { display: none !important; }
@@ -252,6 +253,10 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
           Phone
         </a>
+        <a href="#arcade" class="nav-link" data-app="arcade">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="7" cy="12" r="1"></circle><circle cx="17" cy="12" r="1"></circle><path d="M4 10h2v2H4z" fill="currentColor"></path><path d="M18 10h2v2h-2z" fill="currentColor"></path></svg>
+          Arcade
+        </a>
       </div>
     </nav>
     <div id="nav-backdrop" class="nav-backdrop" aria-hidden="true"></div>
@@ -347,6 +352,24 @@
               <p>Shape the Nexus</p>
             </div>
             <div class="app-card-badge" id="feedback-badge">0</div>
+          </div>
+
+          <!-- Arcade Card -->
+          <div class="app-card" data-app="arcade" tabindex="0" role="button" aria-label="Open Arcade">
+            <div class="app-card-icon" style="--card-accent: #fb923c;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                <circle cx="7" cy="12" r="1"></circle>
+                <circle cx="17" cy="12" r="1"></circle>
+                <path d="M4 10h2v2H4z" fill="currentColor"></path>
+                <path d="M18 10h2v2h-2z" fill="currentColor"></path>
+              </svg>
+            </div>
+            <div class="app-card-info">
+              <h3>Arcade</h3>
+              <p>Quick casual games</p>
+            </div>
+            <div class="app-card-badge" id="arcade-badge" style="background:#fb923c12;color:#fb923c; font-size:0.7rem;">NEW</div>
           </div>
         </div>
       </div>
@@ -653,6 +676,40 @@
                 <button class="btn-primary" id="phone-thread-send-btn">Send</button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arcade View -->
+      <div id="view-arcade" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>Arcade</h2>
+        </div>
+        <div class="view-body arcade-view-body">
+          <div class="arcade-header">
+            <p>7 games queued. Pick one to play.</p>
+          </div>
+          <div class="arcade-grid" id="arcade-grid"></div>
+        </div>
+
+        <!-- Game Panel (overlay inside view) -->
+        <div class="arcade-game-panel" id="arcade-game-panel">
+          <div class="arcade-game-header">
+            <button class="arcade-game-back-btn" id="arcade-game-back" aria-label="Back to grid">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <h2 id="arcade-game-title">Game</h2>
+            <span class="arcade-game-score" id="arcade-game-score">0</span>
+          </div>
+          <div class="arcade-game-frame">
+            <canvas id="arcade-game-canvas"></canvas>
+          </div>
+          <div class="arcade-game-footer">
+            <span id="arcade-game-status">Press SPACE to start</span>
+            <span class="arcade-game-keyhint">ESC = exit</span>
           </div>
         </div>
       </div>

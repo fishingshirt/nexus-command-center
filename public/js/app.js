@@ -7,6 +7,7 @@ import { initWeather } from './apps/weather.js';
 import { initITHub } from './apps/it-hub.js';
 import { initAuth, ensureAuthEnabled } from './apps/auth.js';
 import { initPhoneBridge } from './apps/phone-bridge.js';
+import { initArcade } from './apps/arcade.js';
 import { initWelcome } from './welcome.js';
 
 const APP_REGISTRY = [
@@ -16,7 +17,8 @@ const APP_REGISTRY = [
   { id: 'chat', name: 'Hermes Chat', icon: '💬', path: 'chat' },
   { id: 'weather', name: 'Weather', icon: '☀️', path: 'weather' },
   { id: 'phone', name: 'Phone Bridge', icon: '📱', path: 'phone' },
-  { id: 'feedback', name: 'Feedback', icon: '💬', path: 'feedback' }
+  { id: 'feedback', name: 'Feedback', icon: '💬', path: 'feedback' },
+  { id: 'arcade', name: 'Arcade', icon: '🎮', path: 'arcade' }
 ];
 
 export function initApp() {
@@ -32,6 +34,7 @@ export function initApp() {
   initBackup();
   initITHub();
   initPhoneBridge();
+  initArcade();
   initWeather();
   initCalendar();
   initNotes();
