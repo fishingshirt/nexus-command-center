@@ -743,8 +743,8 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
   .gate {{ text-align:center; z-index:10; }}
   .gate h1 {{ color:#39d0f2; font-size:2rem; margin-bottom:0.5rem; text-shadow:0 0 20px rgba(57,208,242,.5); letter-spacing:2px; }}
   .gate p {{ color:#888; margin-bottom:2rem; font-size:.95rem; }}
-  .pin-wrap {{ display:flex; gap:.6rem; justify-content:center; }}
-  .pin-wrap input {{ width:3rem; height:4rem; font-size:1.8rem; text-align:center; background:#11111a; border:2px solid #1f1f2e; border-radius:8px; color:#fff; outline:none; transition:border-color .2s,box-shadow .2s; caret-color:#39d0f2; }}
+  .pin-wrap {{ margin:0 auto; max-width:320px; }}
+  .pin-wrap input {{ width:100%; padding:.85rem 1rem; font-size:1.1rem; background:#11111a; border:2px solid #1f1f2e; border-radius:8px; color:#fff; outline:none; caret-color:#39d0f2; transition:border-color .2s,box-shadow .2s; }}
   .pin-wrap input:focus {{ border-color:#39d0f2; box-shadow:0 0 10px rgba(57,208,242,.3); }}
   .shield {{ position:absolute; inset:0; background:radial-gradient(circle at center,#0a1925 0%,#000 100%); opacity:.9; }}
   .scanline {{ position:absolute; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,200,.02) 2px,rgba(0,255,200,.02) 4px); pointer-events:none; }}
@@ -758,47 +758,30 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 <div class="gate">
   <h1 class="pulse">NEXUS COMMAND CENTER</h1>
   <p>Please enter your access code to continue</p>
-  <div class="pin-wrap" id="pinWrap">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
-    <input type="text" maxlength="1" autocomplete="off">
+  <div class="pin-wrap">
+    <input id="pinInp" type="password" placeholder="Enter access code" autocomplete="off">
   </div>
   <p id="msg" style="margin-top:1.5rem;color:#c44;font-size:.9rem;min-height:1.2rem;"></p>
 </div>
 <script>
-  const wrap=document.getElementById('pinWrap');
+  const pinInp=document.getElementById('pinInp');
   const msg=document.getElementById('msg');
-  const inputs=wrap.querySelectorAll('input');
-  const CORRECT='fullroot88';
-  const code=[];
-  inputs.forEach((inp,i)={{
-    inp.addEventListener('input',e=>{{
-      if(e.data&&i<9){{code[i]=e.data;inp.value='●';inputs[i+1].focus();}}
-      else if(e.data&&i===9){{code[i]=e.data;inp.value='●';verify();}}
-    }});
-    inp.addEventListener('keydown',e=>{{
-      if(e.key==='Backspace'&&i>0&&inp.value===''){{inputs[i-1].focus();}}
-    }});
-    inp.addEventListener('focus',()=>inp.select());
+  pinInp.addEventListener('keydown',e=>{{
+    if(e.key==='Enter'){{
+      e.preventDefault();
+      const pin=pinInp.value.trim();
+      if(!pin){{pinInp.focus();return;}}
+      msg.textContent='Verifying...';
+      msg.style.color='#39d0f2';
+      fetch('/pin-auth',{{method:'POST',headers:{{'Content-Type':'text/plain'}},body:pin}})
+      .then(r=>r.json())
+      .then(j=>{{
+        if(j.ok){{location.reload();}}
+        else{{msg.textContent='ACCESS DENIED';msg.style.color='#c44';pinInp.style.borderColor='#c44';setTimeout(()=>{{pinInp.style.borderColor='#1f1f2e';pinInp.value='';pinInp.focus();}},800);}}
+      }});
+    }}
   }});
-  function verify(){{
-    msg.textContent='Verifying...';
-    msg.style.color='#39d0f2';
-    const pin=code.join('');
-    fetch('/pin-auth',{{method:'POST',headers:{{'Content-Type':'text/plain'}},body:pin}})
-    .then(r=>r.json())
-    .then(j=>{{
-      if(j.ok){{location.reload();}}
-      else{{msg.textContent='ACCESS DENIED';msg.style.color='#c44';inputs.forEach(i=>{{i.value='';i.style.borderColor='#c44';}});setTimeout(()=>{{inputs.forEach(i=>{{i.style.borderColor='#1f1f2e';}});inputs[0].focus();}},800);}}
-    }});
-  }}
+  pinInp.focus();
 </script>
 </body>
 </html>
