@@ -8,6 +8,7 @@ import { initITHub } from './apps/it-hub.js';
 import { initAuth, ensureAuthEnabled } from './apps/auth.js';
 import { initPhoneBridge } from './apps/phone-bridge.js';
 import { initArcade } from './apps/arcade.js';
+import { initFinance } from './apps/finance.js';
 import { initWelcome } from './welcome.js';
 
 const APP_REGISTRY = [
@@ -18,7 +19,8 @@ const APP_REGISTRY = [
   { id: 'weather', name: 'Weather', icon: '☀️', path: 'weather' },
   { id: 'phone', name: 'Phone Bridge', icon: '📱', path: 'phone' },
   { id: 'feedback', name: 'Feedback', icon: '💬', path: 'feedback' },
-  { id: 'arcade', name: 'Arcade', icon: '🎮', path: 'arcade' }
+  { id: 'arcade', name: 'Arcade', icon: '🎮', path: 'arcade' },
+  { id: 'finance', name: 'Finance', icon: '💰', path: 'finance' }
 ];
 
 export function initApp() {
@@ -35,6 +37,7 @@ export function initApp() {
   initITHub();
   initPhoneBridge();
   initArcade();
+  initFinance();
   initWeather();
   initCalendar();
   initNotes();

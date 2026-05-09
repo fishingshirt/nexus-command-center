@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="css/apps/phone-bridge.css">
     <link rel="stylesheet" href="css/welcome.css">
     <link rel="stylesheet" href="css/apps/arcade.css">
+    <link rel="stylesheet" href="css/apps/finance.css">
   <style>
     /* CRITICAL: hide app before any CSS/JS loads. Zero flash. */
     #app { display: none !important; }
@@ -110,6 +111,10 @@
         <a href="#arcade" class="nav-link" data-app="arcade">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="7" cy="12" r="1"></circle><circle cx="17" cy="12" r="1"></circle><path d="M4 10h2v2H4z" fill="currentColor"></path><path d="M18 10h2v2h-2z" fill="currentColor"></path></svg>
           Arcade
+        </a>
+        <a href="#finance" class="nav-link" data-app="finance">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          Finance
         </a>
         <div class="nav-divider"></div>
         <button class="nav-link nav-settings-link" id="nav-settings-link" data-app="settings" aria-label="Open Settings">
@@ -229,6 +234,21 @@
               <p>Quick casual games</p>
             </div>
             <div class="app-card-badge" id="arcade-badge" style="background:#fb923c12;color:#fb923c; font-size:0.7rem;">NEW</div>
+          </div>
+
+          <!-- Finance Card -->
+          <div class="app-card" data-app="finance" tabindex="0" role="button" aria-label="Open Finance">
+            <div class="app-card-icon" style="--card-accent: #22c55e;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <div class="app-card-info">
+              <h3>Finance</h3>
+              <p id="finance-card-text">Track &amp; trade</p>
+            </div>
+            <div class="app-card-badge" id="finance-badge" style="background:#22c55e12;color:#22c55e;font-size:0.7rem;">BETA</div>
           </div>
         </div>
       </div>
@@ -578,6 +598,98 @@
           </div>
         </div>
       </div>
+      <!-- Finance View -->
+      <div id="view-finance" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>Finance</h2>
+        </div>
+        <div class="view-body finance-view-body">
+          <!-- Tabs -->
+          <div class="finance-tabs">
+            <button class="finance-tab-btn active" data-tab="prices">Prices</button>
+            <button class="finance-tab-btn" data-tab="portfolio">Portfolio</button>
+            <button class="finance-tab-btn" data-tab="orders">Orders</button>
+          </div>
+
+          <!-- Prices Panel -->
+          <div class="finance-panel active" id="finance-panel-prices">
+            <div class="finance-hero">
+              <div class="finance-hero-balance">
+                <span class="finance-hero-label">Paper Balance</span>
+                <span class="finance-hero-amount" id="finance-balance">$100,000.00</span>
+              </div>
+              <div class="finance-hero-pnl">
+                <span class="finance-hero-label">Unrealized P&amp;L</span>
+                <span class="finance-hero-amount" id="finance-pnl">+$0.00</span>
+              </div>
+            </div>
+            <div class="finance-search-row">
+              <input type="text" id="finance-search" placeholder="Symbol (e.g. AAPL, BTC)" autocomplete="off">
+              <button class="btn-primary" id="finance-search-btn">Add</button>
+            </div>
+            <div class="finance-watchlist" id="finance-watchlist">
+              <div class="finance-empty">Search a symbol above to start tracking prices.</div>
+            </div>
+          </div>
+
+          <!-- Portfolio Panel -->
+          <div class="finance-panel" id="finance-panel-portfolio">
+            <div class="finance-panel-header">
+              <h3>Holdings</h3>
+              <span class="finance-panel-sub" id="finance-holdings-count">0 positions</span>
+            </div>
+            <div class="finance-holdings" id="finance-holdings">
+              <div class="finance-empty">No positions yet. Buy from the Prices tab.</div>
+            </div>
+          </div>
+
+          <!-- Orders Panel -->
+          <div class="finance-panel" id="finance-panel-orders">
+            <div class="finance-panel-header">
+              <h3>Order History</h3>
+              <span class="finance-panel-sub" id="finance-orders-count">0 orders</span>
+            </div>
+            <div class="finance-orders" id="finance-orders">
+              <div class="finance-empty">No trades yet.</div>
+            </div>
+          </div>
+
+          <!-- Order Modal (inline) -->
+          <div class="finance-modal" id="finance-order-modal" aria-hidden="true" role="dialog" aria-label="Place order">
+            <div class="finance-modal-backdrop" id="finance-modal-backdrop"></div>
+            <div class="finance-modal-panel">
+              <div class="finance-modal-header">
+                <h3 id="finance-modal-title">Buy AAPL</h3>
+                <button class="finance-modal-close" id="finance-modal-close" aria-label="Close">✕</button>
+              </div>
+              <form class="finance-modal-body" id="finance-order-form">
+                <input type="hidden" id="finance-order-symbol">
+                <input type="hidden" id="finance-order-side">
+                <div class="finance-field">
+                  <span>Price</span>
+                  <input type="number" id="finance-order-price" step="0.01" readonly>
+                </div>
+                <div class="finance-field">
+                  <span>Quantity</span>
+                  <input type="number" id="finance-order-qty" min="1" step="1" required placeholder="1">
+                </div>
+                <div class="finance-field">
+                  <span>Total</span>
+                  <span id="finance-order-total">$0.00</span>
+                </div>
+                <div class="finance-modal-actions">
+                  <button type="button" class="btn-secondary" id="finance-order-cancel">Cancel</button>
+                  <button type="submit" class="btn-primary" id="finance-order-submit">Confirm</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Settings View -->
       <div id="view-settings" class="view">
         <div class="view-header">
