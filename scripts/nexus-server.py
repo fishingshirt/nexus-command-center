@@ -222,6 +222,137 @@ def _api_finance(handler, fullpath):
     _json(handler, 200, _finance_prices(symbols))
     return True
 
+# ── Hermes Bridge helpers ───────────────────────
+_HERMES_STATE_PATH = os.path.expanduser('~/.hermes/nexus-hermes-bridge.json')
+
+def _load_hermes_state():
+    defaults = {'offset': 0, 'pending': []}
+    try:
+        with open(_HERMES_STATE_PATH, 'r') as f:
+            return {**defaults, **json.load(f)}
+    except Exception:
+        return defaults
+
+def _save_hermes_state(st):
+    try:
+        os.makedirs(os.path.dirname(_HERMES_STATE_PATH), exist_ok=True)
+        with open(_HERMES_STATE_PATH, 'w') as f:
+            json.dump(st, f)
+    except Exception:
+        pass
+
+def _tg_token():
+    # Pull token from environment or ~/.hermes/.env
+    import re
+    tok = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if tok:
+        return tok
+    env_path = os.path.expanduser('~/.hermes/.env')
+    try:
+        with open(env_path, 'r') as f:
+            for line in f:
+                m = re.match(r'^TELEGRAM_BOT_TOKEN=(.+)$', line.strip())
+                if m:
+                    return m.group(1).strip()
+    except Exception:
+        pass
+    return ''
+
+def _tg_chat_id():
+    import re
+    cid = os.environ.get('TELEGRAM_HOME_CHANNEL', '')
+    if cid:
+        return cid
+    env_path = os.path.expanduser('~/.hermes/.env')
+    try:
+        with open(env_path, 'r') as f:
+            for line in f:
+                m = re.match(r'^TELEGRAM_HOME_CHANNEL=(.+)$', line.strip())
+                if m:
+                    return m.group(1).strip()
+    except Exception:
+        pass
+    return ''
+
+def _tg_api(method, params=None):
+    import urllib.request, urllib.parse, json, ssl
+    token = _tg_token()
+    if not token:
+        return {'ok': False, 'error': 'No TELEGRAM_BOT_TOKEN'}
+    url = f'https://api.telegram.org/bot{token}/{method}'
+    data = None
+    if params:
+        data = urllib.parse.urlencode(params).encode('utf-8')
+    req = urllib.request.Request(url, data=data, method='POST' if data else 'GET',
+                                 headers={'Content-Type': 'application/x-www-form-urlencoded'} if data else {})
+    try:
+        with urllib.request.urlopen(req, timeout=15, context=ssl.create_default_context()) as resp:
+            return json.loads(resp.read().decode('utf-8'))
+    except Exception as e:
+        return {'ok': False, 'error': str(e)}
+
+def _api_hermes(handler, path):
+    if path == '/api/hermes/message':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        text = (req.get('text') or '').strip()
+        if not text:
+            _json(handler, 400, {'ok': False, 'error': 'Missing text'})
+            return True
+        chat_id = _tg_chat_id()
+        if not chat_id:
+            _json(handler, 503, {'ok': False, 'error': 'TELEGRAM_HOME_CHANNEL not configured'})
+            return True
+        # Send via Telegram Bot API
+        res = _tg_api('sendMessage', {'chat_id': chat_id, 'text': text, 'parse_mode': 'HTML'})
+        if res.get('ok'):
+            st = _load_hermes_state()
+            st.setdefault('sent', []).append({'text': text, 'time': time.time()})
+            st['sent'] = st['sent'][-200:]
+            _save_hermes_state(st)
+            _json(handler, 200, {'ok': True, 'message_id': res['result'].get('message_id')})
+        else:
+            _json(handler, 502, {'ok': False, 'error': res.get('error', 'Telegram API failed'), 'description': res.get('description')})
+        return True
+
+    if path == '/api/hermes/poll':
+        chat_id = _tg_chat_id()
+        if not chat_id:
+            _json(handler, 503, {'ok': False, 'error': 'TELEGRAM_HOME_CHANNEL not configured'})
+            return True
+        st = _load_hermes_state()
+        offset = st.get('offset', 0)
+        res = _tg_api('getUpdates', {'offset': offset + 1, 'limit': 20})
+        messages = []
+        if res.get('ok') and isinstance(res.get('result'), list):
+            for upd in res['result']:
+                msg = upd.get('message') or upd.get('channel_post')
+                if not msg:
+                    continue
+                # Track highest update_id
+                if upd.get('update_id', 0) > offset:
+                    offset = upd['update_id']
+                # Only capture text messages from our chat
+                cid = str(msg.get('chat', {}).get('id', ''))
+                if cid != str(chat_id):
+                    continue
+                txt = msg.get('text') or msg.get('caption', '')
+                if txt:
+                    messages.append({'text': txt, 'from': msg.get('from', {}).get('first_name', 'Hermes'),
+                                     'time': msg.get('date'), 'message_id': msg.get('message_id')})
+        st['offset'] = offset
+        _save_hermes_state(st)
+        _json(handler, 200, {'ok': True, 'messages': messages})
+        return True
+
+    _json(handler, 404, {'ok': False, 'error': 'Unknown hermes endpoint'})
+    return True
+
 def _network():
     result = {'tailscale_ip': None, 'tailscale_status': 'not_installed', 'peers_count': 0, 'magic_dns': False, 'error': None}
     try:
@@ -822,6 +953,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/finance/'):
             return _api_finance(self, self.path)
 
+        if path.startswith('/api/hermes/'):
+            return _api_hermes(self, path)
+
         return False
 
     def do_OPTIONS(self):
@@ -866,6 +1000,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                     return
             if path.startswith('/api/auth/'):
                 if _api_auth(self, path):
+                    return
+            if path.startswith('/api/hermes/'):
+                if _api_hermes(self, path):
                     return
         self.send_response(405)
         self.end_headers()

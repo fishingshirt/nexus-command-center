@@ -1037,6 +1037,13 @@ button.nav-link {
   border-bottom-left-radius: var(--radius-sm);
 }
 
+.chat-msg-thinking {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-style: italic;
+  opacity: 0.85;
+}
+
 /* Full-page chat view */
 .chat-view-body {
   display: flex;

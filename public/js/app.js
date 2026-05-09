@@ -419,10 +419,12 @@ function initChat() {
     if (e.key === 'Enter') sendFromFullpage();
   });
 
-  // Load persisted history
+  // Load persisted history (skip bot messages if bridge responses)
   const history = JSON.parse(localStorage.getItem('ncc-chat-history') || '[]');
   history.forEach(msg => {
     const target = msg.source === 'widget' ? wMessages : fpHistory;
+    // Avoid double-rendering bot placeholder messages after bridge build
+    if (msg.role === 'bot' && msg.text && msg.text.includes('(Hermes bridge not yet connected')) return;
     addMessage(target, msg.text, msg.role, false);
   });
 }
@@ -444,11 +446,56 @@ function addMessage(container, text, role, persist = true) {
   }
 }
 
+async function hermesSend(text) {
+  try {
+    const res = await fetch('/api/hermes/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    return data.ok;
+  } catch (e) {
+    console.warn('Hermes send failed', e);
+    return false;
+  }
+}
+
+let _pollTimer = null;
+
+function startHermesPolling(container) {
+  stopHermesPolling();
+  let lastSeenId = null;
+  _pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch('/api/hermes/poll');
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.messages)) return;
+      for (const m of data.messages) {
+        const key = m.message_id || m.time;
+        if (key === lastSeenId) continue;
+        lastSeenId = key;
+        addMessage(container, m.text, 'bot');
+      }
+    } catch (e) {
+      // silent fail
+    }
+  }, 4000);
+}
+
+function stopHermesPolling() {
+  if (_pollTimer) {
+    clearInterval(_pollTimer);
+    _pollTimer = null;
+  }
+}
+
 function handleCommand(text, container) {
   const lower = text.toLowerCase().trim();
   if (lower === '/new') {
     localStorage.removeItem('ncc-chat-history');
     container.innerHTML = '';
+    stopHermesPolling();
     setTimeout(() => {
       addMessage(container, 'Fresh start. What can I do for you?', 'bot');
     }, 300);
@@ -459,10 +506,24 @@ function handleCommand(text, container) {
     return;
   }
 
-  // Placeholder echo (until Hermes bridge is wired)
-  setTimeout(() => {
-    addMessage(container, `Received: "${text}"\n\n(Hermes bridge not yet connected — this will be wired in T-012)`, 'bot');
-  }, 600);
+  const thinkingId = 'thinking-' + Date.now();
+  const thinkingDiv = document.createElement('div');
+  thinkingDiv.id = thinkingId;
+  thinkingDiv.className = 'chat-msg chat-msg-bot chat-msg-thinking';
+  thinkingDiv.textContent = 'Hermes is thinking…';
+  container.appendChild(thinkingDiv);
+  container.scrollTop = container.scrollHeight;
+
+  hermesSend(text).then(ok => {
+    const t = document.getElementById(thinkingId);
+    if (t) t.remove();
+    if (!ok) {
+      addMessage(container, "Couldn't reach Hermes. Bridge may be offline.", 'bot');
+      return;
+    }
+    addMessage(container, 'Sent to Hermes. Waiting for a reply…', 'bot');
+    startHermesPolling(container);
+  });
 }
 
 /* ===== UTILITIES ===== */
