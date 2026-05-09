@@ -873,8 +873,22 @@ function initFeedback() {
     });
   }
 }
+/* ===== AGENT STATS ===== */
+export function liveAgentStatus(sessionId) {
+  const indicator = document.getElementById('agent-indicator');
+  if (!indicator) return;
+  indicator.dataset.sessionId = sessionId || '';
+  indicator.style.background = '#22c55e';
+  indicator.style.opacity = '1';
+}
 
-function initAgentStats() {
+export function initAgentStats() {
+  // Indicator
+  const indicator = document.getElementById('agent-indicator');
+  if (indicator) {
+    indicator.style.background = '#94a3b8';   // gray = no heartbeat yet
+  }
+
   // Pull stats from settings or whiteboard fallback
   const settings = loadSettings();
   const stats = settings.agentStats || {};

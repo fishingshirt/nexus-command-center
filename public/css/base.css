@@ -1397,6 +1397,29 @@ body {
   font-size: var(--font-size-sm);
 }
 
+/* Agent wake indicator */
+.agent-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: agent-breathe 2.5s ease-in-out infinite;
+  cursor: help;
+}
+
+@keyframes agent-breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-indicator {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* ===== AGENT STATS PANEL (Settings) ===== */
 .agent-stats-panel {
   display: flex;

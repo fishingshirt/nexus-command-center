@@ -172,6 +172,65 @@ def _logs():
         'cron_enabled': True  # cron job invoking us implies it's enabled
     }
 
+# ── Agent Status helpers ──────────────────────
+def agent_status():
+    pidfile = os.path.expanduser('~/.hermes/nexus-agent.pid')
+    pid = None
+    try:
+        with open(pidfile) as f:
+            pid = int(f.read().strip())
+    except FileNotFoundError:
+        pass
+    except ValueError:
+        pass
+    running = False
+    if pid:
+        try:
+            import signal
+            os.kill(pid, 0)
+            running = True
+        except (OSError, ProcessLookupError):
+            pass
+    last_heartbeat = None
+    try:
+        hb_path = os.path.expanduser('~/.hermes/nexus-agent-heartbeat.json')
+        with open(hb_path) as f:
+            h = json.load(f)
+            last_heartbeat = h.get('timestamp')
+    except FileNotFoundError:
+        pass
+    except ValueError:
+        pass
+    if last_heartbeat:
+        try:
+            age = int(time.time() - time.mktime(time.strptime(last_heartbeat, '%Y-%m-%dT%H:%M:%S')))
+            if age > 1200:  # > 20 min old
+                running = False
+        except Exception:
+            pass
+    stats = {}
+    try:
+        with open(os.path.expanduser('~/.hermes/nexus-agent-stats.json')) as f:
+            stats = json.load(f)
+    except FileNotFoundError:
+        pass
+    except ValueError:
+        pass
+    return {
+        'running': running,
+        'pid': pid,
+        'last_heartbeat': last_heartbeat,
+        'stats': stats,
+        'uptime_seconds': int(time.time() - START_TIME)
+    }
+
+def agent_heartbeat():
+    hb_path = os.path.expanduser('~/.hermes/nexus-agent-heartbeat.json')
+    ts = time.strftime('%Y-%m-%dT%H:%M:%S')
+    with open(hb_path, 'w') as f:
+        json.dump({'timestamp': ts}, f)
+    return {'timestamp': ts, 'ok': True}
+
 # ── Request Handler ─────────────────────────────
 def _api_backup(handler, path, repo):
     import tempfile, glob, re
@@ -342,6 +401,60 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/system/logs':
             _json(self, 200, _logs())
+            return True
+
+        if path == '/api/agent/status':
+            _json(self, 200, agent_status())
+            return True
+
+        if path == '/api/agent/heartbeat':
+            _json(self, 200, agent_heartbeat())
+            return True
+
+        if path == '/api/agent/notify':
+            import datetime
+            try:
+                length = int(self.headers.get('Content-Length', 0))
+                body = self.rfile.read(length).decode('utf-8') if length else '{}'
+                req = json.loads(body)
+            except Exception:
+                _json(self, 400, {'ok': False, 'error': 'Invalid JSON'})
+                return True
+            note = {
+                'id': 'agent-' + str(int(time.time() * 1000)),
+                'title': req.get('title', 'Build Update'),
+                'message': req.get('message', ''),
+                'type': req.get('type', 'info'),
+                'timestamp': datetime.datetime.now().isoformat()
+            }
+            # Save to server-side notification queue file
+            queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')
+            queue = []
+            try:
+                with open(queue_path, 'r') as f:
+                    queue = json.load(f)
+            except Exception:
+                pass
+            queue.append(note)
+            # keep last 50
+            queue = queue[-50:]
+            try:
+                with open(queue_path, 'w') as f:
+                    json.dump(queue, f, indent=2)
+            except Exception:
+                pass
+            _json(self, 200, {'ok': True, 'notification': note, 'queued': len(queue)})
+            return True
+
+        if path == '/api/agent/notifications':
+            queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')
+            queue = []
+            try:
+                with open(queue_path, 'r') as f:
+                    queue = json.load(f)
+            except Exception:
+                pass
+            _json(self, 200, {'notifications': queue[-20:]})
             return True
 
         if path.startswith('/api/backup/'):
