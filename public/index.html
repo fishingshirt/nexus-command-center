@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/themes/professional.css" id="theme-stylesheet">
   <link rel="stylesheet" href="css/apps/calendar.css">
+  <link rel="stylesheet" href="css/apps/notes.css">
+  <link rel="stylesheet" href="css/apps/todo.css">
 </head>
 <body>
 
@@ -362,15 +364,35 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           </button>
           <h2>Notes</h2>
-          <button class="view-action" aria-label="New note">
+          <button class="view-action" id="notes-new-btn" aria-label="New note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           </button>
         </div>
-        <div class="view-body">
-          <div class="empty-state">
-            <div class="empty-icon">📝</div>
-            <h3>No notes yet</h3>
-            <p>Capture your thoughts. They'll be saved here.</p>
+        <div class="view-body notes-view-body">
+          <div class="notes-toolbar">
+            <div class="notes-search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="notes-search" placeholder="Search notes..." autocomplete="off">
+            </div>
+            <button class="btn-secondary" id="note-delete-btn" style="display:none;">Delete</button>
+          </div>
+          <div class="notes-layout">
+            <div class="notes-sidebar">
+              <div class="notes-sidebar-header"><span>All Notes</span><span id="notes-count">0</span></div>
+              <div class="notes-list" id="notes-list"></div>
+            </div>
+            <div id="notes-empty" class="notes-empty">
+              <div class="empty-icon">📝</div>
+              <h3>Select or create a note</h3>
+              <p>Your ideas live here.</p>
+            </div>
+            <div id="notes-editor" class="notes-editor" style="display:none;">
+              <div class="notes-editor-header">
+                <input type="text" id="note-title" class="note-title-input" placeholder="Untitled note" autocomplete="off">
+                <span class="note-meta" id="note-meta"></span>
+              </div>
+              <textarea id="note-content" class="note-content-area" placeholder="Start writing..."></textarea>
+            </div>
           </div>
         </div>
       </div>
@@ -385,15 +407,29 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           </button>
         </div>
-        <div class="view-body">
-          <div class="empty-state">
-            <div class="empty-icon">✅</div>
-            <h3>No tasks yet</h3>
-            <p>Add your first task and start getting things done.</p>
+        <div class="view-body todo-view-body">
+          <div class="todo-input-row">
+            <input type="text" id="todo-input" placeholder="What needs to be done?" autocomplete="off">
+            <select id="todo-priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+            <input type="date" id="todo-due">
+            <button class="btn-primary" id="todo-add-btn">Add</button>
+          </div>
+          <div class="todo-filters" id="todo-filters">
+            <button class="todo-filter-btn active" data-filter="all">All</button>
+            <button class="todo-filter-btn" data-filter="active">Active</button>
+            <button class="todo-filter-btn" data-filter="completed">Done</button>
+          </div>
+          <div class="todo-list" id="todo-list"></div>
+          <div class="todo-footer">
+            <span class="todo-stats" id="todo-stats">0 active · 0 completed</span>
+            <button class="todo-clear" id="todo-clear-completed" style="display:none;">Clear completed</button>
           </div>
         </div>
       </div>
-
       <div id="view-chat" class="view">
         <div class="view-header">
           <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">

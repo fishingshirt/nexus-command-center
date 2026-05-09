@@ -1,4 +1,6 @@
 import { initCalendar } from './apps/calendar.js';
+import { initNotes } from './apps/notes.js';
+import { initTodo } from './apps/todo.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -18,6 +20,8 @@ export function initApp() {
   initFeedback();
   initAgentStats();
   initCalendar();
+  initNotes();
+  initTodo();
   updateDashboardDate();
   registerServiceWorker();
 }

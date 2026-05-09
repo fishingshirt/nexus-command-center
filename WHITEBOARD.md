@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| **Project Phase** | `APP_EXPANSION` |
-| **Last Agent Run** | 2026-05-09 (T-024 spec added) |
-| **Active Tasks** | 7 (T-009, T-021, T-022 in progress/done + T-024/25/26/27/28 pending) |
-| **Completed Tasks** | 14 (T-001 through T-008, T-009-a/b/c/d, T-021-a, T-023) |
+|| **Project Phase** | `APP_EXPANSION` |
+|| **Last Agent Run** | 2026-05-09 (T-010 Notes + T-011 To-Do done) |
+|| **Active Tasks** | 7 (T-009, T-021, T-022 in progress/done + T-024/25/26/27/28 pending) |
+|| **Completed Tasks** | 16 (T-001 through T-008, T-009-a/b/c/d, T-021-a, T-023, T-010, T-011) |
 | **Bugs Found** | 0 |
 | **Next Wake** | *(set by cron)* |
 
@@ -44,8 +44,8 @@
 | `T-009-d` | Calendar week/day views | `DONE` | Month/week/day switchable. Responsive. Events clickable. |
 | `T-009-e` | **Google Calendar sync** — OAuth2 + API integration, settings panel auth, auto/manual sync, status indicator | `PENDING` | **User directive.** Settings panel needs Google Calendar token/API field. Manual + auto sync checks. Shows 'linked' / 'synced' / 'error' status. Falls back to localStorage if no auth. |
 | `T-009-f` | Calendar recurring events engine | `PENDING` | Weekly/monthly/yearly recurrence rules. |
-| `T-010` | Notes app — rich text or markdown editor, folders/tags, search | `PENDING` | `localStorage` for now. Consider IndexedDB later. |
-| `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `PENDING` | Must sync visually with Calendar. |
+|| `T-010` | Notes app — rich text or markdown editor, folders/tags, search | `DONE` | Plain-text editor with CRUD, auto-save, search, and sidebar list. localStorage persistence. Markdown rendering + folders/tags deferred. |
+|| `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `DONE` | CRUD, priorities, due dates, filters (all/active/completed), clear completed, localStorage persistence, reactive badge count. Recurring + drag-and-drop deferred. |
 | `T-012` | Hermes API bridge — real chat backend integration | `PENDING` | Research how to pipe messages to/from Hermes. |
 | `T-013` | Data persistence layer — migrate from `localStorage` to a real DB (SQLite/JSON file on server) | `PENDING` | Required before multi-device sync. |
 | `T-014` | Auth / user sessions — basic login so data isn't world-readable | `PENDING` | Simple JWT or even just a password hash. |
