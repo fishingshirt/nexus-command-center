@@ -46,11 +46,13 @@ export function initGoogleSync() {
       // If clientId is set but no apiKey, just mark linked
       if (c.clientId?.trim()) {
         saveStatus('linked', null);
-        return;
+          return;
       }
       saveStatus('none', null);
       return;
     }
+
+    saveStatus('syncing', null);
 
     const timeMin = new Date();
     timeMin.setMonth(timeMin.getMonth() - 1);
@@ -72,7 +74,8 @@ export function initGoogleSync() {
         throw new Error(data.error?.message || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      const imported = mergeEvents(data.items || []);
+      if (!Array.isArray(data.items)) throw new Error('Unexpected response format');
+      const imported = mergeEvents(data.items);
       saveStatus('synced', imported);
     } catch (err) {
       console.error('[CalendarSync]', err);
@@ -91,7 +94,7 @@ export function initGoogleSync() {
       if (g.status === 'cancelled') continue;
       const gcalId = g.id;
       const title = g.summary || '(No title)';
-      const desc = g.description || '';
+      const description = g.description || '';
       const start = g.start?.date || g.start?.dateTime;
       const end = g.end?.date || g.end?.dateTime;
       if (!start) continue;
@@ -113,7 +116,9 @@ export function initGoogleSync() {
         if (existing.date !== dateStr) { existing.date = dateStr; dirty = true; }
         if (existing.start !== startTime) { existing.start = startTime; dirty = true; }
         if (existing.end !== endTime) { existing.end = endTime; dirty = true; }
-        if (existing.desc !== desc) { existing.desc = desc; dirty = true; }
+        if (existing.description !== description) { existing.description = description; dirty = true; }
+        // Preserve local overrides (category, recurrence) — Google wins on core fields only
+        existing.updatedAt = Date.now();
         if (dirty) updated++;
       } else {
         stored.push({
@@ -125,7 +130,7 @@ export function initGoogleSync() {
           end: endTime,
           category: 'other',
           recurrence: 'none',
-          desc,
+          description,
           source: 'google',
           importedAt: now,
           updatedAt: now,
@@ -158,6 +163,7 @@ export function initGoogleSync() {
     const map = {
       none: { text: 'Not linked', cls: '' },
       linked: { text: 'Linked', cls: 'linked' },
+      syncing: { text: 'Syncing…', cls: 'syncing' },
       synced: { text: importResult ? `Synced (+${importResult.created} / ~${importResult.updated})` : 'Synced', cls: 'synced' },
       error: { text: 'Sync error', cls: 'error' },
     };

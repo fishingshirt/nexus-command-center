@@ -297,16 +297,14 @@ function initCalendarSync() {
 
   apiKeyEl?.addEventListener('input', () => { persist(); document.dispatchEvent(new CustomEvent('calendarSyncChanged')); });
   autoEl?.addEventListener('change', () => { persist(); document.dispatchEvent(new CustomEvent('calendarSyncChanged')); toast(autoEl.checked ? 'Auto-sync enabled' : 'Auto-sync disabled'); });
-  intervalEl?.addEventListener('change', persist);
+  intervalEl?.addEventListener('change', () => { persist(); document.dispatchEvent(new CustomEvent('calendarSyncChanged')); });
 
   syncNowBtn?.addEventListener('click', () => {
-    // Actual sync logic now lives in js/apps/gcal-sync.js
-    // It listens to the same button and performs the fetch.
-    // This stub remains as a guard.
     if (!clientIdEl?.value.trim() && !apiKeyEl?.value.trim()) {
       toast('Enter an API key or OAuth client ID first', 'error');
       return;
     }
+    // Actual sync logic lives in js/apps/gcal-sync.js — it listens to the same button
   });
 
   unlinkBtn?.addEventListener('click', () => {
@@ -331,6 +329,7 @@ function initCalendarSync() {
     const map = {
       none: { text: 'Not linked', cls: '' },
       linked: { text: 'Linked', cls: 'linked' },
+      syncing: { text: 'Syncing…', cls: 'syncing' },
       synced: { text: 'Synced', cls: 'synced' },
       error: { text: 'Error', cls: 'error' }
     };
