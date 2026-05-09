@@ -500,7 +500,7 @@ function hideOverlay() {
 function addFlash(container) {
   const f = document.createElement('div');
   f.className = 'welcome-flash';
-  container.appendChild(f);
+  getOverlay().appendChild(f);
 }
 function addParticleLayer(container) {
   const p = document.createElement('div');
