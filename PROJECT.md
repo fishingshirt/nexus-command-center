@@ -86,6 +86,54 @@ The first time you open it, you're greeted with a cinematic welcome: ambient mus
 - **File Manager** — browse server filesystem (if hosted locally)
 - **Terminal** — web-based terminal to the host machine (dangerous but useful)
 
+### X. Phone Bridge (ADB Android Control)
+**User directive.** Controls a connected Android phone via ADB from the dashboard and agent.
+
+**Capabilities:**
+- Detect ADB connection (USB or wireless) with auto-pair on port 5555
+- Display phone status: battery level, charging state, signal strength, carrier, Android version
+- Read SMS inbox from connected Android device via `adb shell content query`
+- Send SMS text messages to specific phone numbers via `adb shell am start` + broadcast
+- One-way message log (inbox read-only) + two-way messaging (send from dashboard)
+- Per-contact conversation threads with chat-bubble layout
+
+**Dashboard UI:**
+- Connection status dot (green `connected`, amber `pairing`, red `disconnected`)
+- Phone info panel: battery percentage (with icon), signal bars, carrier name
+- SMS Inbox list: contact name, message snippet, timestamp, unread indicator
+- Compose view: To field, message body, send button (only active when connected)
+- Thread view: chat-bubble layout with incoming/outgoing colors
+
+**Backend API endpoints** (extend `nexus-server.py`):
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/adb/status` | GET | `{connected: bool, deviceId: string, battery: number,charging:bool,signal:number,carrier:string,androidVersion:string,lastSeenAt:ISO}` |
+| `/api/adb/sms/read` | GET | Returns array of SMS objects `{id,address,body,date,read,type}` |
+| `/api/adb/sms/send` | POST | Body `{to: string, body: string}` → sends SMS via ADB Intent |
+| `/api/adb/contacts` | GET | Returns contact list `{name, phone}` for address-to-name mapping |
+
+**Security/Constraints:**
+- ADB daemon runs on host machine; Python server shells out to `adb` binary
+- Only local dashboard can reach the API (CORS allow `localhost:8080`)
+- SMS send requires explicit user confirmation in UI (no agent-initiated "surprise" texts without user approval)
+- Agent can read messages but cannot auto-send without user clicking Send
+
+**Settings Schema addition:**
+```json
+"phoneBridge": {
+  "enabled": false,
+  "deviceId": null,
+  "connectionMode": "usb",
+  "wirelessHost": null,
+  "wirelessPort": 5555,
+  "autoConnect": true,
+  "lastSyncAt": null,
+  "status": "disconnected"
+}
+```
+
+**Agent Note:** `T-024` breaks into `T-024-a` through `T-024-f`. Start with `T-024-b` (API) so dashboard can develop UI against real data.
+
 ---
 
 ## 🎨 Themes

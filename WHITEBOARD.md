@@ -69,6 +69,13 @@
 | `T-021-c` | Whiteboard task generator — convert feedback entries into WHITEBOARD.md format for agent ingestion | `PENDING` | Export `ncc-feedback` entries as formatted tasks with IDs and priority. |
 | `T-022` | **Agent Stats Panel** — in Settings: live agent metrics (tasks done, bugs fixed, commits, wake cycles, upcoming tasks, last/next run) | `IN_PROGRESS` | **User directive.** Reads from `ncc-settings.agentStats`. Offers "Refresh Whiteboard" button that fetches `WHITEBOARD.md` and parses task board. |
 | `T-023` | **Jarvis Theme** — Iron Man HUD aesthetic, electric arc-blue, holographic glow, HUD grid lines | `DONE` | **User directive.** Theme file `jarvis.css` added to `public/css/themes/`. Electric arc-blue `#39d0f2`, scanline overlay, glowing accents, HUD grid background. |
+| `T-024` | **Phone Bridge App** — ADB Android integration: send/read SMS, connection status, battery/signal telemetry | `PENDING` | **User directive.** Agent controls connected Android phone via ADB. Dashboard shows phone status. Supports one-way message log + two-way compose. |
+| `T-024-a` | ADB device detector script — detect USB/wireless ADB, auto-pair if needed | `PENDING` | Python script run by build agent to verify device and cache state. |
+| `T-024-b` | Nexus server ADB API — extend nexus-server.py with `/api/adb/status`, `/api/adb/sms/read`, `/api/adb/sms/send` | `PENDING` | Zero build-step backend: extend existing Python SPA server. CORS enabled for dashboard fetch. |
+| `T-024-c` | Dashboard Phone Bridge app UI — connection status indicator, battery/phone info panel | `PENDING` | Green/amber/red dot for ADB connection. Shows battery %, signal bars, last sync. |
+| `T-024-d` | SMS Inbox viewer — one-way message history pulled from phone via ADB | `PENDING` | Display SMS threads with contact names, body, timestamp. Sorted newest-first. |
+| `T-024-e` | SMS Compose & Send — two-way messaging from dashboard to phone number | `PENDING` | Text input + To: field. Uses `/api/adb/sms/send`. Stores sent messages in local log. |
+| `T-024-f` | Per-contact conversation thread view — chat-bubble style thread | `PENDING` | Group messages by phone number into threads. Show outgoing/incoming bubble colors. |
 
 ---
 
