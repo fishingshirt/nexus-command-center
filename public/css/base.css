@@ -1873,7 +1873,9 @@ body {
 .backup-merge-size { color: var(--text-muted); font-size: var(--font-size-xs); }
 
 .backup-log-actions { display: flex; gap: 0.2rem; align-items: center; }
+.hidden { display: none !important; }
 
+/* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
   .backup-spinner { animation: none; }
   .backup-modal-body { animation: none; }
