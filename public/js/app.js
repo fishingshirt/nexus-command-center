@@ -7,6 +7,7 @@ import { initWeather } from './apps/weather.js';
 import { initITHub } from './apps/it-hub.js';
 import { initAuth, ensureAuthEnabled } from './apps/auth.js';
 import { initPhoneBridge } from './apps/phone-bridge.js';
+import { initWelcome } from './welcome.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -377,49 +378,6 @@ function initCalendarSync() {
 }
 
 /* ===== WELCOME ===== */
-function initWelcome() {
-  const settings = loadSettings();
-  const overlay = document.getElementById('welcome-overlay');
-  const tagline = document.getElementById('welcome-tagline');
-  const cta = document.getElementById('welcome-cta');
-  const skip = document.getElementById('welcome-skip');
-
-  const hasSeenWelcome = localStorage.getItem('ncc-welcome-seen');
-  const shouldShow = settings.showWelcomeOnBoot || !hasSeenWelcome;
-
-  if (shouldShow) {
-    overlay.classList.add('active');
-    overlay.setAttribute('aria-hidden', 'false');
-    typewriter(tagline, 'Adapt. Learn. Build.', 80);
-  }
-
-  function dismiss() {
-    overlay.classList.remove('active');
-    overlay.setAttribute('aria-hidden', 'true');
-    localStorage.setItem('ncc-welcome-seen', 'true');
-    saveSettings({ showWelcomeOnBoot: false });
-    document.getElementById('show-welcome').checked = false;
-    // Focus management
-    document.getElementById('app')?.focus();
-  }
-
-  cta.addEventListener('click', dismiss);
-  skip.addEventListener('click', dismiss);
-}
-
-function typewriter(el, text, speed) {
-  let i = 0;
-  el.textContent = '';
-  const tick = () => {
-    if (i < text.length) {
-      el.textContent += text.charAt(i);
-      i++;
-      setTimeout(tick, speed);
-    }
-  };
-  tick();
-}
-
 /* ===== CHAT ===== */
 function initChat() {
   // Widget

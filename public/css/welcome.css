@@ -1,0 +1,345 @@
+/**
+ * welcome.css — Cinematic Onboarding Styles (T-033)
+ * Dark, beat-reactive, electric arc-blue aesthetic.
+ * Designed to be loaded alongside base.css for the welcome overlay only.
+ */
+
+/* ===== VARIABLES (override/extend theme) ===== */
+.welcome-overlay {
+  --w-bg: #020202;
+  --w-glow: #39d0f2;
+  --w-glow-weak: rgba(57, 208, 242, 0.3);
+  --w-text: #ffffff;
+  --w-text-muted: #94a3b8;
+  --w-accent-red: #f87171;
+  --w-transition: 0.3s ease;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--w-bg);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.2s ease, visibility 1.2s ease;
+}
+
+.welcome-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Scanline overlay */
+.welcome-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.4;
+}
+
+/* Vignette */
+.welcome-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, #020202 75%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ===== BASE CONTENT LAYOUT ===== */
+.welcome-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 2rem;
+  max-width: 680px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+/* ===== PHASE 1: NAME PROMPT ===== */
+.welcome-brand {
+  font-size: clamp(3rem, 10vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  margin-bottom: 2rem;
+  color: var(--w-text);
+  text-shadow:
+    0 0 8px var(--w-glow-weak),
+    0 0 24px rgba(57, 208, 242, 0.2);
+  animation: brandFloat 4s ease-in-out infinite;
+}
+
+@keyframes brandFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.welcome-prompt {
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  color: var(--w-text-muted);
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.05em;
+}
+
+.welcome-input-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 2rem;
+}
+
+.welcome-name-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(57, 208, 242, 0.4);
+  color: var(--w-text);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  outline: none;
+  letter-spacing: 0.08em;
+  font-weight: 300;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.welcome-name-input:focus {
+  border-bottom-color: var(--w-glow);
+  box-shadow: 0 4px 20px -4px rgba(57, 208, 242, 0.25);
+}
+
+.welcome-name-input::placeholder {
+  color: rgba(148, 163, 184, 0.5);
+}
+
+/* START button */
+.welcome-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 2.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--w-glow);
+  background: transparent;
+  color: var(--w-glow);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+
+.welcome-cta.ready,
+.welcome-cta:not([disabled]) {
+  opacity: 1;
+  pointer-events: auto;
+  animation: ctaPulse 2.5s ease-in-out infinite;
+}
+
+.welcome-cta:hover {
+  background: var(--w-glow);
+  color: #000;
+  box-shadow: 0 0 30px 6px rgba(57, 208, 242, 0.35);
+}
+
+@keyframes ctaPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(57, 208, 242, 0.4); }
+  50% { box-shadow: 0 0 20px 6px rgba(57, 208, 242, 0.2); }
+}
+
+.welcome-audio-status {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--w-text-muted);
+  letter-spacing: 0.05em;
+  transition: color 0.3s ease;
+}
+
+.welcome-audio-status.ready {
+  color: var(--w-glow);
+}
+
+.welcome-audio-status.warning {
+  color: var(--w-accent-red);
+}
+
+/* Skip button */
+.welcome-skip {
+  margin-top: 1.5rem;
+  background: transparent;
+  border: none;
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+}
+
+.welcome-skip:hover {
+  color: var(--w-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ===== PHASE 2: BEAT TEXT ===== */
+.welcome-content.cinematic {
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.beat-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  font-size: clamp(1.6rem, 5vw, 3rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--w-text);
+  text-shadow:
+    0 0 6px var(--w-glow-weak),
+    0 0 18px rgba(57, 208, 242, 0.2);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+
+.beat-text.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.beat-text.beat-pulse {
+  animation: beatPulse 0.2s ease-out;
+}
+
+@keyframes beatPulse {
+  0%   { transform: translate(-50%, -50%) scale(1); filter: brightness(1); text-shadow: 0 0 6px var(--w-glow-weak); }
+  50%  { transform: translate(-50%, -50%) scale(1.08); filter: brightness(1.4); text-shadow: 0 0 24px var(--w-glow), 0 0 48px rgba(57, 208, 242, 0.4); }
+  100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); text-shadow: 0 0 6px var(--w-glow-weak); }
+}
+
+/* ===== PHASE 3: SHOWCASE ===== */
+.showcase-line {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.showcase-icon {
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(57, 208, 242, 0.35));
+}
+
+.showcase-text {
+  font-size: clamp(1.1rem, 3vw, 1.8rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--w-text);
+  text-shadow: 0 0 8px rgba(57, 208, 242, 0.25);
+  text-align: center;
+  max-width: 80vw;
+}
+
+.showcase-line.active {
+  opacity: 1;
+}
+
+.showcase-line.beat-pulse .showcase-icon {
+  animation: iconPulse 0.2s ease-out;
+}
+
+@keyframes iconPulse {
+  0%   { transform: scale(1); filter: drop-shadow(0 0 12px var(--w-glow-weak)); }
+  50%  { transform: scale(1.15); filter: drop-shadow(0 0 28px var(--w-glow)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 12px var(--w-glow-weak)); }
+}
+
+/* ===== PARTICLES ===== */
+.particle-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--w-glow);
+  box-shadow: 0 0 6px 1px var(--w-glow);
+  pointer-events: none;
+}
+
+/* ===== SCREEN FLASH ===== */
+.welcome-flash {
+  position: absolute;
+  inset: 0;
+  background: var(--w-glow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.05s ease;
+  z-index: 4;
+  mix-blend-mode: overlay;
+}
+
+/* ===== PHASE 4: LANDING ===== */
+.welcome-farewell {
+  font-size: clamp(1.4rem, 4vw, 2.4rem);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--w-text);
+  text-shadow: 0 0 12px rgba(57, 208, 242, 0.35);
+  animation: farewellFadeIn 1.5s ease forwards;
+}
+
+@keyframes farewellFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .welcome-overlay,
+  .beat-text,
+  .showcase-line,
+  .welcome-farewell,
+  .welcome-brand,
+  .welcome-cta {
+    animation: none !important;
+    transition: none !important;
+  }
+}
