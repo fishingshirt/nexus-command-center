@@ -706,6 +706,31 @@ function initFeedback() {
       html += `<span style="color:var(--text-muted)">${escapeHtml(answers[i] || '(no answer)')}</span></div>`;
     });
     previewCard.innerHTML = html;
+
+    // Show Generate Whiteboard Task button if not already present
+    if (!document.getElementById('feedback-generate-btn')) {
+      const genBtn2 = document.createElement('button');
+      genBtn2.id = 'feedback-generate-btn';
+      genBtn2.type = 'button';
+      genBtn2.className = 'btn-primary';
+      genBtn2.innerHTML = '📋 Generate Whiteboard Task';
+      genBtn2.style.marginTop = '8px';
+      previewCard.appendChild(genBtn2);
+
+      genBtn2.addEventListener('click', () => {
+        const entry = {
+          id: 'fb-' + Date.now(),
+          type: draft.type,
+          title: draft.title,
+          desc: draft.desc,
+          priority: draft.priority,
+          answers: qs.map((q, i) => ({ question: q.text, answer: answers[i] || '' })),
+          status: 'submitted',
+          createdAt: new Date().toISOString()
+        };
+        showGeneratedTask(entry);
+      });
+    }
   }
 
   finalSubmit.addEventListener('click', () => {
@@ -761,8 +786,21 @@ function initFeedback() {
           <span>${fmtDate(item.createdAt)}</span>
           <span class="feedback-item-priority">${item.priority}</span>
         </div>
+        <div class="feedback-item-actions">
+          <button type="button" class="feedback-gen-btn btn-secondary" data-id="${escapeHtml(item.id)}">📋 Generate Task</button>
+        </div>
       </div>
     `).join('');
+
+    // Wire gen-task buttons
+    list.querySelectorAll('.feedback-gen-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const items = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
+        const entry = items.find(it => it.id === id);
+        if (entry) showGeneratedTask(entry);
+      });
+    });
   }
 
   function updateFeedbackBadge() {
@@ -771,6 +809,68 @@ function initFeedback() {
     const items = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
     badge.textContent = items.length;
     badge.style.display = items.length > 0 ? 'flex' : 'none';
+  }
+
+  /* ── Whiteboard Task Generator ────────────────── */
+  function generateTaskId() {
+    const items = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
+    const maxT = items.reduce((m, it) => {
+      const match = (it.taskId || '').match(/T-(\d+)/);
+      return match ? Math.max(m, parseInt(match[1], 10)) : m;
+    }, 21); // start past existing feedback-related tasks
+    return `T-${String(maxT + 1).padStart(3, '0')}`;
+  }
+
+  function generateTaskMarkdown(entry) {
+    const tid = generateTaskId();
+    const priorityBadge = entry.priority === 'must' ? '🔴' : entry.priority === 'should' ? '🟡' : '🟢';
+    const status = 'PENDING';
+    const typeLabel = entry.type === 'bug' ? 'Bug' : entry.type === 'theme' ? 'Theme Idea' : entry.type === 'improvement' ? 'Improvement' : 'Feature';
+    const answersBlock = (entry.answers || []).map((a, i) => {
+      return `- **Q${i + 1}:** ${escapeMarkdown(a.question)}\n  - ${escapeMarkdown(a.answer || '(no answer)')}`;
+    }).join('\n');
+
+    return `| ID | Task | Status | Notes |\n|----|------|--------|-------|\n| \`${tid}\` | ${priorityBadge} ${escapeMarkdown(entry.title)} | \`${status}\` | **Type:** ${typeLabel}${entry.desc ? ` — ${escapeMarkdown(entry.desc.slice(0, 120))}` : ''}${entry.desc.length > 120 ? '...' : ''} |` +
+           `\n\n**Generated Task Details**\n- **Task ID:** ${tid}\n- **Priority:** ${entry.priority}\n- **Submitted:** ${entry.createdAt ? new Date(entry.createdAt).toLocaleString() : 'now'}\n\n**Clarifying Answers**\n${answersBlock || '_No answers recorded._'}`;
+  }
+
+  function escapeMarkdown(text) {
+    if (!text) return '';
+    return text.replace(/[|\\]/g, '\\$&').trim();
+  }
+
+  function showGeneratedTask(entry) {
+    const genBox = document.getElementById('feedback-generated');
+    const pre = document.getElementById('feedback-generated-code');
+    if (!genBox || !pre) return;
+
+    const md = generateTaskMarkdown(entry);
+    pre.textContent = md;
+
+    // Inject generate + copy buttons into each history item if not already
+    genBox.style.display = 'block';
+    genBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  /* Wire up copy + close */
+  const genClose = document.getElementById('feedback-close-gen');
+  const genCopy = document.getElementById('feedback-copy-gen');
+  if (genClose) {
+    genClose.addEventListener('click', () => {
+      document.getElementById('feedback-generated').style.display = 'none';
+    });
+  }
+  if (genCopy) {
+    genCopy.addEventListener('click', () => {
+      const pre = document.getElementById('feedback-generated-code');
+      if (!pre) return;
+      const text = pre.textContent || '';
+      navigator.clipboard.writeText(text).then(() => toast('Task markdown copied to clipboard'))
+        .catch(() => {
+          const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+          toast('Task markdown copied to clipboard');
+        });
+    });
   }
 }
 

@@ -1379,6 +1379,17 @@ body {
   font-weight: 500;
 }
 
+.feedback-item-actions {
+  margin-top: var(--space-2);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.feedback-item-actions .btn-secondary {
+  padding: 6px 10px;
+  font-size: var(--font-size-xs);
+}
+
 .feedback-empty {
   text-align: center;
   padding: var(--space-8);
@@ -1477,6 +1488,52 @@ body {
 
 .feedback-preview-card b {
   color: var(--accent);
+}
+
+/* Generated task preview */
+.feedback-generated {
+  margin-bottom: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.feedback-generated-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.feedback-close-gen {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.feedback-close-gen:hover {
+  color: var(--danger);
+}
+
+.feedback-generated pre {
+  padding: var(--space-4);
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 280px;
 }
 
 @media (prefers-reduced-motion: reduce) {
