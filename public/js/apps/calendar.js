@@ -147,7 +147,7 @@ function renderWeek() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-  let headerHtml = '<div class="calendar-week-header"></div>'; // gutter
+  let headerHtml = '';
   let bodyHtml = '';
 
   for (let i = 0; i < 7; i++) {
