@@ -10,11 +10,11 @@
 | Metric | Value |
 |--------|-------|
 || **Project Phase** | `SECURITY & CLOUD` |
-|||| **Last Agent Run** | 2026-05-09 (T-033 Welcome Rebrand — text overflow fixed, PC sizing, farewell with name+tagline; T-026-a Arcade app shell + game launcher grid) |
-|||| **Active Tasks** | 7 (T-025 through T-028, T-031, T-032, T-033) |
-|||| **Completed Tasks** | 52 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033-a/b/c/d/e/f/g, T-026-a) |
+|| **Last Agent Run** | 2026-05-09 (T-026-b Snake game — full playable implementation with keyboard, touch, particles, speed ramp, high scores) |
+|| **Active Tasks** | 7 (T-025 through T-028, T-031, T-032, T-033) |
+|| **Completed Tasks** | 53 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033-a/b/c/d/e/f/g, T-026-a, T-026-b) |
 
-|| **Current Focus:** T-026-b (Game: Snake) — Arcade shell done, building first playable game. |
+|| **Current Focus:** T-026-c (Game: Pong) — Next arcade game. Canvas-based with CPU opponent. |
 
 ---
 
@@ -88,10 +88,10 @@
 | `T-025-c` | Agent PDF execution bridge — nexus-server.py endpoint `/api/pdf/edit` receives `{pdfId, instruction}`, shells out to Python script that loads `nano-pdf` / `pymupdf` to edit | `PENDING` | Python backend extension. Agent script checks for `uv` package manager to install `pymupdf` if missing. |
 | `T-025-d` | PDF preview & download — render edited PDF in `<iframe>` or `<canvas>`, offer download, keep version history | `PENDING` | Versioned edits stored on server disk. User can rollback to previous version. |
 || `T-026` | **Mini Games Arcade** — dedicated "Arcade" app tab with collection of quick casual games | `IN_PROGRESS` | **User directive.** Arcade cabinet aesthetic. Each game is a self-contained canvas-based module. Keep-me-busy mode. |
-|| `T-026-a` | Arcade app shell + game launcher grid — 3x3 (or scrollable) grid of game cards with high scores | `DONE` | App card added to dashboard, nav link, CSS/JS modules. 7 games listed (Snake, Pong, Tetromino, Minesweeper, 2048, Typing, Reaction). All show "Coming Soon" placeholder. High score storage API ready (`saveHighScore`, `arcadeReportScore`). |
-|| `T-026-b` | Game: Snake — classic snake, touch + keyboard controls, score + high score | `PENDING` | Canvas-based. Speed increases with score. Particle effects on eat. |
-| `T-026-c` | Game: Pong — vs CPU, difficulty levels, score tracking | `PENDING` | Canvas-based. Touch drag for paddle on mobile. |
-| `T-026-d` | Game: Tetromino (Tetris clone) — 7-bag randomizer, hold piece, next preview, line clear scoring | `PENDING` | Canvas-based. Touch controls: tap to rotate, swipe to move/drop. |
+|| T-026-a | Arcade app shell + game launcher grid — 3x3 (or scrollable) grid of game cards with high scores | `DONE` | App card added to dashboard, nav link, CSS/JS modules. 7 games listed (Snake, Pong, Tetromino, Minesweeper, 2048, Typing, Reaction). All show "Coming Soon" placeholder. High score storage API ready (`saveHighScore`, `arcadeReportScore`). |
+|| T-026-b | Game: Snake — classic snake, touch + keyboard controls, score + high score | `DONE` | Canvas-based. Speed increases with score. Particle effects on eat. Mobile swipe controls. Escape to exit. |
+|| T-026-c | Game: Pong — vs CPU, difficulty levels, score tracking | `PENDING` | Canvas-based. Touch drag for paddle on mobile. |
+|| T-026-d | Game: Tetromino (Tetris clone) — 7-bag randomizer, hold piece, next preview, line clear scoring | `PENDING` | Canvas-based. Touch controls: tap to rotate, swipe to move/drop. |
 | `T-026-e` | Game: Minesweeper — classic, 3 difficulties, flag mode, chord reveal, timer | `PENDING` | DOM-based grid. Right-click / long-press to flag. |
 | `T-026-f` | Game: 2048 — swipe/arrow to merge tiles, undo once per game, score + best | `PENDING` | DOM-based or canvas. Smooth slide animation via CSS transform. |
 | `T-026-g` | Game: Typing Speed Test — WPM / accuracy / time attack modes | `PENDING` | Text corpus from quotes API or hardcoded list. Real-time WPM calculation. |
