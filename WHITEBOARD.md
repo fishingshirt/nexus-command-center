@@ -9,14 +9,14 @@
 
 | Metric | Value |
 |--------|-------|
-| **Project Phase** | `SCAFFOLDING_COMPLETE` |
-| **Last Agent Run** | 2026-05-09 (T-009 month view + CRUD + persistence) |
-| **Active Tasks** | 4 (T-009 in progress, T-021-a, T-022, T-023 in progress/done) |
-| **Completed Tasks** | 13 (T-001 through T-008, T-009-a/b/c, T-021-a, T-023) |
+| **Project Phase** | `APP_EXPANSION` |
+| **Last Agent Run** | 2026-05-09 (T-024 spec added) |
+| **Active Tasks** | 7 (T-009, T-021, T-022 in progress/done + T-024/25/26/27/28 pending) |
+| **Completed Tasks** | 14 (T-001 through T-008, T-009-a/b/c/d, T-021-a, T-023) |
 | **Bugs Found** | 0 |
 | **Next Wake** | *(set by cron)* |
 
-**Current Focus:** Build the foundational HTML/CSS/JS scaffold and Docker setup.
+|**Current Focus:** Agent can pick up highest-priority pending task: T-009-e (Google Calendar sync) or any new user-requested feature.
 
 ---
 
@@ -76,6 +76,36 @@
 | `T-024-d` | SMS Inbox viewer — one-way message history pulled from phone via ADB | `PENDING` | Display SMS threads with contact names, body, timestamp. Sorted newest-first. |
 | `T-024-e` | SMS Compose & Send — two-way messaging from dashboard to phone number | `PENDING` | Text input + To: field. Uses `/api/adb/sms/send`. Stores sent messages in local log. |
 | `T-024-f` | Per-contact conversation thread view — chat-bubble style thread | `PENDING` | Group messages by phone number into threads. Show outgoing/incoming bubble colors. |
+| `T-025` | **Smart PDF Editor** — upload PDF + natural language instruction, agent loads PDF skills to edit text/merge pages/replace content/export | `PENDING` | **User directive.** User uploads PDF and types instruction (e.g. "change title to X", "merge with doc2.pdf"). Dashboard triggers agent which loads `nano-pdf` or `ocr-and-documents` skill, performs edit, returns download link. |
+| `T-025-a` | PDF upload dropzone + UI — accept `.pdf` via drag/drop, show thumbnail, list of uploaded PDFs in localStorage | `PENDING` | Uses `<input type=file accept=.pdf>` + `FileReader` for preview. Stores metadata in `ncc-pdf-library`. |
+| `T-025-b` | Natural language instruction parser — parse user text into structured edit command (replace text, insert page, merge, extract pages, OCR) | `PENDING` | Simple keyword-match → command object. Falls back to "generic edit" if unclear. |
+| `T-025-c` | Agent PDF execution bridge — nexus-server.py endpoint `/api/pdf/edit` receives `{pdfId, instruction}`, shells out to Python script that loads `nano-pdf` / `pymupdf` to edit | `PENDING` | Python backend extension. Agent script checks for `uv` package manager to install `pymupdf` if missing. |
+| `T-025-d` | PDF preview & download — render edited PDF in `<iframe>` or `<canvas>`, offer download, keep version history | `PENDING` | Versioned edits stored on server disk. User can rollback to previous version. |
+| `T-026` | **Mini Games Arcade** — dedicated "Arcade" app tab with collection of quick casual games | `PENDING` | **User directive.** Arcade cabinet aesthetic. Each game is a self-contained canvas-based module. Keep-me-busy mode. |
+| `T-026-a` | Arcade app shell + game launcher grid — 3x3 (or scrollable) grid of game cards with high scores | `PENDING` | Each card shows game icon, best score, play button. Grid responsive. |
+| `T-026-b` | Game: Snake — classic snake, touch + keyboard controls, score + high score | `PENDING` | Canvas-based. Speed increases with score. Particle effects on eat. |
+| `T-026-c` | Game: Pong — vs CPU, difficulty levels, score tracking | `PENDING` | Canvas-based. Touch drag for paddle on mobile. |
+| `T-026-d` | Game: Tetromino (Tetris clone) — 7-bag randomizer, hold piece, next preview, line clear scoring | `PENDING` | Canvas-based. Touch controls: tap to rotate, swipe to move/drop. |
+| `T-026-e` | Game: Minesweeper — classic, 3 difficulties, flag mode, chord reveal, timer | `PENDING` | DOM-based grid. Right-click / long-press to flag. |
+| `T-026-f` | Game: 2048 — swipe/arrow to merge tiles, undo once per game, score + best | `PENDING` | DOM-based or canvas. Smooth slide animation via CSS transform. |
+| `T-026-g` | Game: Typing Speed Test — WPM / accuracy / time attack modes | `PENDING` | Text corpus from quotes API or hardcoded list. Real-time WPM calculation. |
+| `T-026-h` | Game: Reaction Time Tester — click when green, measure ms, average of 5 | `PENDING` | Simple state machine. Anti-cheat: detect early clicks. |
+| `T-026-i` | Arcade high score leaderboard — global per-game scores in `localStorage` | `PENDING` | Simple array sort. Show top 10 with dates. |
+| `T-027` | **Work Simulator** — "look busy" mode: fake IDE, fake terminal scrolling, fake build notifications, fake Slack messages, all designed to make it look like you're deep in work | `PENDING` | **User directive.** Paranoia/theater mode for open offices / shoulder surfers. |
+| `T-027-a` | Work Simulator launcher + mode picker — choose from Fake IDE, Fake Terminal, Fake Dashboard, or Auto-Rotate | `PENDING` | Mode selection buttons. Quick toggle from dashboard header or Settings. |
+| `T-027-b` | Fake IDE mode — syntax-highlighted code auto-types itself, cursor blinks, fake file tabs, fake errors/warnings in sidebar | `PENDING` | Pre-baked code snippets (Python, JS, Rust). Simulates typing with realistic backspace mistakes. Line numbers gutter. |
+| `T-027-c` | Fake Terminal mode — scrolls npm install, docker build, git push, test suite output with green checkmarks and occasional warnings | `PENDING` | Pre-recorded log snippets. Auto-scroll. Speed configurable. Color-coded output. |
+| `T-027-d` | Fake Dashboard mode — live-updating metrics charts, build pipelines with progress bars, server health grids, deploy status cards | `PENDING` | Fake charts via CSS bars + JS random fluctuation. "Build #4827 passed" toasts. |
+| `T-027-e` | Fake Chat Notifications — random Slack/Discord-style toast notifications popping from corner: "Build deployed", "PR approved", "CI green" | `PENDING` | Toast stack with avatar, name, snippet. Auto-dismiss. Configurable frequency. |
+| `T-027-f` | Boss Key — instant hotkey (`Ctrl+B` or `Ctrl+~`) to switch to a fake Excel/Google Sheets spreadsheet full of data | `PENDING` | Pre-rendered HTML table with fake sales/revenue data. Looks like real work. |
+| `T-027-g` | Panic/Chill slider — controls intensity: Chill = slow typing, few notifications; Panic = rapid scroll, urgent toasts, red warnings | `PENDING` | Slider 1-5. Dynamically adjusts all simulators. |
+| `T-028` | **Additional Mini Games Backlog** — collection of smaller game ideas for future Arcade expansion | `PENDING` | **User directive.** More keep-me-busy games. |
+| `T-028-a` | Game: Breakout — paddle + bricks, power-ups, levels | `PENDING` | Canvas-based. |
+| `T-028-b` | Game: Space Shooter — horizontal scroller, enemies, bullets | `PENDING` | Canvas-based. |
+| `T-028-c` | Game: Memory Match — card flip matching, timer, moves counter | `PENDING` | DOM-based grid. |
+| `T-028-d` | Game: Word Scramble — unscramble words against timer | `PENDING` | Word list from API or hardcoded. |
+| `T-028-e` | Game: Trivia Quiz — multiple choice, categories, streak counter | `PENDING` | Question bank in JSON. |
+| `T-028-f` | Game: Sudoku — generator + solver hint, 4 difficulties | `PENDING` | DOM grid. Highlight conflicts. |
 
 ---
 

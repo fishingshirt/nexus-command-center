@@ -134,6 +134,105 @@ The first time you open it, you're greeted with a cinematic welcome: ambient mus
 
 **Agent Note:** `T-024` breaks into `T-024-a` through `T-024-f`. Start with `T-024-b` (API) so dashboard can develop UI against real data.
 
+### XI. Smart PDF Editor
+**User directive.** Upload a PDF and tell the agent what to change — it loads PDF skills (`nano-pdf`, `pymupdf`) to edit.
+
+**Capabilities:**
+- Drag-and-drop PDF upload with thumbnail preview
+- Natural language instruction parser: "change title to X", "merge with doc2.pdf", "extract pages 3-5", "OCR and replace text"
+- Backend executes edits via Python `pymupdf` / `nano-pdf` CLI
+- Version history: every edit creates a new version, user can rollback
+- Preview edited PDF inline (`<iframe>` or `<canvas>`)
+- Download final PDF
+
+**Dashboard UI:**
+- Upload dropzone: dashed border, file icon, "Drop PDF here"
+- PDF library grid: thumbnails of uploaded PDFs with last-edited date
+- Instruction input: text area with placeholder "What would you like to change?"
+- Status indicator: `queued` → `editing` → `ready` → `error`
+- Preview panel: rendered PDF with page flip controls
+- Version dropdown: select previous version to restore
+- Download button next to preview
+
+**Backend API endpoints** (extend `nexus-server.py`):
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/pdf/upload` | POST | Accepts multipart PDF file, saves to disk, returns `{pdfId}` |
+| `/api/pdf/list` | GET | Returns array of uploaded PDFs `{id, name, pages, uploadedAt, versions[]}` |
+| `/api/pdf/edit` | POST | Body `{pdfId, instruction}` → agent processes, returns `{editId, status}` |
+| `/api/pdf/edit/:id` | GET | Poll status of running edit job |
+| `/api/pdf/download/:pdfId/:version` | GET | Download specific version of PDF |
+| `/api/pdf/rollback/:pdfId` | POST | Restore to specified version index |
+
+**Agent Note:** `T-025` breaks into `T-025-a` through `T-025-d`. Install `pymupdf` via `uv pip install pymupdf` on the host if missing. PDF files stored in `/tmp/nexus-command-center/data/pdfs/`.
+
+### XII. Mini Games Arcade
+**User directive.** A dedicated "Arcade" app tab filled with quick casual games to keep the user busy during downtime.
+
+**Games (launch v1):**
+| Game | Controls | Style |
+|------|----------|-------|
+| **Snake** | Arrow keys / swipe | Canvas, particles on eat, speed ramps |
+| **Pong** | Mouse drag / touch | vs CPU, 3 difficulty levels |
+| **Tetromino** | Tap rotate, swipe move/drop | 7-bag randomizer, hold piece, next preview, line clear scoring |
+| **Minesweeper** | Click reveal, right-click/long-press flag | DOM grid, 3 difficulties, chord reveal, timer |
+| **2048** | Arrow keys / swipe | Smooth CSS transforms, undo once, score tracking |
+| **Typing Speed** | Keyboard only | WPM + accuracy against timer or sentences |
+| **Reaction Time** | Click when green | Average of 5 rounds, anti-cheat for early clicks |
+
+**Dashboard UI:**
+- Arcade cabinet header with neon glow title
+- 3x3 (or scrollable) grid of game cards
+- Each card: game icon, best score, "PLAY" button
+- Fullscreen game overlay when launched
+- Pause button → mini overlay with Resume / Quit / Settings
+- Post-game score screen with "Play Again" and "Back to Arcade"
+- High score leaderboard per game in `localStorage` (top 10)
+
+**Tech:** Each game is a self-contained ES module exporting `init(canvas, onScore, onQuit)`. Zero dependencies. Canvas games handle HiDPI scaling.
+
+**Agent Note:** `T-026` breaks into `T-026-a` through `T-026-i`. Start with `T-026-a` (shell) then `T-026-b` through `T-026-i` (one per cycle).
+
+### XIII. Work Simulator
+**User directive.** "Paranoia / theater mode" — make it look like you're deep in important work so shoulder surfers leave you alone.
+
+**Simulation Modes:**
+| Mode | Visual | Behavior |
+|------|--------|----------|
+| **Fake IDE** | Full-screen editor with syntax highlighting, file tabs, sidebar with fake errors/warnings | Auto-types realistic code (Python/JS/Rust) with occasional backspace mistakes. Blinking cursor. Green build success flashes in status bar. |
+| **Fake Terminal** | Full-screen terminal with green/white text on dark bg | Streams npm install, docker build, git push, pytest output. Auto-scroll. Green checkmarks. Occasional yellow warnings. |
+| **Fake Dashboard** | Grid of metric cards, build pipelines, deploy status | CSS bar charts fluctuate randomly. Progress bars fill. "Build #4827 passed" toasts. Red/amber/green health dots. |
+| **Fake Spreadsheet** *(Boss Key)* | Excel/Google Sheets clone full of numbers | `Ctrl+B` or `Ctrl+~` instant switch. Fake sales/revenue data. Looks exactly like real work. |
+
+**Shared Features:**
+- **Boss Key** (`Ctrl+B` / `Ctrl+~`): instant swap to Fake Spreadsheet
+- **Panic/Chill Slider** (1-5): controls typing speed, notification frequency, scroll speed
+- **Fake Chat Notifications**: Slack/Discord-style corner toasts: "Build deployed", "PR approved", "CI green"
+- **Auto-Rotate**: cycles modes every N minutes
+- **Quick toggle**: from dashboard header or Settings — one click to enter Work Sim
+
+**Dashboard UI:**
+- Full-screen takeover when activated
+- Mode picker overlay on first launch
+- Bottom control bar: mode selector, panic slider, boss key hint, exit button
+- Exit requires 3-second press-and-hold (prevents accidental exits)
+
+**Agent Note:** `T-027` breaks into `T-027-a` through `T-027-g`. Start with `T-027-a` (launcher shell) then the modes. Pre-baked content lives in `public/assets/work-sim/`.
+
+### XIV. Additional Mini Games Backlog
+**User directive.** More games for future Arcade expansion. Lower priority until v1 Arcade is live.
+
+| Game | Desc |
+|------|------|
+| Breakout | Paddle + bricks, power-ups, levels |
+| Space Shooter | Horizontal scroller, enemies, bullets |
+| Memory Match | Card flip matching, timer, moves counter |
+| Word Scramble | Unscramble words against timer |
+| Trivia Quiz | Multiple choice, categories, streak counter |
+| Sudoku | Generator + solver hint, 4 difficulties |
+
+**Agent Note:** `T-028` breaks into `T-028-a` through `T-028-f`. Pick up after `T-026` is complete.
+
 ---
 
 ## 🎨 Themes
