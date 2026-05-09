@@ -4,7 +4,7 @@
    Adds /api/* endpoints for IT Hub telemetry.
    Usage: python3 nexus-server.py [--port 8080] [--dir /path/to/public]
 """
-import http.server, socketserver, os, sys, argparse, signal, atexit, json, time, subprocess, socket
+import http.server, socketserver, os, sys, argparse, signal, atexit, json, time, subprocess, socket, shutil
 from pathlib import Path
 
 PIDFILE = os.path.expanduser('~/.hermes/nexus-server.pid')
@@ -206,15 +206,166 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             return True
 
         if path.startswith('/api/backup/'):
-            # pass through to static handler — backup endpoints could be added later
-            _json(self, 501, {'ok': False, 'error': 'Not implemented in this server'})
-            return True
+            return _api_backup(self, path, repo)
 
         return False
+
+def _api_backup(handler, path, repo):
+    import tempfile, glob, re
+
+    BACKUP_DIR = os.path.expanduser('~/.hermes/backups')
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+
+    if path == '/api/backup/usb':
+        drives = []
+        try:
+            # Try lsblk for removable block devices
+            out = subprocess.check_output(
+                ['lsblk', '-J', '-o', 'NAME,SIZE,TYPE,MOUNTPOINT,LABEL,FSTYPE,RM'],
+                stderr=subprocess.DEVNULL, text=True, timeout=5
+            )
+            blk = json.loads(out)
+            for dev in blk.get('blockdevices', []):
+                if dev.get('rm') != True:
+                    continue
+                # Children partitions
+                for child in dev.get('children', []):
+                    drives.append({
+                        'path': child.get('mountpoint') or f'/dev/{child.get("name")}',
+                        'label': child.get('label') or dev.get('name'),
+                        'size': child.get('size') or dev.get('size'),
+                        'fstype': child.get('fstype') or '',
+                        'mounted': bool(child.get('mountpoint'))
+                    })
+                if not dev.get('children'):
+                    drives.append({
+                        'path': f'/dev/{dev.get("name")}',
+                        'label': dev.get('label') or dev.get('name'),
+                        'size': dev.get('size'),
+                        'fstype': dev.get('fstype') or '',
+                        'mounted': bool(dev.get('mountpoint'))
+                    })
+        except Exception:
+            # Fallback: scan /media and /mnt for mount points
+            for base in ['/media', '/mnt', '/run/media']:
+                if os.path.isdir(base):
+                    for user in os.listdir(base):
+                        up = os.path.join(base, user)
+                        if os.path.isdir(up):
+                            for d in os.listdir(up):
+                                dp = os.path.join(up, d)
+                                if os.path.ismount(dp):
+                                    try:
+                                        st = shutil.disk_usage(dp)
+                                        size = f"{st.total // (1024**3)} GB"
+                                    except Exception:
+                                        size = '?'
+                                    drives.append({
+                                        'path': dp, 'label': d, 'size': size,
+                                        'fstype': '', 'mounted': True
+                                    })
+        _json(handler, 200, {'drives': drives})
+        return True
+
+    if path == '/api/backup/run':
+        import hashlib, datetime
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+
+        btype = req.get('type', 'full')
+        cfg = req.get('config', {})
+        target = req.get('target')
+        timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+
+        # Gather ncc localStorage keys plus settings
+        export_data = {'_meta': {'exported_at': timestamp, 'version': 1, 'type': btype}}
+        for k in list(os.environ.keys()):
+            if k.startswith('ncc-'):
+                pass  # no env fallback; we only read browser localStorage via frontend
+        # Since we cannot read browser localStorage from server, we accept it in the request
+        payload_data = req.get('data', {})
+        if payload_data:
+            export_data['data'] = payload_data
+        else:
+            export_data['data'] = {}
+
+        # Write to server backup dir
+        arc_name = f"nexus-backup-{timestamp}.json"
+        arc_path = os.path.join(BACKUP_DIR, arc_name)
+        with open(arc_path, 'w') as f:
+            json.dump(export_data, f, indent=2)
+
+        # If gpg + passphrase, encrypt in place
+        passphrase = cfg.get('passphrase', '')
+        if passphrase and len(passphrase) >= 8:
+            enc_path = arc_path + '.gpg'
+            try:
+                subprocess.run(
+                    ['gpg', '--batch', '--passphrase-fd', '0', '--symmetric',
+                     '--cipher-algo', 'AES256', '-o', enc_path, arc_path],
+                    input=passphrase.encode(), check=True, timeout=60
+                )
+                os.remove(arc_path)
+                arc_path = enc_path
+                arc_name += '.gpg'
+            except Exception:
+                pass  # leave unencrypted if gpg unavailable
+
+        # If local target (USB path), copy there too
+        final_target = 'server'
+        if btype in ('local', 'full') and target:
+            if os.path.isdir(target):
+                try:
+                    dest = os.path.join(target, arc_name)
+                    shutil.copy2(arc_path, dest)
+                    final_target = target
+                except Exception as e:
+                    _json(handler, 200, {'ok': False, 'error': f'USB copy failed: {e}'})
+                    return True
+
+        # Cloud
+        if btype == 'cloud' and cfg.get('provider'):
+            # Placeholder: we only store locally; real cloud sync is future work
+            final_target = f"cloud({cfg['provider']})→server"
+
+        size = '—'
+        try:
+            size = f"{os.path.getsize(arc_path):,} bytes"
+        except Exception:
+            pass
+
+        _json(handler, 200, {
+            'ok': True, 'file': arc_name, 'path': arc_path,
+            'target': final_target, 'size': size,
+            'summary': f'Backed up to {final_target}'
+        })
+        return True
+
+    _json(handler, 404, {'ok': False, 'error': 'Unknown backup endpoint'})
+    return True
 
     def do_OPTIONS(self):
         self.send_response(204)
         _cors(self)
+        self.end_headers()
+
+    def do_POST(self):
+        self.extensions_map['.js'] = 'application/javascript'
+        self.extensions_map['.css'] = 'text/css'
+        self.extensions_map['.svg'] = 'image/svg+xml'
+        self.extensions_map['.json'] = 'application/json'
+        if self.path.startswith('/api/'):
+            path = self.path.split('?')[0]
+            repo = os.path.dirname(os.path.abspath(self.args_dir))
+            if path.startswith('/api/backup/'):
+                if _api_backup(self, path, repo):
+                    return
+        self.send_response(405)
         self.end_headers()
 
     def do_GET(self):

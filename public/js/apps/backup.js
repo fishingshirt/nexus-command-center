@@ -179,7 +179,17 @@ async function runBackup(type) {
   btn.innerHTML = `<span class="backup-spinner"></span> Working...`;
 
   const config = loadBackupConfig();
-  const body = { type, config };
+
+  // Collect all ncc-* localStorage data
+  const payload = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('ncc-')) {
+      payload[key] = localStorage.getItem(key);
+    }
+  }
+
+  const body = { type, config, data: payload };
   if (type === 'local') {
     const sel = document.querySelector('.backup-usb-item.selected');
     if (sel) body.target = sel.dataset.path;
