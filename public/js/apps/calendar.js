@@ -1,7 +1,7 @@
 import { toast } from '../app.js';
 
 // ===== CALENDAR APP =====
-// Handles month view grid, event CRUD, and localStorage persistence.
+// Handles month/week/day views, event CRUD, and localStorage persistence.
 // All events stored under key: ncc-calendar-events
 
 const STORAGE_KEY = 'ncc-calendar-events';
@@ -13,8 +13,8 @@ const CATEGORY_COLORS = {
   other:    { bg: 'rgba(100,116,139,0.15)', text: '#64748b' },
 };
 
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth();
+let anchorDate = new Date();
+let currentView = 'month';
 let selectedDate = null;
 let editingEventId = null;
 
@@ -46,19 +46,39 @@ function updateCalendarBadge() {
   if (badge) badge.textContent = count;
 }
 
-// ---- Grid Renderer ----
+// ---- View Switcher ----
+function setView(view) {
+  currentView = view;
+  document.querySelectorAll('#calendar-view-switcher .view-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+  renderCalendar();
+}
+
+// ---- Render Dispatcher ----
 function renderCalendar() {
+  if (currentView === 'month') renderMonth();
+  else if (currentView === 'week') renderWeek();
+  else if (currentView === 'day') renderDay();
+  renderLegend();
+}
+
+// ---- Month View ----
+function renderMonth() {
   const monthYearEl = document.getElementById('cal-month-year');
   const gridEl = document.getElementById('cal-grid');
   const events = loadEvents();
 
-  monthYearEl.textContent = new Date(currentYear, currentMonth, 1)
+  const year = anchorDate.getFullYear();
+  const month = anchorDate.getMonth();
+
+  monthYearEl.textContent = new Date(year, month, 1)
     .toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 
-  const firstOfMonth = new Date(currentYear, currentMonth, 1);
+  const firstOfMonth = new Date(year, month, 1);
   const firstDayIndex = firstOfMonth.getDay(); // 0 = Sunday
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const startPrev = new Date(currentYear, currentMonth, 0).getDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startPrev = new Date(year, month, 0).getDate();
 
   let html = '';
   const today = new Date();
@@ -72,7 +92,7 @@ function renderCalendar() {
 
   // Current month
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = dateStr === todayStr;
     const dayEvents = events
       .filter(e => e.date === dateStr)
@@ -106,19 +126,152 @@ function renderCalendar() {
   }
 
   gridEl.innerHTML = html;
+  attachDayClicks(gridEl);
+}
 
-  // Day click
-  gridEl.querySelectorAll('.calendar-day[data-date]').forEach(cell => {
-    cell.addEventListener('click', () => openModal(cell.dataset.date));
+// ---- Week View ----
+function renderWeek() {
+  const monthYearEl = document.getElementById('cal-month-year');
+  const gridEl = document.getElementById('cal-grid');
+  const events = loadEvents();
+
+  const weekStart = new Date(anchorDate);
+  weekStart.setDate(anchorDate.getDate() - anchorDate.getDay());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  const fmt = { month: 'short', day: 'numeric' };
+  monthYearEl.textContent = `${weekStart.toLocaleDateString(undefined, fmt)} – ${weekEnd.toLocaleDateString(undefined, fmt)}`;
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  let headerHtml = '<div class="calendar-week-header"></div>'; // gutter
+  let bodyHtml = '';
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const dayEvents = events
+      .filter(e => e.date === dateStr)
+      .sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+
+    headerHtml += `<div class="calendar-week-header-cell ${isToday ? 'today' : ''}">
+      <span>${dayNames[i]}</span>
+      <span class="wk-day-num">${d.getDate()}</span>
+    </div>`;
+
+    let evHtml = '';
+    dayEvents.forEach(ev => {
+      const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
+      evHtml += `<div class="calendar-week-event ${ev.category || 'other'}" style="background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${escapeHtml(truncate(ev.title, 28))}</div>`;
+    });
+
+    bodyHtml += `<div class="day-column ${isToday ? 'today' : ''}" data-date="${dateStr}">${evHtml}</div>`;
+  }
+
+  gridEl.innerHTML = `<div class="calendar-week">${headerHtml}${bodyHtml}</div>`;
+  attachDayClicks(gridEl);
+}
+
+// ---- Day View ----
+function renderDay() {
+  const monthYearEl = document.getElementById('cal-month-year');
+  const gridEl = document.getElementById('cal-grid');
+  const events = loadEvents();
+
+  const year = anchorDate.getFullYear();
+  const month = anchorDate.getMonth();
+  const day = anchorDate.getDate();
+  const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const isToday = dateStr === todayStr;
+
+  monthYearEl.textContent = anchorDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const dayEvents = events
+    .filter(e => e.date === dateStr)
+    .sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+
+  const untimed = dayEvents.filter(e => !e.start);
+  const timed = dayEvents.filter(e => e.start);
+
+  let timelineHtml = '';
+  for (let h = 0; h < 24; h++) {
+    const hourLabel = String(h).padStart(2, '0') + ':00';
+    const slotEvents = timed.filter(e => {
+      if (!e.start) return false;
+      const eh = parseInt(e.start.split(':')[0], 10);
+      return eh === h;
+    });
+    let slotContent = '';
+    if (slotEvents.length) {
+      slotEvents.forEach(ev => {
+        const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
+        slotContent += `<div class="calendar-day-event ${ev.category || 'other'}" style="background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${escapeHtml(ev.title)} ${ev.start ? `<small>${ev.start}${ev.end ? '–'+ev.end : ''}</small>` : ''}</div>`;
+      });
+    }
+    timelineHtml += `<div class="time-slot">
+      <div class="slot-time">${hourLabel}</div>
+      <div class="slot-content">${slotContent}</div>
+    </div>`;
+  }
+
+  let untimedHtml = '';
+  if (untimed.length) {
+    untimedHtml = `<div style="padding:var(--space-2) var(--space-4);border-bottom:1px solid var(--border);background:var(--bg);">
+      <span style="font-size:var(--font-size-xs);color:var(--text-muted);font-weight:600;">ALL-DAY / UNTIMED</span>
+      <div style="margin-top:var(--space-1);">
+        ${untimed.map(ev => {
+          const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
+          return `<span class="calendar-day-event ${ev.category || 'other'}" style="display:inline-block;margin-right:4px;background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${escapeHtml(ev.title)}</span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  const noMsg = (!timed.length && !untimed.length) ? '<div class="no-events-msg">No events today</div>' : '';
+
+  gridEl.innerHTML = `<div class="calendar-day-view">
+    <div class="calendar-day-view-header">
+      <h3>${anchorDate.toLocaleDateString(undefined, { weekday: 'long' })}</h3>
+      <div class="day-sub">${anchorDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} ${isToday ? '• Today' : ''}</div>
+    </div>
+    ${untimedHtml}
+    <div class="calendar-day-timeline">${timelineHtml}</div>
+    ${noMsg}
+  </div>`;
+  attachDayClicks(gridEl);
+}
+
+// ---- Helper: attach clicks to day cells or event chips ----
+function attachDayClicks(container) {
+  container.querySelectorAll('[data-date]').forEach(cell => {
+    const date = cell.dataset.date;
+    if (!date) return;
+    cell.addEventListener('click', (e) => {
+      if (e.target.closest('.calendar-event-chip, .calendar-week-event, .calendar-day-event')) return;
+      openModal(date);
+    });
     cell.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        openModal(cell.dataset.date);
+        openModal(date);
       }
     });
   });
-
-  renderLegend();
+  container.querySelectorAll('.calendar-event-chip, .calendar-week-event, .calendar-day-event').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = chip.dataset.id;
+      if (id) openModal(chip.closest('[data-date]')?.dataset.date, id);
+    });
+  });
 }
 
 function renderLegend() {
@@ -179,7 +332,6 @@ function openModal(dateStr, eventId = null) {
     elId.value = '';
   }
 
-  // Focus title after transition
   setTimeout(() => elTitle.focus(), 50);
 }
 
@@ -232,27 +384,25 @@ function saveEvent(e) {
 export function initCalendar() {
   // Nav
   document.getElementById('cal-prev').addEventListener('click', () => {
-    currentMonth--;
-    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    renderCalendar();
+    navigate(-1);
   });
   document.getElementById('cal-next').addEventListener('click', () => {
-    currentMonth++;
-    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    renderCalendar();
+    navigate(1);
   });
   document.getElementById('cal-today').addEventListener('click', () => {
-    const now = new Date();
-    currentYear = now.getFullYear();
-    currentMonth = now.getMonth();
+    anchorDate = new Date();
     renderCalendar();
-    // Scroll to grid
-    document.getElementById('cal-grid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
+
   document.getElementById('calendar-add-btn').addEventListener('click', () => {
     const today = new Date();
     const str = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     openModal(str);
+  });
+
+  // View switcher
+  document.querySelectorAll('#calendar-view-switcher .view-btn').forEach(btn => {
+    btn.addEventListener('click', () => setView(btn.dataset.view));
   });
 
   // Modal
@@ -266,6 +416,17 @@ export function initCalendar() {
   });
 
   updateCalendarBadge();
+  renderCalendar();
+}
+
+function navigate(dir) {
+  if (currentView === 'month') {
+    anchorDate.setMonth(anchorDate.getMonth() + dir);
+  } else if (currentView === 'week') {
+    anchorDate.setDate(anchorDate.getDate() + dir * 7);
+  } else if (currentView === 'day') {
+    anchorDate.setDate(anchorDate.getDate() + dir);
+  }
   renderCalendar();
 }
 
