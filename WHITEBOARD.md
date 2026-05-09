@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| **Project Phase** | `SCAFFOLDING` |
-| **Last Agent Run** | *(never)* |
+| **Project Phase** | `SCAFFOLDING_COMPLETE` |
+| **Last Agent Run** | 2026-05-09 (initial scaffold by Hermes) |
 | **Active Tasks** | 0 |
-| **Completed Tasks** | 0 |
+| **Completed Tasks** | 8 (T-001 through T-008 scaffold complete) |
 | **Bugs Found** | 0 |
 | **Next Wake** | *(set by cron)* |
 
@@ -169,7 +169,7 @@ nexus-command-center/
 
 ## 🕐 LAST UPDATED
 
-*Never* — waiting for first agent run.
+*2026-05-09* — Initial scaffold complete. Agent can now pick up T-009 and beyond.
 
 ---
 
