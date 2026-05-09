@@ -141,6 +141,87 @@ def _deps():
         services.append({'name': 'DNS', 'status': 'error', 'message': 'DNS unavailable'})
     return {'services': services}
 
+# ── Finance helpers ───────────────────────────
+_finance_cache = {'data': {}, 'ts': 0}
+CRYPTO_MAP = {
+    'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'ADA': 'cardano',
+    'XRP': 'ripple', 'DOGE': 'dogecoin', 'DOT': 'polkadot', 'AVAX': 'avalanche-2',
+    'LINK': 'chainlink', 'LTC': 'litecoin', 'BCH': 'bitcoin-cash', 'UNI': 'uniswap',
+}
+
+def _fetch_yahoo(sym):
+    import urllib.request, json
+    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{sym.upper()}?interval=1d&range=1d'
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)'})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+            result = data['chart']['result'][0]
+            meta = result['meta']
+            price = meta.get('regularMarketPrice')
+            prev = meta.get('previousClose') or meta.get('regularMarketPreviousClose') or meta.get('chartPreviousClose')
+            if price is None and result.get('indicators', {}).get('quote'):
+                close = result['indicators']['quote'][0].get('close', [])
+                price = close[-1] if close else None
+            change = None
+            if price is not None and prev:
+                change = round(((price - prev) / prev) * 100, 2)
+            return {'symbol': sym.upper(), 'price': round(price, 2) if price else None, 'change': change, 'source': 'yahoo'}
+    except Exception as e:
+        return {'symbol': sym.upper(), 'price': None, 'change': None, 'source': 'yahoo', 'error': str(e)}
+
+def _fetch_coingecko(ids):
+    import urllib.request, json
+    if not ids:
+        return []
+    url = f'https://api.coingecko.com/api/v3/simple/price?ids={",".join(ids)}&vs_currencies=usd&include_24hr_change=true'
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)'})
+    reverse_map = {v: k for k, v in CRYPTO_MAP.items()}
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+            out = []
+            for cid, info in data.items():
+                sym = reverse_map.get(cid.lower(), cid.upper())
+                out.append({'symbol': sym, 'price': info.get('usd'), 'change': round(info.get('usd_24h_change'), 2) if info.get('usd_24h_change') is not None else None, 'source': 'coingecko'})
+            return out
+    except Exception as e:
+        return [{'symbol': reverse_map.get(cid.lower(), cid.upper()), 'price': None, 'change': None, 'source': 'coingecko', 'error': str(e)} for cid in ids]
+
+def _finance_prices(symbols):
+    global _finance_cache
+    now = time.time()
+    if now - _finance_cache['ts'] < 60:
+        # serve from cache if symbols subset
+        cached = _finance_cache['data']
+        if all(s.upper() in cached for s in symbols):
+            return {'prices': [cached[s.upper()] for s in symbols]}
+    stocks = [s for s in symbols if s.upper() not in CRYPTO_MAP]
+    cryptos = [s for s in symbols if s.upper() in CRYPTO_MAP]
+    results = {}
+    for s in stocks:
+        results[s.upper()] = _fetch_yahoo(s)
+    if cryptos:
+        ids = [CRYPTO_MAP[s.upper()] for s in cryptos]
+        cg_results = _fetch_coingecko(ids)
+        for r in cg_results:
+            results[r['symbol'].upper()] = r
+    _finance_cache = {'data': results, 'ts': now}
+    return {'prices': list(results.values())}
+
+def _api_finance(handler, fullpath):
+    import urllib.parse
+    parsed = urllib.parse.urlparse(fullpath)
+    qs = urllib.parse.parse_qs(parsed.query)
+    symbols = qs.get('symbols', [])
+    if symbols:
+        symbols = [s.strip() for s in symbols[0].split(',') if s.strip()]
+    if not symbols:
+        _json(handler, 400, {'ok': False, 'error': 'Missing symbols parameter'})
+        return True
+    _json(handler, 200, _finance_prices(symbols))
+    return True
+
 def _network():
     result = {'tailscale_ip': None, 'tailscale_status': 'not_installed', 'peers_count': 0, 'magic_dns': False, 'error': None}
     try:
@@ -737,6 +818,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         if path.startswith('/api/adb/'):
             return _api_adb(self, path)
+
+        if path.startswith('/api/finance/'):
+            return _api_finance(self, self.path)
 
         return False
 

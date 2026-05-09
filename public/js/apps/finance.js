@@ -1,10 +1,11 @@
-/* ===== FINANCE APP SHELL (T-036-a) ===== */
+/* ===== FINANCE APP (T-036) — Stocks, Crypto & Paper Trading ===== */
 const LS_KEY = 'ncc-finance';
+const PRICE_CACHE_KEY = 'ncc-finance-prices';
+let PRICE_POLL_ID = null;
 
 function loadData() {
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY)) || {};
-  } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
+  catch { return {}; }
 }
 function saveData(patch) {
   const d = loadData();
@@ -20,6 +21,7 @@ function ensureData() {
   return d;
 }
 
+// Fallback demo prices if API fails
 const DEMO_PRICES = {
   AAPL: 192.50, MSFT: 332.10, GOOGL: 138.20, AMZN: 128.90,
   TSLA: 242.30, NVDA: 460.15, META: 298.40, BTC: 42300.00,
@@ -31,12 +33,78 @@ function fmtMoney(n) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0);
 }
 
+/* ---- PRICE ENGINE ---- */
+function getCachedPrices() {
+  try {
+    const raw = localStorage.getItem(PRICE_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data.ts || Date.now() - data.ts > 10 * 60 * 1000) return null; // stale >10min
+    return data.prices || null;
+  } catch { return null; }
+}
+
+function setCachedPrices(prices) {
+  localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ ts: Date.now(), prices }));
+}
+
+function getPrice(sym) {
+  const cached = getCachedPrices();
+  if (cached && cached[sym] != null) return cached[sym];
+  return DEMO_PRICES[sym] || 0;
+}
+
+function getChange(sym) {
+  const cached = getCachedPrices();
+  if (cached && cached[sym + '_change'] != null) return cached[sym + '_change'];
+  // random fallback when no real data
+  return (Math.random() * 6 - 3);
+}
+
+async function fetchRealPrices(symbols) {
+  if (!symbols.length) return;
+  try {
+    const resp = await fetch(`/api/finance/prices?symbols=${encodeURIComponent(symbols.join(','))}`);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (!data.prices) return;
+    const map = {};
+    data.prices.forEach(p => {
+      if (p.price != null) {
+        map[p.symbol] = p.price;
+        if (p.change != null) map[p.symbol + '_change'] = p.change;
+      }
+    });
+    setCachedPrices(map);
+    renderAll();
+  } catch (e) {
+    console.warn('Finance price fetch failed:', e);
+  }
+}
+
+function schedulePricePoll() {
+  if (PRICE_POLL_ID) { clearInterval(PRICE_POLL_ID); PRICE_POLL_ID = null; }
+  const cfg = loadSettings();
+  const fin = cfg.finance || {};
+  if (!fin.livePrices) return;
+  const intervalMin = fin.intervalMin || 5;
+  const d = ensureData();
+  if (!d.watchlist.length) return;
+  // immediate fetch
+  fetchRealPrices(d.watchlist);
+  PRICE_POLL_ID = setInterval(() => {
+    const d2 = ensureData();
+    if (d2.watchlist.length) fetchRealPrices(d2.watchlist);
+  }, intervalMin * 60 * 1000);
+}
+
 export function initFinance() {
   ensureData();
   bindTabs();
   bindPricesPanel();
   bindOrderModal();
   renderAll();
+  schedulePricePoll();
 }
 
 /* ---- TABS ---- */
@@ -65,6 +133,7 @@ function bindPricesPanel() {
       saveData({ watchlist: d.watchlist });
     }
     search.value = '';
+    fetchRealPrices(d.watchlist);
     renderAll();
   };
   addBtn.addEventListener('click', add);
@@ -133,7 +202,11 @@ function executeOrder(sym, side, price, qty) {
     if (total > d.balance) { showFinanceToast('Insufficient balance'); return; }
     d.balance -= total;
     const existing = d.holdings.find(h => h.symbol === sym);
-    if (existing) { existing.qty += qty; existing.avgPrice = (existing.avgPrice * (existing.qty - qty) + total) / existing.qty; }
+    if (existing) {
+      const oldTotal = existing.avgPrice * (existing.qty);
+      existing.qty += qty;
+      existing.avgPrice = (oldTotal + total) / existing.qty;
+    }
     else { d.holdings.push({ symbol: sym, qty, avgPrice: price }); }
   } else {
     const existing = d.holdings.find(h => h.symbol === sym);
@@ -163,7 +236,7 @@ function renderBalance(d) {
   if (pnlEl) {
     let pnl = 0;
     d.holdings.forEach(h => {
-      const market = DEMO_PRICES[h.symbol] || h.avgPrice;
+      const market = getPrice(h.symbol) || h.avgPrice;
       pnl += (market - h.avgPrice) * h.qty;
     });
     pnlEl.textContent = (pnl >= 0 ? '+' : '') + fmtMoney(pnl);
@@ -177,16 +250,16 @@ function renderWatchlist(d) {
   if (!wrap) return;
   if (!d.watchlist.length) { wrap.innerHTML = '<div class="finance-empty">Search a symbol above to start tracking prices.</div>'; return; }
   wrap.innerHTML = d.watchlist.map(sym => {
-    const price = DEMO_PRICES[sym] || 0;
-    const change = (Math.random() * 6 - 3).toFixed(2);
-    const up = parseFloat(change) >= 0;
+    const price = getPrice(sym);
+    const change = getChange(sym);
+    const up = change >= 0;
     return `
       <div class="finance-row">
         <div class="finance-row-info">
           <span class="finance-row-symbol">${sym}</span>
           <span class="finance-row-price">${price ? fmtMoney(price) : '—'}</span>
         </div>
-        <span class="finance-row-change ${up ? 'up' : 'down'}">${up ? '+' : ''}${change}%</span>
+        <span class="finance-row-change ${up ? 'up' : 'down'}">${up ? '+' : ''}${typeof change === 'number' ? change.toFixed(2) : '0.00'}%</span>
         <div class="finance-row-actions">
           <button class="finance-btn-buy" onclick="window._openFinanceOrder('${sym}','buy',${price || 0})" aria-label="Buy ${sym}">Buy</button>
           <button class="finance-btn-sell" onclick="window._openFinanceOrder('${sym}','sell',${price || 0})" aria-label="Sell ${sym}">Sell</button>
@@ -210,7 +283,7 @@ function renderHoldings(d) {
   if (!wrap) return;
   if (!d.holdings.length) { wrap.innerHTML = '<div class="finance-empty">No positions yet. Buy from the Prices tab.</div>'; return; }
   wrap.innerHTML = d.holdings.map(h => {
-    const market = DEMO_PRICES[h.symbol] || h.avgPrice;
+    const market = getPrice(h.symbol) || h.avgPrice;
     const pnl = (market - h.avgPrice) * h.qty;
     const pnlPct = h.avgPrice ? ((market - h.avgPrice) / h.avgPrice * 100).toFixed(2) : '0.00';
     return `
@@ -263,3 +336,52 @@ function showFinanceToast(msg) {
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2500);
 }
+
+/* ---- SETTINGS INTEGRATION ---- */
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem('ncc-settings')) || {}; }
+  catch { return {}; }
+}
+
+export function initFinanceSettings() {
+  // Called by settings.js when Settings view is opened
+  const wrap = document.getElementById('finance-settings-wrap');
+  if (!wrap) return;
+  const cfg = loadSettings().finance || {};
+  wrap.innerHTML = `
+    <div class="settings-row">
+      <label for="finance-live">Live prices</label>
+      <input type="checkbox" id="finance-live" class="toggle" ${cfg.livePrices ? 'checked' : ''}>
+    </div>
+    <div class="settings-row">
+      <label for="finance-interval">Price refresh interval</label>
+      <select id="finance-interval">
+        <option value="1" ${(cfg.intervalMin||5)==1 ? 'selected' : ''}>Every 1 min</option>
+        <option value="5" ${(cfg.intervalMin||5)==5 ? 'selected' : ''}>Every 5 min</option>
+        <option value="15" ${(cfg.intervalMin||5)==15 ? 'selected' : ''}>Every 15 min</option>
+        <option value="30" ${(cfg.intervalMin||5)==30 ? 'selected' : ''}>Every 30 min</option>
+      </select>
+    </div>
+    <p class="settings-hint">When enabled, prices are fetched from Yahoo Finance (stocks) and CoinGecko (crypto).</p>
+  `;
+
+  document.getElementById('finance-live')?.addEventListener('change', (e) => {
+    const s = loadSettings();
+    s.finance = { ...(s.finance || {}), livePrices: e.target.checked };
+    localStorage.setItem('ncc-settings', JSON.stringify(s));
+    showFinanceToast(e.target.checked ? 'Live prices enabled' : 'Live prices disabled');
+    schedulePricePoll();
+  });
+
+  document.getElementById('finance-interval')?.addEventListener('change', (e) => {
+    const s = loadSettings();
+    s.finance = { ...(s.finance || {}), intervalMin: parseInt(e.target.value, 10) };
+    localStorage.setItem('ncc-settings', JSON.stringify(s));
+    schedulePricePoll();
+  });
+}
+
+// Auto-init settings when view opens
+window.addEventListener('hashchange', () => {
+  if (location.hash === '#settings') initFinanceSettings();
+});
