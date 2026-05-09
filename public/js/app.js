@@ -41,6 +41,7 @@ export function initApp() {
   initTodo();
   initGoogleSync();
   initAuth();
+  initHomeButton();
   updateDashboardDate();
   registerServiceWorker();
 }
@@ -96,6 +97,21 @@ function switchView(viewId) {
   }
 }
 
+/* ===== HOME BUTTON ===== */
+function initHomeButton() {
+  const brand = document.getElementById('header-brand');
+  if (!brand) return;
+  brand.addEventListener('click', () => {
+    location.hash = 'dashboard';
+  });
+  brand.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      location.hash = 'dashboard';
+    }
+  });
+}
+
 function updateNavActive(viewId) {
   document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.toggle('active', link.dataset.app === viewId);
@@ -139,6 +155,27 @@ function initNavigation() {
       close();
     });
   });
+
+  // Settings nav button opens settings modal
+  const settingsNav = document.getElementById('nav-settings-link');
+  if (settingsNav) {
+    settingsNav.addEventListener('click', e => {
+      e.preventDefault();
+      close();
+      const panel = document.getElementById('settings-panel');
+      const sBackdrop = document.getElementById('settings-backdrop');
+      const closeBtn = document.getElementById('settings-close');
+      if (panel) {
+        panel.classList.add('open');
+        panel.setAttribute('aria-hidden', 'false');
+        if (sBackdrop) {
+          sBackdrop.classList.add('visible');
+          sBackdrop.setAttribute('aria-hidden', 'false');
+        }
+        if (closeBtn) closeBtn.focus();
+      }
+    });
+  }
 }
 
 /* ===== THEME ===== */
@@ -192,10 +229,12 @@ function initSettings() {
     panel.setAttribute('aria-hidden', 'true');
     backdrop.classList.remove('visible');
     backdrop.setAttribute('aria-hidden', 'true');
-    openBtn.focus();
+    // Focus hamburger menu as safe fallback
+    const fallback = document.getElementById('header-menu-btn') || openBtn;
+    if (fallback) fallback.focus();
   }
 
-  openBtn.addEventListener('click', open);
+  if (openBtn) openBtn.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
   backdrop.addEventListener('click', close);
 

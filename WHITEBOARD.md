@@ -10,11 +10,11 @@
 | Metric | Value |
 |--------|-------|
 || **Project Phase** | `SECURITY & CLOUD` |
-|| **Last Agent Run** | 2026-05-09 (T-026-b Snake game — full playable implementation with keyboard, touch, particles, speed ramp, high scores) |
-|| **Active Tasks** | 11 (T-025 through T-028, T-031, T-032, T-033, T-035 through T-038) |
-|| **Completed Tasks** | 54 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033 + subtasks a–g, T-026-a, T-026-b, T-034) |
+||| **Last Agent Run** | 2026-05-09 (T-035 + T-037 — Nexus logo clickable home button + Settings gear relocated to hamburger menu with Settings nav link) |
+||| **Active Tasks** | 9 (T-025, T-026, T-027, T-028, T-031, T-032, T-036, T-038) |
+||| **Completed Tasks** | 56 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033 + subtasks a–g, T-026-a, T-026-b, T-034, T-035, T-037) |
 
-|| **Current Focus:** T-035 (Nexus logo → Home button) + T-036 (Stocks & Crypto paper trading) + T-037 (Settings relocation) + T-038 (Logic bug sweep) |
+||| **Current Focus:** T-036 (Stocks & Crypto paper trading) + T-038 (Logic bug sweep) |
 
 ---
 
@@ -166,13 +166,13 @@
 ||| `T-033-e` | Phase 3 copy scripting | `DONE` | JSON-driven `SHOWCASE_BEATS` array in `welcome.js`. Agent can edit copy/timing without touching DOM logic. |
 ||| `T-033-f` | Phase 4 — landing (1:45–2:00) | `DONE` | 15s audio fade-out via `audio.volume` ramp. Dashboard fades in with 1.5s opacity transition. "Welcome back, {name}" if name entered. `ncc-welcome-shown` flag set. |
 |||| `T-033-g` | Audio sync engine | `DONE` | `requestAnimationFrame` loop tracks `audio.currentTime` against `PHASE_THRESHOLDS` (0, 22, 105, 120). `AnalyserNode` beat detection runs independently. `prefers-reduced-motion` skips entire intro. |
-|| `T-035` | **Nexus logo → Home button** — make the Nexus button/logo in the header clickable, acting as a global "go home" action that returns to the main dashboard grid | `PENDING` | **User directive.** Single click handler on `#header-logo` or `.nexus-brand`. Calls `showView('dashboard')` or equivalent router. Ensure keyboard-accessible (`Enter` key). |
+||| `T-035` | **Nexus logo → Home button** — make the Nexus button/logo in the header clickable, acting as a global "go home" action that returns to the main dashboard grid | `DONE` | Click → `location.hash = 'dashboard'`. Keyboard `Enter`/`Space` supported. Brand styled `cursor:pointer` + hover bg + focus ring. |
 || `T-036` | **Stocks & Crypto view + Paper Trading** — new Finance app: stocks and crypto price tracking (live or API-based) with a built-in paper-trading simulator, portfolio, order history | `PENDING` | **User directive.** New dashboard app. Live prices via free API (Alpha Vantage, Finnhub, CoinGecko, or similar). Paper trading: virtual balance, buy/sell orders, P&L, transaction log. Charts optional (deferred). Sub-tasks: API integration, portfolio engine, order modal, history. |
 ||| `T-036-a` | Stocks & Crypto shell — register new app, card, view HTML + JS, nav icon | `PENDING` | App shell in `public/apps/finance.html` + `public/js/apps/finance.js`. Responsive table/grid layout. Tab switch: Stocks / Crypto / Portfolio / Orders. |
 ||| `T-036-b` | Live price fetch engine — free API for stock/crypto quotes, cache in localStorage, poll interval configurable in Settings | `PENDING` | Endpoint `/api/finance/prices` in `nexus-server.py` or direct browser fetch if CORS allows. Graceful offline fallback. |
 ||| `T-036-c` | Paper-trading engine — virtual $100k balance, buy/sell with quantity/price, deduct/add balance, update holdings, compute unrealized P&L | `PENDING` | Store `ncc-paper-portfolio` in localStorage. Validate balance before buy. Sell only if held. |
 ||| `T-036-d` | Order history + transaction log — table of completed orders with timestamp, ticker, side, quantity, price, total | `PENDING` | Filterable by ticker and date range. CSV export deferred. |
-|| `T-037` | **Settings icon relocation — move into hamburger dropdown, remove top-right button** — the settings gear icon currently on the top right should become its own app, but only visible inside the top-left 3-line hamburger menu dropdown list | `PENDING` | **User directive.** Remove `settings.js` gear button from header top-right. Add "Settings" as a row inside the hamburger `⋮` dropdown (`#nav-drawer` or similar). Clicking it opens the existing Settings panel/modal. The Settings panel itself remains a modal overlay (not a standalone route). |
+||| `T-037` | **Settings icon relocation — move into hamburger dropdown, remove top-right button** — the settings gear icon currently on the top right should become its own app, but only visible inside the top-left 3-line hamburger menu dropdown list | `DONE` | Removed `#header-settings-btn` from header. Added `nav-settings-link` button in nav drawer (below Arcade). CSS added for `button.nav-link` resets + `button.nav-link:focus-visible`. Settings opens through shared `initSettings()` close trap (fallback focus → hamburger). |
 || `T-038` | **Logic bug sweep** — agent-wide audit pass: review all JS modules for common logic bugs, race conditions, memory leaks, unhandled edge cases, and `localStorage` quota issues | `PENDING` | **User directive.** Priority after UI relocations. Check: event listener cleanup on app switch, `NaN` guards on numeric inputs, `try/catch` around `JSON.parse`, `localStorage` quota exceeded handling, missing `await` on async flows, duplicate ID generation in CRUD, off-by-one in calendar loops, canvas `requestAnimationFrame` leaks in Arcade games. Document findings in BUG TRACKER. |
 
 ---
