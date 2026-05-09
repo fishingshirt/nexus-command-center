@@ -28,10 +28,10 @@ export async function ensureAuthEnabled(appId) {
 
 /* Settings UI injection */
 function initAuthSettings() {
-  const panel = document.getElementById('settings-panel');
-  if (!panel || panel.querySelector('#auth-settings-section')) return;
+  const viewBody = document.querySelector('.settings-view-body');
+  if (!viewBody || viewBody.querySelector('#auth-settings-section')) return;
 
-  const dataSection = panel.querySelector('.settings-section:last-of-type');
+  const dataSection = viewBody.querySelector('.settings-section:last-of-type');
   const section = document.createElement('section');
   section.className = 'settings-section';
   section.id = 'auth-settings-section';
