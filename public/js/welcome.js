@@ -15,19 +15,24 @@ const COPY_LINES = [
 ];
 
 const SHOWCASE_BEATS = [
-  { time: 24.0,  text: "Your calendar — optimized by AI.",                           icon: '📅' },
-  { time: 33.0,  text: "Your tasks — auto-prioritized. I sort the noise.",           icon: '✅' },
-  { time: 42.0,  text: "Your notes — summarized in seconds.",                        icon: '📝' },
-  { time: 51.0,  text: "Your weather — always one glance away.",                     icon: '☀️' },
-  { time: 60.0,  text: "Your system — monitored 24/7. I see everything.",            icon: '💬' },
-  { time: 69.0,  text: "Your data — backed up and encrypted. Even I can't peek.",    icon: '📱' },
-  { time: 78.0,  text: "Your inbox — sorted by AI before you wake up.",            icon: '💬' },
-  { time: 87.0,  text: "Your terminal — real-time system control.",                 icon: '🖥️' },
-  { time: 96.0,  text: "Your games — right here when you need a break.",             icon: '🎮' },
-  { time: 105.0, text: "Your command center awaits.",                                icon: '🔷' },
+  { time: 24.0,  text: "Your calendar — optimized by AI.",                   icon: '📅' },
+  { time: 26.5,  text: "Your tasks — auto-prioritized. I sort the noise.",   icon: '✅' },
+  { time: 29.0,  text: "Your notes — summarized in seconds.",                  icon: '📝' },
+  { time: 31.5,  text: "Your weather — always one glance away.",              icon: '☀️' },
+  { time: 34.0,  text: "Your system — monitored 24/7. I see everything.",    icon: '💻' },
+  { time: 36.5,  text: "Your data — backed up and encrypted.",               icon: '🔐' },
+  { time: 39.0,  text: "Your inbox — sorted before you wake up.",            icon: '📬' },
+  { time: 41.5,  text: "Your terminal — real-time system control.",         icon: '⌨️' },
+  { time: 44.0,  text: "Your AI assistant — always one message away.",      icon: '🤖' },
+  { time: 46.5,  text: "Your smart home — lights, locks, climate.",         icon: '🏠' },
+  { time: 49.0,  text: "Your portfolio — crypto, stocks, net worth.",       icon: '📈' },
+  { time: 51.5,  text: "Your music — soundtrack to your command center.",    icon: '🎵' },
+  { time: 54.0,  text: "Your games — when you need to disconnect.",        icon: '🎮' },
+  { time: 56.5,  text: "Your files — organized, searchable, secure.",      icon: '📁' },
+  { time: 59.0,  text: "Your command center awaits.",                        icon: '🔷' },
 ];
 
-const PHASE = { START: 0, SHOWCASE: 22, LANDING: 105, END: 120 };
+const PHASE = { START: 0, SHOWCASE: 22, LANDING: 64, END: 78 };
 
 let audioCtx, analyser, audio;
 let phaseRaf, beatRaf, particleRaf;
@@ -263,7 +268,7 @@ function runBeatEngine() {
 }
 
 function onBeat() {
-  const active = document.querySelector('.beat-text.active, .showcase-line.active');
+  const active = document.querySelector('.beat-text.active, .showcase-line.visible');
   if (active) {
     active.classList.remove('beat-pulse');
     void active.offsetWidth; // force reflow to retrigger css animation
@@ -297,16 +302,9 @@ function renderBeatText() {
 function updateBeatText(t) {
   beatTextEls.forEach(el => {
     const time = parseFloat(el.dataset.time);
-    const active = t >= time && t < time + 1.5;
+    const active = t >= time && t < time + 1.8;
     el.classList.toggle('active', active);
-    if (active) {
-      el.style.opacity = '1';
-      el.style.transform = 'scale(1)';
-      el.style.letterSpacing = `${Math.sin((t - time) * 3) * 2}px`;
-    } else if (t > time + 1.5) {
-      el.style.opacity = '0';
-      el.style.transform = 'scale(1.05)';
-    }
+    // Let CSS handle all transforms — no inline style manipulation to prevent jump
   });
 }
 
@@ -333,22 +331,23 @@ function updateShowcase(t) {
   showcaseEls.forEach(el => {
     const time = parseFloat(el.dataset.time);
     const dt = t - time;
-    const active = dt >= 0 && dt < 8;
-    el.classList.toggle('active', active);
+    const visible = dt >= 0 && dt < 2.2;
+    el.classList.toggle('visible', visible);
+
     if (dt < 0) {
       el.style.opacity = '0';
-      el.style.transform = 'translateY(20px) scale(0.95)';
-    } else if (dt < 0.5) {
-      const p = dt / 0.5;
+      el.style.transform = 'translate(-50%, -50%) scale(0.92)';
+    } else if (dt < 0.3) {
+      const p = dt / 0.3;
       el.style.opacity = String(p);
-      el.style.transform = `translateY(${(1 - p) * 20}px) scale(${0.95 + p * 0.05})`;
-    } else if (dt < 6) {
+      el.style.transform = `translate(-50%, -50%) scale(${0.92 + p * 0.08})`;
+    } else if (dt < 1.9) {
       el.style.opacity = '1';
-      el.style.transform = 'translateY(0) scale(1)';
+      el.style.transform = 'translate(-50%, -50%) scale(1)';
     } else {
-      const p = Math.max(0, 1 - (dt - 6) / 2);
+      const p = Math.max(0, 1 - (dt - 1.9) / 0.3);
       el.style.opacity = String(p);
-      el.style.transform = `translateY(-${(1 - p) * 20}px) scale(${1 + (1 - p) * 0.03})`;
+      el.style.transform = `translate(-50%, -50%) scale(${1 - (1 - p) * 0.08})`;
     }
   });
 }
@@ -400,21 +399,28 @@ function startFadeOut() {
   content.innerHTML = '';
   content.className = 'welcome-content phase4';
 
-  const farewell = document.createElement('div');
-  farewell.className = 'welcome-farewell';
   const saved = localStorage.getItem('ncc-welcome-name');
-  farewell.textContent = saved ? `Welcome back, ${saved}` : 'Welcome back.';
-  content.appendChild(farewell);
+  const displayName = saved || 'Commander';
+
+  const line1 = document.createElement('div');
+  line1.className = 'welcome-farewell';
+  line1.textContent = `Welcome back, ${displayName}`;
+  content.appendChild(line1);
+
+  const line2 = document.createElement('div');
+  line2.className = 'welcome-farewell-sub';
+  line2.textContent = 'Welcome to the future';
+  content.appendChild(line2);
 
   const fadeStart = getCineTime();
   function tick() {
     if (isCleanedUp) return;
     const elapsed = getCineTime() - fadeStart;
     if (audio && !audio.paused) {
-      const vol = Math.max(0, 1 - elapsed / 15);
+      const vol = Math.max(0, 1 - elapsed / 14);
       audio.volume = vol;
     }
-    if (elapsed < 15) {
+    if (elapsed < 14) {
       requestAnimationFrame(tick);
     } else {
       if (audio) audio.pause();

@@ -5,7 +5,7 @@
  */
 
 /* ===== VARIABLES (override/extend theme) ===== */
-.welcome-overlay {
+#welcome-overlay {
   --w-bg: #020202;
   --w-glow: #39d0f2;
   --w-glow-weak: rgba(57, 208, 242, 0.3);
@@ -25,13 +25,13 @@
   transition: opacity 1.2s ease, visibility 1.2s ease;
 }
 
-.welcome-overlay.active {
+#welcome-overlay.active {
   opacity: 1;
   visibility: visible;
 }
 
 /* Scanline overlay */
-.welcome-overlay::before {
+#welcome-overlay::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -210,8 +210,8 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  font-size: clamp(1.6rem, 5vw, 3rem);
+  transform: translate(-50%, -50%) scale(0.95);
+  font-size: clamp(1.6rem, 4vw, 3rem);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -221,23 +221,29 @@
     0 0 18px rgba(57, 208, 242, 0.2);
   white-space: nowrap;
   opacity: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.35s ease;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .beat-text.active {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  animation: beatTextIn 0.35s ease forwards;
+}
+
+@keyframes beatTextIn {
+  from { transform: translate(-50%, -50%) scale(0.95); letter-spacing: 0.1em; }
+  to   { transform: translate(-50%, -50%) scale(1);   letter-spacing: 0.15em; }
 }
 
 .beat-text.beat-pulse {
-  animation: beatPulse 0.2s ease-out;
+  animation: beatPulse 0.25s ease-out;
 }
 
 @keyframes beatPulse {
-  0%   { transform: translate(-50%, -50%) scale(1); filter: brightness(1); text-shadow: 0 0 6px var(--w-glow-weak); }
-  50%  { transform: translate(-50%, -50%) scale(1.08); filter: brightness(1.4); text-shadow: 0 0 24px var(--w-glow), 0 0 48px rgba(57, 208, 242, 0.4); }
-  100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); text-shadow: 0 0 6px var(--w-glow-weak); }
+  0%   { transform: translate(-50%, -50%) scale(1);   filter: brightness(1);   text-shadow: 0 0 6px var(--w-glow-weak); }
+  50%  { transform: translate(-50%, -50%) scale(1.05); filter: brightness(1.3); text-shadow: 0 0 24px var(--w-glow), 0 0 48px rgba(57, 208, 242, 0.4); }
+  100% { transform: translate(-50%, -50%) scale(1);   filter: brightness(1);   text-shadow: 0 0 6px var(--w-glow-weak); }
 }
 
 /* ===== PHASE 3: SHOWCASE ===== */
@@ -245,24 +251,24 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(0.92);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  will-change: transform, opacity;
 }
 
 .showcase-icon {
-  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
   line-height: 1;
   filter: drop-shadow(0 0 12px rgba(57, 208, 242, 0.35));
 }
 
 .showcase-text {
-  font-size: clamp(1.1rem, 3vw, 1.8rem);
+  font-size: clamp(1.1rem, 2.5vw, 1.8rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--w-text);
@@ -271,18 +277,20 @@
   max-width: 80vw;
 }
 
-.showcase-line.active {
+.showcase-line.visible {
   opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .showcase-line.beat-pulse .showcase-icon {
-  animation: iconPulse 0.2s ease-out;
+  animation: iconPulse 0.25s ease-out;
 }
 
 @keyframes iconPulse {
-  0%   { transform: scale(1); filter: drop-shadow(0 0 12px var(--w-glow-weak)); }
-  50%  { transform: scale(1.15); filter: drop-shadow(0 0 28px var(--w-glow)); }
-  100% { transform: scale(1); filter: drop-shadow(0 0 12px var(--w-glow-weak)); }
+  0%   { transform: scale(1);   filter: drop-shadow(0 0 12px var(--w-glow-weak)); }
+  50%  { transform: scale(1.12); filter: drop-shadow(0 0 28px var(--w-glow)); }
+  100% { transform: scale(1);   filter: drop-shadow(0 0 12px var(--w-glow-weak)); }
 }
 
 /* ===== PARTICLES ===== */
@@ -318,12 +326,23 @@
 
 /* ===== PHASE 4: LANDING ===== */
 .welcome-farewell {
-  font-size: clamp(1.4rem, 4vw, 2.4rem);
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
   font-weight: 300;
   letter-spacing: 0.08em;
   color: var(--w-text);
   text-shadow: 0 0 12px rgba(57, 208, 242, 0.35);
-  animation: farewellFadeIn 1.5s ease forwards;
+  animation: farewellFadeIn 1.2s ease forwards;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-farewell-sub {
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--w-glow);
+  text-shadow: 0 0 8px rgba(57, 208, 242, 0.25);
+  animation: farewellFadeIn 1.5s ease 0.4s both;
+  text-transform: uppercase;
 }
 
 @keyframes farewellFadeIn {
@@ -333,10 +352,11 @@
 
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
-  .welcome-overlay,
+  #welcome-overlay,
   .beat-text,
   .showcase-line,
   .welcome-farewell,
+  .welcome-farewell-sub,
   .welcome-brand,
   .welcome-cta {
     animation: none !important;
