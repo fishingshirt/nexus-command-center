@@ -1,0 +1,201 @@
+/* === JARVIS THEME ===
+   Inspired by Tony Stark's JARVIS AI interface
+   Dark charcoal base with electric arc-blue accents,
+   holographic glows, and futuristic HUD styling.
+   ================================================ */
+
+:root {
+  /* ── Base ── */
+  --bg-body: #050b14;
+  --bg-surface: #0a1628;
+  --bg-card: #0d1c33;
+  --bg-card-hover: #112540;
+  --bg-overlay: rgba(5, 11, 20, 0.97);
+  --bg-input: #0a192f;
+  --bg-active: #0f2444;
+  --bg-subtle: #0b1626;
+
+  /* ── Text ── */
+  --fg-primary: #d6e7ff;
+  --fg-secondary: #8da4c8;
+  --fg-muted: #4b6fa0;
+  --fg-inverse: #050b14;
+
+  /* ── Brand / Accent ── */
+  --accent: #39d0f2;          /* Electric arc blue */
+  --accent-weak: rgba(57, 208, 242, 0.12);
+  --accent-hover: rgb(80, 223, 255);
+  --accent-active: #0ea5c9;
+  --accent-gradient: linear-gradient(135deg, #39d0f2, #0ea5c9);
+
+  /* ── Severity ── */
+  --success: #00e676;
+  --warning: #ff9100;
+  --error: #ff1744;
+  --info: #39d0f2;
+
+  /* ── Borders ── */
+  --border: rgba(57, 208, 242, 0.18);
+  --border-hover: rgba(57, 208, 242, 0.40);
+  --radius: 6px;
+  --radius-lg: 10px;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 0 8px rgba(57, 208, 242, 0.08);
+  --shadow-md: 0 0 20px rgba(57, 208, 242, 0.12);
+  --shadow-lg: 0 0 40px rgba(57, 208, 242, 0.15);
+
+  /* ── HUD / Scanline ── */
+  --hud-line: rgba(57, 208, 242, 0.06);
+  --scanline: rgba(57, 208, 242, 0.02);
+
+  /* ── Typography ── */
+  --font-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+}
+
+/* ── HUD Grid Background ── */
+body[data-theme="jarvis"] {
+  background:
+    linear-gradient(90deg, var(--hud-line) 1px, transparent 1px),
+    linear-gradient(var(--hud-line) 1px, transparent 1px),
+    var(--bg-body);
+  background-size: 60px 60px, 60px 60px, 100% 100%;
+}
+
+/* ── Subtle Animated Scanline (CSS animation) ── */
+body[data-theme="jarvis"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scanline) 2px,
+    var(--scanline) 4px
+  );
+  opacity: 0.4;
+  z-index: 9999;
+}
+
+/* ── Glow on interactive elements ── */
+body[data-theme="jarvis"] .app-card,
+body[data-theme="jarvis"] .message-bubble,
+body[data-theme="jarvis"] .settings-btn,
+body[data-theme="jarvis"] .chat-toggle,
+body[data-theme="jarvis"] .nav-item,
+body[data-theme="jarvis"] .modal-content,
+body[data-theme="jarvis"] button {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+}
+
+body[data-theme="jarvis"] .app-card:hover,
+body[data-theme="jarvis"] .nav-item:hover,
+body[data-theme="jarvis"] button:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+/* ── Accent border-left on cards ── */
+body[data-theme="jarvis"] .app-card {
+  border-left: 3px solid var(--accent);
+}
+
+body[data-theme="jarvis"] .app-card:hover {
+  border-left-color: var(--accent-hover);
+}
+
+/* ── Chat widget ── */
+body[data-theme="jarvis"] .chat-widget {
+  border: 1px solid var(--border-hover);
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-surface);
+}
+
+body[data-theme="jarvis"] .chat-header {
+  background: rgba(57, 208, 242, 0.08);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Feedback widget ── */
+body[data-theme="jarvis"] .feedback-widget {
+  border-left: 3px solid var(--accent);
+}
+
+/* ── Agent Stats panel ── */
+body[data-theme="jarvis"] .agent-stats-panel .stat-card {
+  border-left: 2px solid var(--accent);
+  background: var(--bg-card);
+}
+
+body[data-theme="jarvis"] .agent-stats-panel .stat-value {
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(57, 208, 242, 0.4);
+}
+
+/* ── Modal ── */
+body[data-theme="jarvis"] .modal-content {
+  border: 1px solid var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Nav drawer ── */
+body[data-theme="jarvis"] .nav-drawer {
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+/* ── Input glow on focus ── */
+body[data-theme="jarvis"] input:focus,
+body[data-theme="jarvis"] textarea:focus,
+body[data-theme="jarvis"] select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(57, 208, 242, 0.15);
+}
+
+/* ── Scrollbar ── */
+body[data-theme="jarvis"] ::-webkit-scrollbar {
+  width: 6px;
+}
+body[data-theme="jarvis"] ::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+body[data-theme="jarvis"] ::-webkit-scrollbar-thumb {
+  background: rgba(57, 208, 242, 0.25);
+  border-radius: 3px;
+}
+body[data-theme="jarvis"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(57, 208, 242, 0.45);
+}
+
+/* ── Toast ── */
+body[data-theme="jarvis"] .toast {
+  border-left: 3px solid var(--accent);
+}
+
+/* ── Status indicators with glow ── */
+body[data-theme="jarvis"] .status-connected {
+  color: var(--success);
+  text-shadow: 0 0 6px rgba(0, 230, 118, 0.35);
+}
+body[data-theme="jarvis"] .status-syncing {
+  color: var(--warning);
+  text-shadow: 0 0 6px rgba(255, 145, 0, 0.35);
+}
+body[data-theme="jarvis"] .status-error {
+  color: var(--error);
+  text-shadow: 0 0 6px rgba(255, 23, 68, 0.35);
+}
+
+/* ── Pulse animation for agent activity ── */
+@keyframes jarvis-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(57, 208, 242, 0.15); }
+  50%      { box-shadow: 0 0 20px rgba(57, 208, 242, 0.35); }
+}
+body[data-theme="jarvis"] .agent-active {
+  animation: jarvis-pulse 2.5s ease-in-out infinite;
+}

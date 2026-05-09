@@ -99,11 +99,12 @@ The first time you open it, you're greeted with a cinematic welcome: ambient mus
 ### Alternate Themes
 | Theme | Vibe | Color Palette |
 |-------|------|---------------|
-| **Midnight Hacker** | Cyberpunk terminal | Black bg, neon green (#00ff41), dark purple accents |
-| **Sakura Garden** | Soft, calming | Pink/rose bg, warm whites, cherry blossom accents |
-| **Space Odyssey** | Cosmic, vast | Deep navy bg, starfield white, orbital gold accents |
-| **Retro Arcade** | 80s nostalgia | Dark bg, hot pink, cyan, grid lines, pixel font accents |
-| **Ocean Breeze** | Fresh, airy | Teal/seafoam bg, sandy beige, wave blues |
+|| **Midnight Hacker** | Cyberpunk terminal | Black bg, neon green (#00ff41), dark purple accents |
+|| **Sakura Garden** | Soft, calming | Pink/rose bg, warm whites, cherry blossom accents |
+|| **Space Odyssey** | Cosmic, vast | Deep navy bg, starfield white, orbital gold accents |
+|| **Retro Arcade** | 80s nostalgia | Dark bg, hot pink, cyan, grid lines, pixel font accents |
+|| **Ocean Breeze** | Fresh, airy | Teal/seafoam bg, sandy beige, wave blues |
+|| **Jarvis** | Iron Man HUD, futuristic | Near-black bg, electric arc-blue (#39d0f2), holographic glows, HUD grid lines, monospace accents |
 
 Each theme is a single CSS file that overrides CSS custom properties in `:root`. The base CSS uses variables for every color, spacing, radius, and shadow. Adding a new theme takes 5 minutes.
 

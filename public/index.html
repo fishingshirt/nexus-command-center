@@ -52,6 +52,7 @@
             <option value="space-odyssey">Space Odyssey</option>
             <option value="retro-arcade">Retro Arcade</option>
             <option value="ocean-breeze">Ocean Breeze</option>
+            <option value="jarvis">Jarvis</option>
           </select>
         </div>
         <div class="settings-row">
@@ -66,6 +67,50 @@
           <label for="show-welcome">Replay welcome screen on next visit</label>
           <input type="checkbox" id="show-welcome" class="toggle">
         </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>Agent Activity</h3>
+        <div class="agent-stats-panel" id="agent-stats-panel">
+          <div class="stat-row">
+            <div class="stat-card">
+              <span class="stat-label">Tasks Done</span>
+              <span class="stat-value" id="agent-stat-tasks">0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Bugs Fixed</span>
+              <span class="stat-value" id="agent-stat-bugs">0</span>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-card">
+              <span class="stat-label">Commits</span>
+              <span class="stat-value" id="agent-stat-commits">0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Wake Cycles</span>
+              <span class="stat-value" id="agent-stat-wakes">0</span>
+            </div>
+          </div>
+          <div class="stat-full">
+            <span class="stat-label">Upcoming Tasks</span>
+            <ul class="agent-upcoming-list" id="agent-upcoming-list">
+              <li class="agent-upcoming-empty">Loading whiteboard...</li>
+            </ul>
+          </div>
+          <div class="stat-full">
+            <span class="stat-label">Last Agent Run</span>
+            <span class="stat-sub" id="agent-stat-last-run">Never</span>
+          </div>
+          <div class="stat-full">
+            <span class="stat-label">Next Scheduled Run</span>
+            <span class="stat-sub" id="agent-stat-next-run">—</span>
+          </div>
+        </div>
+        <button class="btn-secondary" id="btn-sync-whiteboard" style="margin-top:0.5rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          Refresh Whiteboard
+        </button>
       </section>
 
       <section class="settings-section">
@@ -138,6 +183,11 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
           Hermes Chat
         </a>
+        <div class="nav-divider"></div>
+        <a href="#feedback" class="nav-link" data-app="feedback">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          Feedback
+        </a>
       </div>
     </nav>
     <div id="nav-backdrop" class="nav-backdrop" aria-hidden="true"></div>
@@ -197,6 +247,76 @@
               <p>Talk to your AI</p>
             </div>
             <div class="app-card-status" id="chat-status"></div>
+          </div>
+
+          <!-- Feedback Card -->
+          <div class="app-card" data-app="feedback" tabindex="0" role="button" aria-label="Send Feedback">
+            <div class="app-card-icon" style="--card-accent: #8b5cf6;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </div>
+            <div class="app-card-info">
+              <h3>Feedback</h3>
+              <p>Shape the Nexus</p>
+            </div>
+            <div class="app-card-badge" id="feedback-badge">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feedback View -->
+      <div id="view-feedback" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>Feedback</h2>
+        </div>
+        <div class="view-body feedback-view-body">
+          <div class="feedback-intro">
+            <h3>Shape the Nexus</h3>
+            <p>Got an idea? Found something missing? Tell me and the AI agent will turn it into a whiteboard task.</p>
+          </div>
+          <form class="feedback-form" id="feedback-form">
+            <label class="feedback-field">
+              <span>What type of feedback?</span>
+              <select id="feedback-type" required>
+                <option value="">Select one...</option>
+                <option value="feature">✨ New Feature / App Idea</option>
+                <option value="improvement">🔧 Improvement to existing app</option>
+                <option value="bug">🐛 Bug Report</option>
+                <option value="theme">🎨 New Theme / Design Idea</option>
+                <option value="other">💬 Other</option>
+              </select>
+            </label>
+            <label class="feedback-field">
+              <span>Title (one-liner)</span>
+              <input type="text" id="feedback-title" required placeholder="e.g., 'Add Pomodoro timer to Calendar'" maxlength="120">
+            </label>
+            <label class="feedback-field">
+              <span>Describe it in detail</span>
+              <textarea id="feedback-desc" rows="5" required placeholder="What problem does it solve? Who is it for? Any example apps you like?"></textarea>
+            </label>
+            <label class="feedback-field">
+              <span>Priority</span>
+              <div class="feedback-priority">
+                <label><input type="radio" name="feedback-priority" value="nice" checked> Nice to have</label>
+                <label><input type="radio" name="feedback-priority" value="should"> Should have</label>
+                <label><input type="radio" name="feedback-priority" value="must"> Must have</label>
+              </div>
+            </label>
+            <div class="feedback-actions">
+              <button type="submit" class="btn-primary" id="feedback-submit-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                Submit to Agent Board
+              </button>
+            </div>
+          </form>
+
+          <div class="feedback-history" id="feedback-history">
+            <h4>Your Submissions</h4>
+            <div class="feedback-list" id="feedback-list">
+              <!-- Filled by JS -->
+            </div>
           </div>
         </div>
       </div>

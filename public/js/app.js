@@ -4,7 +4,8 @@ const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
   { id: 'notes', name: 'Notes', icon: '📝', path: 'notes' },
   { id: 'todo', name: 'To-Do', icon: '✅', path: 'todo' },
-  { id: 'chat', name: 'Hermes Chat', icon: '💬', path: 'chat' }
+  { id: 'chat', name: 'Hermes Chat', icon: '💬', path: 'chat' },
+  { id: 'feedback', name: 'Feedback', icon: '💬', path: 'feedback' }
 ];
 
 export function initApp() {
@@ -14,6 +15,8 @@ export function initApp() {
   initSettings();
   initWelcome();
   initChat();
+  initFeedback();
+  initAgentStats();
   initCalendar();
   updateDashboardDate();
   registerServiceWorker();
@@ -413,6 +416,177 @@ function updateDashboardDate() {
     const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     el.textContent = now.toLocaleDateString(undefined, opts);
   }
+}
+
+/* ===== FEEDBACK ===== */
+function initFeedback() {
+  const form = document.getElementById('feedback-form');
+  const list = document.getElementById('feedback-list');
+  if (!form) return;
+
+  // Load existing
+  renderFeedbackList();
+  updateFeedbackBadge();
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const type = document.getElementById('feedback-type').value;
+    const title = document.getElementById('feedback-title').value.trim();
+    const desc = document.getElementById('feedback-desc').value.trim();
+    const priority = document.querySelector('input[name="feedback-priority"]:checked')?.value || 'nice';
+
+    const entry = {
+      id: 'fb-' + Date.now(),
+      type,
+      title,
+      desc,
+      priority,
+      status: 'submitted',
+      createdAt: new Date().toISOString()
+    };
+
+    const stored = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
+    stored.unshift(entry);
+    localStorage.setItem('ncc-feedback', JSON.stringify(stored));
+
+    form.reset();
+    renderFeedbackList();
+    updateFeedbackBadge();
+    toast('Feedback submitted to agent board');
+  });
+
+  function renderFeedbackList() {
+    if (!list) return;
+    const items = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
+    if (items.length === 0) {
+      list.innerHTML = '<div class="feedback-empty">No submissions yet. Be the first to shape the Nexus!</div>';
+      return;
+    }
+    list.innerHTML = items.map(item => `
+      <div class="feedback-item">
+        <div class="feedback-item-header">
+          <span class="feedback-item-title">${escapeHtml(item.title)}</span>
+          <span class="feedback-item-type ${item.type}">${item.type}</span>
+        </div>
+        <div class="feedback-item-desc">${escapeHtml(item.desc)}</div>
+        <div class="feedback-item-meta">
+          <span>${fmtDate(item.createdAt)}</span>
+          <span class="feedback-item-priority">${item.priority}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function updateFeedbackBadge() {
+    const badge = document.getElementById('feedback-badge');
+    if (!badge) return;
+    const items = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
+    badge.textContent = items.length;
+    badge.style.display = items.length > 0 ? 'flex' : 'none';
+  }
+}
+
+function initAgentStats() {
+  // Pull stats from settings or whiteboard fallback
+  const settings = loadSettings();
+  const stats = settings.agentStats || {};
+
+  setStat('agent-stat-tasks', stats.tasksDone || 0);
+  setStat('agent-stat-bugs', stats.bugsFixed || 0);
+  setStat('agent-stat-commits', stats.commits || 0);
+  setStat('agent-stat-wakes', stats.wakeCycles || 0);
+
+  const lastRun = stats.lastRun ? fmtDate(stats.lastRun) : 'Never';
+  const nextRun = stats.nextRun ? fmtDate(stats.nextRun) : '—';
+  document.getElementById('agent-stat-last-run').textContent = lastRun;
+  document.getElementById('agent-stat-next-run').textContent = nextRun;
+
+  // Upcoming tasks (read from localStorage or show placeholder)
+  const upcomingList = document.getElementById('agent-upcoming-list');
+  if (upcomingList) {
+    const whiteboard = localStorage.getItem('ncc-whiteboard-cache');
+    if (whiteboard) {
+      try {
+        const wb = JSON.parse(whiteboard);
+        const tasks = (wb.tasks || []).filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').slice(0, 6);
+        if (tasks.length) {
+          upcomingList.innerHTML = tasks.map(t => `<li>${escapeHtml(t.title || t.id)}</li>`).join('');
+        } else {
+          upcomingList.innerHTML = '<li class="agent-upcoming-empty">No upcoming tasks from whiteboard cache</li>';
+        }
+      } catch {
+        upcomingList.innerHTML = '<li class="agent-upcoming-empty">Open Settings → Refresh Whiteboard to sync</li>';
+      }
+    }
+  }
+
+  // Refresh button
+  const btn = document.getElementById('btn-sync-whiteboard');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      fetchWhiteboard();
+    });
+  }
+}
+
+function setStat(id, n) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = n;
+}
+
+function fetchWhiteboard() {
+  // Try loading WHITEBOARD.md from the server (same origin)
+  fetch('WHITEBOARD.md')
+    .then(r => r.ok ? r.text() : Promise.reject(new Error('Not found')))
+    .then(text => {
+      const parsed = parseWhiteboard(text);
+      localStorage.setItem('ncc-whiteboard-cache', JSON.stringify(parsed));
+      // Update upcoming list
+      const upcomingList = document.getElementById('agent-upcoming-list');
+      if (upcomingList) {
+        const tasks = (parsed.tasks || []).filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').slice(0, 6);
+        if (tasks.length) {
+          upcomingList.innerHTML = tasks.map(t => `<li>${escapeHtml(t.title || t.id)}</li>`).join('');
+        } else {
+          upcomingList.innerHTML = '<li class="agent-upcoming-empty">All tasks are done</li>';
+        }
+      }
+      toast('Whiteboard refreshed');
+    })
+    .catch(() => {
+      toast('Could not load WHITEBOARD.md — check server / repo', 'error');
+    });
+}
+
+function parseWhiteboard(md) {
+  const tasks = [];
+  const bugs = [];
+  let inTasks = false;
+  let inBugs = false;
+
+  for (const line of md.split('\n')) {
+    if (line.includes('## 🎯 TASK BOARD') || line.includes('## 🎯')) inTasks = true;
+    if (line.includes('## 🔍 BUG TRACKER') || line.includes('## 🔍')) { inTasks = false; inBugs = true; }
+    if (line.includes('## 🧠') || line.includes('## 📝')) { inTasks = false; inBugs = false; }
+
+    const taskMatch = line.match(/\| `?T-\d+`? \| (.+?) \| `(DONE|IN_PROGRESS|PENDING)` \|/);
+    if (taskMatch && inTasks) {
+      tasks.push({ id: line.match(/T-\d+/)?.[0] || '', title: taskMatch[1], status: taskMatch[2] });
+    }
+  }
+  return { tasks, bugs };
+}
+
+function escapeHtml(str) {
+  return (str || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return iso; }
 }
 
 function registerServiceWorker() {

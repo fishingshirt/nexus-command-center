@@ -11,8 +11,8 @@
 |--------|-------|
 | **Project Phase** | `SCAFFOLDING_COMPLETE` |
 | **Last Agent Run** | 2026-05-09 (T-009 month view + CRUD + persistence) |
-| **Active Tasks** | 1 (T-009 in progress, sub-tasks a-c done) |
-| **Completed Tasks** | 11 (T-001 through T-008, T-009-a, T-009-b, T-009-c) |
+| **Active Tasks** | 4 (T-009 in progress, T-021-a, T-022, T-023 in progress/done) |
+| **Completed Tasks** | 13 (T-001 through T-008, T-009-a/b/c, T-021-a, T-023) |
 | **Bugs Found** | 0 |
 | **Next Wake** | *(set by cron)* |
 
@@ -59,6 +59,16 @@
 | `T-018` | RSS feed reader / news aggregator | `PENDING` | For staying updated. |
 | `T-019` | Finance tracker app | `PENDING` | Simple expense logging. |
 | `T-020` | AI task suggester — agent analyzes usage patterns and suggests new apps/features | `PENDING` | Meta-agent feature. |
+
+### 🟣 NEW FEATURES (Just Added — User Requested)
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| `T-021` | **Feedback AI** — in-app feedback form that generates structured whiteboard tasks, asks clarifying questions, and stores submissions | `IN_PROGRESS` | **User directive.** Feedback form with type selector, priority picker, title, description, and question prompts for missing details. Stores in localStorage and generates agent-readable task cards. |
+| `T-021-a` | Feedback form UI + localStorage + history list | `DONE` | Form with type, title, desc, priority. Renders user's past submissions. |
+| `T-021-b` | Smart question engine — AI asks clarifying questions before accepting submission | `PENDING` | Based on type & description, auto-prompt: "What problem does it solve?", "Who is it for?", etc. Only finalizes once answered. |
+| `T-021-c` | Whiteboard task generator — convert feedback entries into WHITEBOARD.md format for agent ingestion | `PENDING` | Export `ncc-feedback` entries as formatted tasks with IDs and priority. |
+| `T-022` | **Agent Stats Panel** — in Settings: live agent metrics (tasks done, bugs fixed, commits, wake cycles, upcoming tasks, last/next run) | `IN_PROGRESS` | **User directive.** Reads from `ncc-settings.agentStats`. Offers "Refresh Whiteboard" button that fetches `WHITEBOARD.md` and parses task board. |
+| `T-023` | **Jarvis Theme** — Iron Man HUD aesthetic, electric arc-blue, holographic glow, HUD grid lines | `DONE` | **User directive.** Theme file `jarvis.css` added to `public/css/themes/`. Electric arc-blue `#39d0f2`, scanline overlay, glowing accents, HUD grid background. |
 
 ---
 
