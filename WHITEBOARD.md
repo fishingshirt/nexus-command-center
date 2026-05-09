@@ -11,8 +11,8 @@
 |--------|-------|
 | **Project Phase** | `SECURITY & CLOUD` |
 | **Last Agent Run** | 2026-05-09 (T-029 IT Hub complete, T-030/031 added) |
-| **Active Tasks** | 8 (T-021-c, T-022, T-024 through T-028, T-030, T-031) |
-| **Completed Tasks** | 35 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-029 + subtasks, T-030, T-030-c) |
+| **Active Tasks** | 7 (T-021-c, T-022, T-024 through T-028, T-030-f, T-031) |
+| **Completed Tasks** | 36 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-029 + subtasks, T-030 + subtasks a–e) |
 
 |**Current Focus:** T-030-d DONE. Backup history endpoint live + download support. Next: T-030-e (restore endpoint) so the Backup UI has full end-to-end protection — create, download, restore.
 
@@ -143,7 +143,7 @@
 | `T-030-b` | Backup dashboard UI — `backup.js` card, view, status panel, USB list, cloud config form, history | `DONE` | Self-contained module. Renders card, view, polling. localStorage history + server-side file history. |
 | `T-030-c` | Fix critical `nexus-server.py` structural bug — `_api_backup` was inside class scope causing 501/404 on all backup endpoints | `DONE` | Extracted `_api_backup` to top-level function before `SPAHandler`. Verified `/api/backup/usb` and `/api/backup/run` respond correctly. |
 | `T-030-d` | Backup history endpoint — `GET /api/backup/history` returns list of archived backup files from server disk with metadata (filename, size, created, encrypted) | `DONE` | Lists `nexus-backup-*` files from `~/.hermes/backups`, sorted newest first. Includes download button in UI. |
-| `T-030-e` | Restore endpoint — `POST /api/backup/restore` accepts a backup filename, decrypts if needed, merges data back into browser via download prompt or direct localStorage injection | `PENDING` | User picks backup from history, confirms destructive merge, gets success toast. |
+| `T-030-e` | Restore endpoint — `POST /api/backup/restore` accepts a backup filename, decrypts if needed, merges data back into browser via download prompt or direct localStorage injection | `DONE` | User picks backup from history, confirms destructive merge, gets success toast. UI: restore button per entry, passphrase modal for encrypted backups, merge preview (Add Only vs Full Replace). Endpoint: decrypt with `gpg --batch --passphrase-fd 0 --decrypt`. Security: path traversal blocked. |
 | `T-030-f` | Backup health auto-check — dashboard badge turns amber if no backup in 7 days, red if > 30 days | `PENDING` | Reads `lastSyncTime` equivalent from backup log. |
 | `T-031` | **Cloud Vault** — encrypted cloud sync via rclone/rsync/S3 | `PENDING` | **User directive.** After T-030 is stable. UI config already present. Actual upload/download deferred. |
 

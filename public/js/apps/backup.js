@@ -365,8 +365,11 @@ function renderHistory(list, items) {
       : (isServer ? '📦 Server' : '📦 Backup');
     const timeStr = fmtTime(item.created);
     const encIcon = item.encrypted ? '🔒 ' : '';
-    const actions = isServer && item.filename
-      ? `<button class="backup-history-action" data-file="${esc(item.filename)}" aria-label="Download backup">⬇️</button>`
+    const downloadBtn = isServer && item.filename
+      ? `<button class="backup-history-action" data-download="${esc(item.filename)}" aria-label="Download backup">⬇️</button>`
+      : '';
+    const restoreBtn = isServer && item.filename
+      ? `<button class="backup-history-action" data-restore="${esc(item.filename)}" data-enc="${item.encrypted ? '1' : '0'}" aria-label="Restore backup">↩️</button>`
       : '';
     return `
       <li class="backup-log-entry ${statusClass}">
@@ -374,13 +377,18 @@ function renderHistory(list, items) {
         <span class="backup-log-target">${esc(item.target || item.filename || 'server')}</span>
         <span class="backup-log-size">${item.size || '—'}</span>
         <span class="backup-log-time">${timeStr}</span>
-        ${actions}
+        <span class="backup-log-actions">${restoreBtn}${downloadBtn}</span>
       </li>`;
   }).join('');
 
   // Wire download buttons
-  list.querySelectorAll('.backup-history-action').forEach(btn => {
-    btn.addEventListener('click', () => downloadBackup(btn.dataset.file));
+  list.querySelectorAll('.backup-history-action[data-download]').forEach(btn => {
+    btn.addEventListener('click', () => downloadBackup(btn.dataset.download));
+  });
+
+  // Wire restore buttons
+  list.querySelectorAll('.backup-history-action[data-restore]').forEach(btn => {
+    btn.addEventListener('click', () => showRestoreModal(btn.dataset.restore, btn.dataset.enc === '1'));
   });
 
   // Update "Last Backup" display
@@ -400,6 +408,130 @@ function updateBadge(count) {
   if (!badge) return;
   badge.textContent = count;
   badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+function showRestoreModal(filename, encrypted) {
+  // Remove existing modal
+  document.getElementById('restore-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'restore-modal';
+  modal.className = 'backup-modal';
+  modal.innerHTML = `
+    <div class="backup-modal-overlay"></div>
+    <div class="backup-modal-body">
+      <h3>↩️ Restore Backup</h3>
+      <p class="backup-modal-filename"><strong>${esc(filename)}</strong></p>
+      <p class="backup-modal-warning">⚠️ This will <strong>overwrite</strong> your current localStorage data for the keys in this backup. This action cannot be undone.</p>
+      ${encrypted ? `
+      <label class="backup-field" style="margin-top:0.5rem">
+        <span>Decryption Passphrase</span>
+        <input type="password" id="restore-passphrase" placeholder="Enter backup passphrase" autocomplete="off">
+      </label>` : ''}
+      <div class="backup-modal-actions">
+        <button class="btn-secondary" id="btn-restore-cancel">Cancel</button>
+        <button class="btn-primary" id="btn-restore-confirm">Restore Now</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  document.getElementById('btn-restore-cancel')?.addEventListener('click', close);
+  modal.querySelector('.backup-modal-overlay')?.addEventListener('click', close);
+
+  document.getElementById('btn-restore-confirm')?.addEventListener('click', async () => {
+    const passphrase = encrypted ? (document.getElementById('restore-passphrase')?.value || '') : '';
+    if (encrypted && !passphrase) { _toast('Passphrase required', 'error'); return; }
+    close();
+    await doRestore(filename, passphrase);
+  });
+}
+
+async function doRestore(filename, passphrase) {
+  const btn = document.querySelector(`.backup-history-action[data-restore="${esc(filename)}"]`);
+  const orig = btn ? btn.innerHTML : '↩️';
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳'; }
+
+  try {
+    const resp = await fetch('/api/backup/restore', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, passphrase })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      _toast(`Restore failed: ${data.error || 'unknown'}`, 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+      return;
+    }
+
+    // Preview modal — show keys and confirm merge
+    showMergePreview(data.data, filename, btn, orig);
+  } catch (e) {
+    _toast(`Restore error: ${e.message}`, 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+function showMergePreview(data, filename, btnRef, btnOrig) {
+  document.getElementById('merge-modal')?.remove();
+  const keys = Object.keys(data || {});
+  const modal = document.createElement('div');
+  modal.id = 'merge-modal';
+  modal.className = 'backup-modal';
+  modal.innerHTML = `
+    <div class="backup-modal-overlay"></div>
+    <div class="backup-modal-body" style="max-height:80vh;overflow:auto">
+      <h3>🧩 Merge Preview</h3>
+      <p>${keys.length} localStorage key(s) in <strong>${esc(filename)}</strong>:</p>
+      <ul class="backup-merge-keys">
+        ${keys.map(k => `<li>${esc(k)} <span class="backup-merge-size">${(data[k]?.length || 0).toLocaleString()} chars</span></li>`).join('')}
+      </ul>
+      <p class="backup-modal-warning">Choose how to restore:</p>
+      <div class="backup-modal-actions">
+        <button class="btn-secondary" id="btn-merge-cancel">Cancel</button>
+        <button class="btn-primary" id="btn-merge-add">Add Only (no overwrite)</button>
+        <button class="btn-primary" id="btn-merge-full">Full Replace</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  document.getElementById('btn-merge-cancel')?.addEventListener('click', () => {
+    close();
+    if (btnRef) { btnRef.disabled = false; btnRef.innerHTML = btnOrig; }
+  });
+  modal.querySelector('.backup-modal-overlay')?.addEventListener('click', () => {
+    close();
+    if (btnRef) { btnRef.disabled = false; btnRef.innerHTML = btnOrig; }
+  });
+
+  document.getElementById('btn-merge-add')?.addEventListener('click', () => {
+    applyMerge(data, false);
+    close();
+    if (btnRef) { btnRef.disabled = false; btnRef.innerHTML = btnOrig; }
+  });
+  document.getElementById('btn-merge-full')?.addEventListener('click', () => {
+    applyMerge(data, true);
+    close();
+    if (btnRef) { btnRef.disabled = false; btnRef.innerHTML = btnOrig; }
+  });
+}
+
+function applyMerge(data, overwrite) {
+  let count = 0;
+  for (const [key, value] of Object.entries(data || {})) {
+    if (key === '_meta') continue;
+    if (!overwrite && localStorage.getItem(key) !== null) continue;
+    try { localStorage.setItem(key, value); count++; } catch (e) { console.warn('Restore skipped', key, e.message); }
+  }
+  _toast(`Restored ${count} key(s). Reloading...`);
+  // Trigger a gentle app refresh so data is picked up
+  setTimeout(() => {
+    window.dispatchEvent(new StorageEvent('storage', { key: '', newValue: '' }));
+    loadBackupHistory();
+  }, 500);
 }
 
 function downloadBackup(filename) {

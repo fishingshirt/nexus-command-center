@@ -416,6 +416,79 @@ def _api_backup(handler, path, repo):
             handler.wfile.write(f.read())
         return True
 
+    if path == '/api/backup/restore':
+        import tempfile, urllib.parse
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        filename = (req.get('filename') or '').replace('/', '').replace('\\', '')
+        passphrase = req.get('passphrase', '')
+        if not filename or not filename.startswith('nexus-backup-'):
+            _json(handler, 400, {'ok': False, 'error': 'Invalid filename'})
+            return True
+
+        fp = os.path.join(BACKUP_DIR, filename)
+        if not os.path.isfile(fp) or not os.path.realpath(fp).startswith(os.path.realpath(BACKUP_DIR)):
+            _json(handler, 404, {'ok': False, 'error': 'Not found'})
+            return True
+
+        # Decrypt if needed
+        is_encrypted = filename.endswith('.gpg')
+        work_path = fp
+        if is_encrypted:
+            if not passphrase:
+                _json(handler, 400, {'ok': False, 'error': 'Passphrase required for encrypted backup'})
+                return True
+            try:
+                fd, tmp = tempfile.mkstemp(suffix='.json')
+                os.close(fd)
+                subprocess.run(
+                    ['gpg', '--batch', '--passphrase-fd', '0', '--decrypt',
+                     '-o', tmp, fp],
+                    input=passphrase.encode(), check=True, timeout=60
+                )
+                work_path = tmp
+            except subprocess.CalledProcessError:
+                try: os.remove(tmp)
+                except: pass
+                _json(handler, 400, {'ok': False, 'error': 'Decryption failed — wrong passphrase?'})
+                return True
+            except Exception as e:
+                try: os.remove(tmp)
+                except: pass
+                _json(handler, 500, {'ok': False, 'error': f'Decryption error: {e}'})
+                return True
+
+        # Read backup payload
+        try:
+            with open(work_path, 'r') as f:
+                payload = json.load(f)
+        except Exception as e:
+            if is_encrypted:
+                try: os.remove(tmp)
+                except: pass
+            _json(handler, 500, {'ok': False, 'error': f'Failed to read backup: {e}'})
+            return True
+        finally:
+            if is_encrypted:
+                try: os.remove(tmp)
+                except: pass
+
+        data = payload.get('data', {})
+        meta = payload.get('_meta', {})
+        _json(handler, 200, {
+            'ok': True,
+            'filename': filename,
+            'meta': meta,
+            'keys': list(data.keys()),
+            'data': data
+        })
+        return True
+
     _json(handler, 404, {'ok': False, 'error': 'Unknown backup endpoint'})
     return True
 
