@@ -767,6 +767,8 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
     <input type="text" maxlength="1" autocomplete="off">
     <input type="text" maxlength="1" autocomplete="off">
     <input type="text" maxlength="1" autocomplete="off">
+    <input type="text" maxlength="1" autocomplete="off">
+    <input type="text" maxlength="1" autocomplete="off">
   </div>
   <p id="msg" style="margin-top:1.5rem;color:#c44;font-size:.9rem;min-height:1.2rem;"></p>
 </div>
@@ -776,10 +778,10 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
   const inputs=wrap.querySelectorAll('input');
   const CORRECT='fullroot88';
   const code=[];
-  inputs.forEach((inp,i)=>{{
+  inputs.forEach((inp,i)={{
     inp.addEventListener('input',e=>{{
-      if(e.data&&i<7){{code[i]=e.data;inp.value='●';inputs[i+1].focus();}}
-      else if(e.data&&i===7){{code[i]=e.data;inp.value='●';verify();}}
+      if(e.data&&i<9){{code[i]=e.data;inp.value='●';inputs[i+1].focus();}}
+      else if(e.data&&i===9){{code[i]=e.data;inp.value='●';verify();}}
     }});
     inp.addEventListener('keydown',e=>{{
       if(e.key==='Backspace'&&i>0&&inp.value===''){{inputs[i-1].focus();}}
