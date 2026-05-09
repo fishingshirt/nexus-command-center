@@ -27,6 +27,77 @@ function loadEvents() {
   }
 }
 
+function getVisibleEvents(rangeStart, rangeEnd) {
+  const raw = loadEvents();
+  const visible = [];
+  for (const ev of raw) {
+    if (!ev.recurrence || ev.recurrence === 'none') {
+      visible.push(ev);
+      continue;
+    }
+    // Add the master event itself if it falls in range
+    const evDate = new Date(ev.date + 'T00:00:00');
+    if (evDate >= rangeStart && evDate <= rangeEnd) {
+      visible.push(ev);
+    }
+    // Add generated occurrences
+    const occs = getOccurrences(ev, rangeStart, rangeEnd);
+    visible.push(...occs);
+  }
+  // Deduplicate by generated id
+  const seen = new Set();
+  return visible.filter(o => {
+    if (seen.has(o.id)) return false;
+    seen.add(o.id);
+    return true;
+  });
+}
+
+function getOccurrences(ev, rangeStart, rangeEnd) {
+  const occurrences = [];
+  const masterDate = new Date(ev.date + 'T00:00:00');
+  const rule = ev.recurrence;
+  const maxOccurrences = 366; // safety cap
+
+  let cursor = new Date(masterDate);
+  let count = 0;
+  while (count < maxOccurrences) {
+    if (cursor > rangeEnd) break;
+    if (cursor >= rangeStart && cursor > masterDate) {
+      const y = cursor.getFullYear();
+      const m = String(cursor.getMonth() + 1).padStart(2, '0');
+      const d = String(cursor.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+      occurrences.push({
+        ...ev,
+        id: `${ev.id}_occ_${dateStr}`,
+        masterId: ev.id,
+        date: dateStr,
+        isOccurrence: true,
+      });
+    }
+    // Advance cursor
+    if (rule === 'daily') {
+      cursor.setDate(cursor.getDate() + 1);
+    } else if (rule === 'weekly') {
+      cursor.setDate(cursor.getDate() + 7);
+    } else if (rule === 'monthly') {
+      cursor.setMonth(cursor.getMonth() + 1);
+      // If the day doesn't exist in the next month (e.g. 31st), skip to next valid
+      if (cursor.getDate() !== masterDate.getDate()) {
+        // Move to end of that month, next loop will advance again — simple skip
+        cursor.setDate(0);
+      }
+    } else if (rule === 'yearly') {
+      cursor.setFullYear(cursor.getFullYear() + 1);
+    } else {
+      break;
+    }
+    count++;
+  }
+  return occurrences;
+}
+
 function saveEvents(events) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
   updateCalendarBadge();
@@ -38,9 +109,12 @@ function generateId() {
 
 // ---- Badge ----
 function updateCalendarBadge() {
-  const events = loadEvents();
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  // Use visible events for today so recurring events count
+  const start = new Date(todayStr + 'T00:00:00');
+  const end = new Date(todayStr + 'T23:59:59');
+  const events = getVisibleEvents(start, end);
   const count = events.filter(e => e.date === todayStr).length;
   const badge = document.getElementById('calendar-badge');
   if (badge) badge.textContent = count;
@@ -67,7 +141,6 @@ function renderCalendar() {
 function renderMonth() {
   const monthYearEl = document.getElementById('cal-month-year');
   const gridEl = document.getElementById('cal-grid');
-  const events = loadEvents();
 
   const year = anchorDate.getFullYear();
   const month = anchorDate.getMonth();
@@ -79,6 +152,14 @@ function renderMonth() {
   const firstDayIndex = firstOfMonth.getDay(); // 0 = Sunday
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startPrev = new Date(year, month, 0).getDate();
+
+  // Compute visible range for recurring events
+  const prevPadding = firstDayIndex;
+  const totalCells = firstDayIndex + daysInMonth;
+  const nextPadding = (7 - (totalCells % 7)) % 7;
+  const rangeStart = new Date(year, month, 1 - prevPadding);
+  const rangeEnd = new Date(year, month + 1, nextPadding, 23, 59, 59);
+  const events = getVisibleEvents(rangeStart, rangeEnd);
 
   let html = '';
   const today = new Date();
@@ -105,7 +186,8 @@ function renderMonth() {
 
     chips.forEach(ev => {
       const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
-      eventsHtml += `<div class="calendar-event-chip ${ev.category || 'other'}" style="background:${cat.bg};color:${cat.text}" title="${escapeHtml(ev.title)}">${escapeHtml(truncate(ev.title, 14))}</div>`;
+      const recCls = ev.recurrence && ev.recurrence !== 'none' ? 'recurring' : '';
+      eventsHtml += `<div class="calendar-event-chip ${ev.category || 'other'} ${recCls}" style="background:${cat.bg};color:${cat.text}" title="${escapeHtml(ev.title)}">${recCls ? '↻ ' : ''}${escapeHtml(truncate(ev.title, 14))}</div>`;
     });
     if (more > 0) {
       eventsHtml += `<div class="calendar-more">+${more} more</div>`;
@@ -119,8 +201,6 @@ function renderMonth() {
   }
 
   // Next month trailing days
-  const totalCells = firstDayIndex + daysInMonth;
-  const nextPadding = (7 - (totalCells % 7)) % 7;
   for (let d = 1; d <= nextPadding; d++) {
     html += `<div class="calendar-day other-month" data-date=""><span class="calendar-day-num">${d}</span></div>`;
   }
@@ -133,7 +213,6 @@ function renderMonth() {
 function renderWeek() {
   const monthYearEl = document.getElementById('cal-month-year');
   const gridEl = document.getElementById('cal-grid');
-  const events = loadEvents();
 
   const weekStart = new Date(anchorDate);
   weekStart.setDate(anchorDate.getDate() - anchorDate.getDay());
@@ -146,6 +225,10 @@ function renderWeek() {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const rangeEnd = new Date(weekEnd);
+  rangeEnd.setHours(23,59,59,999);
+  const events = getVisibleEvents(weekStart, rangeEnd);
 
   let headerHtml = '';
   let bodyHtml = '';
@@ -181,7 +264,6 @@ function renderWeek() {
 function renderDay() {
   const monthYearEl = document.getElementById('cal-month-year');
   const gridEl = document.getElementById('cal-grid');
-  const events = loadEvents();
 
   const year = anchorDate.getFullYear();
   const month = anchorDate.getMonth();
@@ -193,6 +275,10 @@ function renderDay() {
   const isToday = dateStr === todayStr;
 
   monthYearEl.textContent = anchorDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const start = new Date(dateStr + 'T00:00:00');
+  const end = new Date(dateStr + 'T23:59:59');
+  const events = getVisibleEvents(start, end);
 
   const dayEvents = events
     .filter(e => e.date === dateStr)
@@ -306,6 +392,7 @@ const elDate = document.getElementById('event-date');
 const elStart = document.getElementById('event-start');
 const elEnd = document.getElementById('event-end');
 const elCategory = document.getElementById('event-category');
+const elRecurrence = document.getElementById('event-recurrence');
 const elDesc = document.getElementById('event-desc');
 
 function openModal(dateStr, eventId = null) {
@@ -324,6 +411,7 @@ function openModal(dateStr, eventId = null) {
     elStart.value = ev.start || '';
     elEnd.value = ev.end || '';
     elCategory.value = ev.category || 'other';
+    elRecurrence.value = ev.recurrence || 'none';
     elDesc.value = ev.description || '';
   } else {
     modalTitle.textContent = 'New Event';
@@ -362,6 +450,7 @@ function saveEvent(e) {
     start: elStart.value || '',
     end: elEnd.value || '',
     category: elCategory.value,
+    recurrence: elRecurrence.value || 'none',
     description: elDesc.value.trim(),
     updatedAt: Date.now(),
   };

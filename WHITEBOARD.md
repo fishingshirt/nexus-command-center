@@ -9,14 +9,14 @@
 
 | Metric | Value |
 |--------|-------|
-|| **Project Phase** | `APP_EXPANSION` |
-|| **Last Agent Run** | 2026-05-09 (T-009-e-a Google Calendar sync settings UI done) |
-|| **Active Tasks** | 7 (T-009, T-021, T-022 in progress/done + T-024/25/26/27/28 pending) |
-|| **Completed Tasks** | 17 (T-001 through T-008, T-009-a/b/c/d/e-a, T-021-a, T-023, T-010, T-011) |
-|| **Bugs Found** | 0 |
-|| **Next Wake** | *(set by cron)* |
+| **Project Phase** | `APP_EXPANSION` |
+| **Last Agent Run** | 2026-05-09 (T-009-f Calendar recurring events engine done) |
+| **Active Tasks** | 6 (T-009, T-021, T-022 in progress/done + T-024/25/26/27/28 pending) |
+| **Completed Tasks** | 18 (T-001 through T-008, T-009-a/b/c/d/e-a/f, T-021-a, T-023, T-010, T-011) |
+| **Bugs Found** | 0 |
+| **Next Wake** | *(set by cron)* |
 
-||**Current Focus:** Agent can pick up highest-priority pending task: T-009-e-b (Google Calendar OAuth/API wiring) or any new user-requested feature.
+|**Current Focus:** Agent can pick up highest-priority pending task: T-009-e-b (Google Calendar OAuth/API wiring) or any new user-requested feature.
 
 ---
 
@@ -47,7 +47,7 @@
 | `T-009-e-b` | Google Calendar sync — OAuth2 + API client wiring (gapi script injection, token refresh) | `PENDING` | Requires Google Cloud project. Script loads gapi, handles sign-in, stores token. |
 | `T-009-e-c` | Google Calendar sync — Sync engine (read events, merge with localStorage) | `PENDING` | Fetch events list, merge into ncc-calendar-events with gcalId field, handle conflicts. |
 | `T-009-e-d` | Google Calendar sync — Auto-sync background loop + Calendar header status dot | `PENDING` | Poll every N minutes when enabled. Show green/amber/red dot in calendar toolbar. |
-|| `T-009-f` | Calendar recurring events engine | `PENDING` | Weekly/monthly/yearly recurrence rules. |
+|| `T-009-f` | Calendar recurring events engine | `DONE` | Daily/weekly/monthly/yearly recurrence. Events rendered with ↻ badge. Occurrences generated on-the-fly for month/week/day views. No hard end-date or count-limit yet. |
 || `T-010` | Notes app — rich text or markdown editor, folders/tags, search | `DONE` | Plain-text editor with CRUD, auto-save, search, and sidebar list. localStorage persistence. Markdown rendering + folders/tags deferred. |
 || `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `DONE` | CRUD, priorities, due dates, filters (all/active/completed), clear completed, localStorage persistence, reactive badge count. Recurring + drag-and-drop deferred. |
 | `T-012` | Hermes API bridge — real chat backend integration | `PENDING` | Research how to pipe messages to/from Hermes. |
