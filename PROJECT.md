@@ -194,30 +194,110 @@ The first time you open it, you're greeted with a cinematic welcome: ambient mus
 **Agent Note:** `T-026` breaks into `T-026-a` through `T-026-i`. Start with `T-026-a` (shell) then `T-026-b` through `T-026-i` (one per cycle).
 
 ### XIII. Work Simulator
-**User directive.** "Paranoia / theater mode" — make it look like you're deep in important work so shoulder surfers leave you alone.
+**User directive.** **Ultra-realistic "busy work" camouflage.** When someone looks over your shoulder, they must genuinely believe you are doing real, important work. No joke content, no placeholder text, no "Lorem Ipsum." Every pixel, every line of code, every terminal scroll must pass a shoulder-surfing test at 3 feet.
 
-**Simulation Modes:**
+**Design Principle: Believability First**
+- All code files use real file names (`api/routes/userAuth.js`, `src/components/Dashboard.tsx`, `terraform/modules/vpc/main.tf`)
+- All variable names, function names, and comments look like production code
+- Terminal output uses real package names, real version numbers, real git commit hashes
+- Dashboard metrics look like a real SaaS platform (user count, revenue, latency, deploy pipelines)
+- Spreadsheet contains real-looking business data (revenue by region, churn rates, cohort analysis)
+
+**Simulation Modes (All Full-Screen, Zero Browser Chrome Visible):**
+
 | Mode | Visual | Behavior |
 |------|--------|----------|
-| **Fake IDE** | Full-screen editor with syntax highlighting, file tabs, sidebar with fake errors/warnings | Auto-types realistic code (Python/JS/Rust) with occasional backspace mistakes. Blinking cursor. Green build success flashes in status bar. |
-| **Fake Terminal** | Full-screen terminal with green/white text on dark bg | Streams npm install, docker build, git push, pytest output. Auto-scroll. Green checkmarks. Occasional yellow warnings. |
-| **Fake Dashboard** | Grid of metric cards, build pipelines, deploy status | CSS bar charts fluctuate randomly. Progress bars fill. "Build #4827 passed" toasts. Red/amber/green health dots. |
-| **Fake Spreadsheet** *(Boss Key)* | Excel/Google Sheets clone full of numbers | `Ctrl+B` or `Ctrl+~` instant switch. Fake sales/revenue data. Looks exactly like real work. |
+| **VS Code Clone** | Full IDE with sidebar file tree, open tabs, bottom panel (terminal + problems), minimap | File tree contains 40+ files from a fictional but realistic micro-SaaS. Open tab auto-types real code (React/TypeScript, Rust, Python, Go, Terraform). Occasional ESLint warnings (real rules). Bottom panel shows a real terminal streaming logs. File tabs have unsaved-change dots. |
+| **JetBrains Clone** | Dark IDE with project structure, run tool window, version control panel, database tool window | Same realism as VS Code mode but with JetBrains layout. Git diff panel shows realistic merge conflicts. Database table view shows realistic user records. Run panel shows Spring Boot / Django startup logs. |
+| **Terminal Only** | Full-screen terminal, no browser UI visible | Streams realistic `docker compose up`, `terraform apply`, `cargo build --release`, `pytest -xvs`, `kubectl logs -f deployment/api`. Uses actual ASCII progress bars, real color codes, real package download progress. Occasional `git push` with realistic remote output. |
+| **Real Dashboard** | Grafana/Metabase-style layout: sidebar nav, metric cards, line charts, alert panels | Shows plausible SaaS metrics: "Active Users: 14,203" (fluctuates slightly), "P95 Latency: 187ms", "Last Deploy: 4m ago by jenkins","Error Rate: 0.03%". Charts redraw with live-looking data points. Alert panels flash amber for "High CPU on prod-api-03". |
+| **Real Spreadsheet** *(Boss Key: `Ctrl+B` / `Ctrl+~`)* | Google Sheets / Excel Online clone with real formulas visible in formula bar | Contains Q3 Revenue sheet with actual formulas (`=SUMIF(C:C,"Enterprise",D:D)`), pivot tables, conditional formatting (green for >target, red for <target). Cells show realistic numbers: `$1,247,300`, churn `2.4%`, MRR growth `+4.2%`. |
+| **Real Slack / Teams** | Slack sidebar + channel list + message pane | #deployments channel shows: "[2:34 PM] ci-bot: Build #4827 passed — merged `feat/auth-refactor` into `main`". #alerts: "[2:35 PM] pagerduty: HIGH CPU on prod-api-03". Typing indicator occasionally appears. |
+
+**Realism Engine Details:**
+
+*VS Code / JetBrains Mode:*
+- 5 pre-built "projects" the user can select from Settings:
+  1. `nexus-command-center` (React/Node) — this actual project
+  2. `meridian-analytics` (Python/FastAPI + PostgreSQL)
+  3. `aegis-platform` (Rust/Go microservices + Kubernetes)
+  4. `vertex-commerce` (Next.js + Stripe + Prisma)
+  5. `quantum-ml-pipeline` (PyTorch + Airflow + S3)
+- Code typing simulates realistic developer cadence: bursts of typing, pauses to think, occasional backspace on typos, copy-paste of blocks, command+click to jump to definitions
+- Sidebar explorer shows git status indicators (M, U, D) on files
+- Problems panel shows 2-3 real-looking TypeScript/eslint errors
+- Status bar shows branch name, line count, encoding, TypeScript version, Prettier status
+- Minimap renders actual code silhouette
+
+*Terminal Mode:*
+- 8 pre-built terminal "sessions":
+  1. Docker Compose up (microservices)
+  2. Terraform plan + apply (AWS infrastructure)
+  3. Rust cargo build --release
+  4. Python pytest with coverage
+  5. Kubernetes rollout status
+  6. Git rebase interactive (with realistic conflicts)
+  7. npm install + build (Next.js)
+  8. Database migration (Alembic / Prisma)
+- Each session uses real-looking file paths (`./src/services/billing/stripeWebhook.ts`)
+- Progress bars use ANSI sequences, real byte counts
+- Realistic timing: npm install takes ~30 seconds of visible progress
+
+*Dashboard Mode:*
+- 6 panel layouts selectable in settings
+- Metrics refresh every 2-8 seconds with small noise (+/- 2%)
+- Alert toasts slide in from top-right with realistic infrastructure messages
+- Dark sidebar nav with icons: "Overview", "API", "Database", "Infra", "Security", "Alerts"
+- "Logged in as: admin@..." in top-right
+
+*Slack/Teams Mode:*
+- 5 channels: #general, #deployments, #alerts, #frontend, #backend
+- Realistic conversation snippets between "team members"
+- Emoji reactions, thread replies, file uploads ("coverage_report.html")
+- Away/busy indicators on user avatars
+- "Someone is typing..." animation occasionally
 
 **Shared Features:**
-- **Boss Key** (`Ctrl+B` / `Ctrl+~`): instant swap to Fake Spreadsheet
-- **Panic/Chill Slider** (1-5): controls typing speed, notification frequency, scroll speed
-- **Fake Chat Notifications**: Slack/Discord-style corner toasts: "Build deployed", "PR approved", "CI green"
-- **Auto-Rotate**: cycles modes every N minutes
-- **Quick toggle**: from dashboard header or Settings — one click to enter Work Sim
+- **Boss Key** (`Ctrl+B` / `Ctrl+~`): instant, zero-animation swap to Spreadsheet mode. No visual transition — just instant swap so it looks like you switched windows naturally.
+- **Panic/Chill Slider** (1-5): 
+  - 1 = slow typing, occasional activity, calm green metrics
+  - 3 = normal pace, some Slack messages, amber alerts
+  - 5 = rapid typing cascades, terminal error red text, urgent Slack DMs, "P1 incident" flashing on dashboard
+- **Contextual Pauses**: Simulator pauses typing when mouse moves (looks like you're reading / thinking), resumes after 1-2 seconds
+- **Idle Timeout Detection**: If no mouse/keyboard for 60s, simulator auto-switches to a low-activity "reviewing code" state (scrolling slowly through a file)
+- **Screen Edge Detection**: When mouse approaches top of screen, briefly show a "browser tab" with a fake Jira ticket, then auto-hide when mouse moves away
+- **Quick toggle**: `Ctrl+Shift+W` from anywhere in dashboard enters Work Sim instantly
+- **Exit**: 3-second press-and-hold on a hidden corner button (prevents accidental exits during panic)
+- **Auto-Rotate**: Every N minutes, seamlessly cross-fade between modes (looks like you're multitasking)
 
-**Dashboard UI:**
-- Full-screen takeover when activated
-- Mode picker overlay on first launch
-- Bottom control bar: mode selector, panic slider, boss key hint, exit button
-- Exit requires 3-second press-and-hold (prevents accidental exits)
+**Content Sources (Pre-baked):**
+- `public/assets/work-sim/projects/` — 5 complete project file trees with real-ish code
+- `public/assets/work-sim/terminal-logs/` — 8 long text files of realistic terminal output
+- `public/assets/work-sim/dashboard-data/` — JSON data feeds for charts
+- `public/assets/work-sim/slack-chats/` — realistic channel conversation JSON
+- `public/assets/work-sim/spreadsheets/` — pre-rendered HTML table data with formulas
 
-**Agent Note:** `T-027` breaks into `T-027-a` through `T-027-g`. Start with `T-027-a` (launcher shell) then the modes. Pre-baked content lives in `public/assets/work-sim/`.
+**Settings additions:**
+```json
+"workSimulator": {
+  "enabled": false,
+  "preferredMode": "vscode",
+  "preferredProject": "nexus-command-center",
+  "panicLevel": 3,
+  "autoRotate": true,
+  "rotateIntervalMinutes": 5,
+  "bossKeySpreadsheet": "q3-revenue",
+  "idleTimeoutSeconds": 60,
+  "typingSpeedWpm": 85,
+  "showVsCode": true,
+  "showJetBrains": true,
+  "showTerminal": true,
+  "showDashboard": true,
+  "showSlack": true
+}
+```
+
+**Agent Note:** `T-027` breaks into `T-027-a` through `T-027-g`. `T-027-a` builds the launcher shell + content engine. Each content pack (project code, terminal logs, dashboard data) is ~500 lines of pre-baked realistic text. Use actual open-source code snippets mixed with fictional business logic to achieve "real but not real" authenticity.
 
 ### XIV. Additional Mini Games Backlog
 **User directive.** More games for future Arcade expansion. Lower priority until v1 Arcade is live.
