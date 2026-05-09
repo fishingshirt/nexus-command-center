@@ -506,6 +506,12 @@ export function initCalendar() {
 
   updateCalendarBadge();
   renderCalendar();
+
+  // Re-render when external sync merges events
+  window.addEventListener('ncc-cal-updated', () => {
+    renderCalendar();
+    updateCalendarBadge();
+  });
 }
 
 function navigate(dir) {

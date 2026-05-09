@@ -44,6 +44,17 @@
   box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
 }
 
+.calendar-sync-dot.syncing {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.2);
+  animation: pulse-dot 1.4s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
 .calendar-sync-dot.synced {
   background: #10b981;
   box-shadow: 0 0 0 3px rgba(16,185,129,0.2);

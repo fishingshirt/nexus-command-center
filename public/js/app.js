@@ -1,6 +1,7 @@
 import { initCalendar } from './apps/calendar.js';
 import { initNotes } from './apps/notes.js';
 import { initTodo } from './apps/todo.js';
+import { initGoogleSync } from './apps/gcal-sync.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -23,6 +24,7 @@ export function initApp() {
   initCalendar();
   initNotes();
   initTodo();
+  initGoogleSync();
   updateDashboardDate();
   registerServiceWorker();
 }
@@ -293,31 +295,34 @@ function initCalendarSync() {
     if (unlinkBtn) unlinkBtn.style.display = clientIdEl.value.trim() ? 'inline-flex' : 'none';
   });
 
-  apiKeyEl?.addEventListener('input', persist);
-  autoEl?.addEventListener('change', () => { persist(); toast(autoEl.checked ? 'Auto-sync enabled' : 'Auto-sync disabled'); });
+  apiKeyEl?.addEventListener('input', () => { persist(); document.dispatchEvent(new CustomEvent('calendarSyncChanged')); });
+  autoEl?.addEventListener('change', () => { persist(); document.dispatchEvent(new CustomEvent('calendarSyncChanged')); toast(autoEl.checked ? 'Auto-sync enabled' : 'Auto-sync disabled'); });
   intervalEl?.addEventListener('change', persist);
 
   syncNowBtn?.addEventListener('click', () => {
+    // Actual sync logic now lives in js/apps/gcal-sync.js
+    // It listens to the same button and performs the fetch.
+    // This stub remains as a guard.
     if (!clientIdEl?.value.trim() && !apiKeyEl?.value.trim()) {
       toast('Enter an API key or OAuth client ID first', 'error');
       return;
     }
-    updateSyncBadge('synced');
-    const cfg = loadSettings().calendarSync || {};
-    cfg.status = 'synced';
-    cfg.lastSynced = new Date().toISOString();
-    saveSettings({ calendarSync: cfg });
-    toast('Calendar synced (stub — full sync in T-009-e-b/c)');
   });
 
   unlinkBtn?.addEventListener('click', () => {
     if (!confirm('Unlink Google Calendar?')) return;
     if (clientIdEl) clientIdEl.value = '';
     if (apiKeyEl) apiKeyEl.value = '';
-    saveSettings({ calendarSync: { status: 'none' } });
+    const cfg2 = loadSettings().calendarSync || {};
+    cfg2.clientId = '';
+    cfg2.apiKey = '';
+    cfg2.status = 'none';
+    cfg2.autoSync = false;
+    saveSettings({ calendarSync: cfg2 });
     updateSyncBadge('none');
     unlinkBtn.style.display = 'none';
     toast('Calendar unlinked');
+    document.dispatchEvent(new CustomEvent('calendarSyncChanged'));
   });
 
   function updateSyncBadge(status) {
