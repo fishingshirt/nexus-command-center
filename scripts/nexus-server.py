@@ -759,7 +759,7 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
   <h1 class="pulse">NEXUS COMMAND CENTER</h1>
   <p>Please enter your access code to continue</p>
   <div class="pin-wrap">
-    <input id="pinInp" type="password" placeholder="Enter access code" autocomplete="off">
+    <input id="pinInp" type="text" placeholder="Enter access code" autocomplete="off">
   </div>
   <p id="msg" style="margin-top:1.5rem;color:#c44;font-size:.9rem;min-height:1.2rem;"></p>
 </div>
