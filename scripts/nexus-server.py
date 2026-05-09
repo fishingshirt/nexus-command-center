@@ -323,6 +323,72 @@ def _api_auth(handler, path):
 
     return False
 
+# ── ADB Bridge helpers ──────────────────────
+def _api_adb(handler, path):
+    import json, os, subprocess, sys
+    STATE_PATH = os.path.expanduser('~/.hermes/nexus-adb-state.json')
+    SENT_PATH = os.path.expanduser('~/.hermes/nexus-adb-sent.json')
+
+    def load_state():
+        try:
+            with open(STATE_PATH) as f:
+                return json.load(f)
+        except Exception:
+            return {'connected': False, 'error': 'State file missing'}
+
+    if path == '/api/adb/status':
+        st = load_state()
+        age = int(time.time()) - st.get('timestamp', 0)
+        payload = {
+            'connected': st.get('connected', False),
+            'serial': st.get('serial'),
+            'battery': st.get('battery'),
+            'signal': st.get('signal'),
+            'adbInstalled': st.get('adbInstalled', False),
+            'lastUpdateAgeSec': age,
+            'error': st.get('error')
+        }
+        _json(handler, 200, payload)
+        return True
+
+    if path == '/api/adb/sms/read':
+        st = load_state()
+        inbox = st.get('inbox', [])
+        _json(handler, 200, {'messages': inbox, 'count': len(inbox)})
+        return True
+
+    if path == '/api/adb/sms/send':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        st = load_state()
+        if not st.get('connected'):
+            _json(handler, 503, {'ok': False, 'error': 'No ADB device connected'})
+            return True
+        serial = st['serial']
+        number = (req.get('to') or '').strip()
+        text = (req.get('body') or '').strip()
+        if not number or not text:
+            _json(handler, 400, {'ok': False, 'error': 'Missing to or body'})
+            return True
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'adb-bridge.py')
+        try:
+            out = subprocess.check_output(
+                [sys.executable, script, 'send', number, text],
+                stderr=subprocess.STDOUT, text=True, timeout=15
+            )
+            res = json.loads(out)
+            _json(handler, 200, res)
+        except Exception as e:
+            _json(handler, 500, {'ok': False, 'error': str(e)})
+        return True
+
+    return False
+
 # ── Request Handler ─────────────────────────────
 def _api_backup(handler, path, repo):
     import tempfile, glob, re
@@ -668,6 +734,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         if path.startswith('/api/auth/'):
             return _api_auth(self, path)
+
+        if path.startswith('/api/adb/'):
+            return _api_adb(self, path)
 
         return False
 

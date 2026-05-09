@@ -6,6 +6,7 @@ import { initBackup } from './apps/backup.js';
 import { initWeather } from './apps/weather.js';
 import { initITHub } from './apps/it-hub.js';
 import { initAuth, ensureAuthEnabled } from './apps/auth.js';
+import { initPhoneBridge } from './apps/phone-bridge.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -13,6 +14,7 @@ const APP_REGISTRY = [
   { id: 'todo', name: 'To-Do', icon: '✅', path: 'todo' },
   { id: 'chat', name: 'Hermes Chat', icon: '💬', path: 'chat' },
   { id: 'weather', name: 'Weather', icon: '☀️', path: 'weather' },
+  { id: 'phone', name: 'Phone Bridge', icon: '📱', path: 'phone' },
   { id: 'feedback', name: 'Feedback', icon: '💬', path: 'feedback' }
 ];
 
@@ -28,6 +30,7 @@ export function initApp() {
   initAgentStats();
   initBackup();
   initITHub();
+  initPhoneBridge();
   initWeather();
   initCalendar();
   initNotes();
