@@ -90,7 +90,7 @@
 || `T-026` | **Mini Games Arcade** — dedicated "Arcade" app tab with collection of quick casual games | `IN_PROGRESS` | **User directive.** Arcade cabinet aesthetic. Each game is a self-contained canvas-based module. Keep-me-busy mode. |
 || T-026-a | Arcade app shell + game launcher grid — 3x3 (or scrollable) grid of game cards with high scores | `DONE` | App card added to dashboard, nav link, CSS/JS modules. 7 games listed (Snake, Pong, Tetromino, Minesweeper, 2048, Typing, Reaction). All show "Coming Soon" placeholder. High score storage API ready (`saveHighScore`, `arcadeReportScore`). |
 || T-026-b | Game: Snake — classic snake, touch + keyboard controls, score + high score | `DONE` | Canvas-based. Speed increases with score. Particle effects on eat. Mobile swipe controls. Escape to exit. |
-|| T-026-c | Game: Pong — vs CPU, difficulty levels, score tracking | `PENDING` | Canvas-based. Touch drag for paddle on mobile. |
+||| T-026-c | Game: Pong — vs CPU, difficulty levels, score tracking | `DONE` | Canvas-based. Touch drag for paddle on mobile. Keyboard arrows/W/S. First to 7 wins. Particle effects on paddle hits. Auto difficulty ramp. |
 || T-026-d | Game: Tetromino (Tetris clone) — 7-bag randomizer, hold piece, next preview, line clear scoring | `PENDING` | Canvas-based. Touch controls: tap to rotate, swipe to move/drop. |
 | `T-026-e` | Game: Minesweeper — classic, 3 difficulties, flag mode, chord reveal, timer | `PENDING` | DOM-based grid. Right-click / long-press to flag. |
 | `T-026-f` | Game: 2048 — swipe/arrow to merge tiles, undo once per game, score + best | `PENDING` | DOM-based or canvas. Smooth slide animation via CSS transform. |
