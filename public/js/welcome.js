@@ -404,7 +404,7 @@ function startFadeOut() {
 
   const line1 = document.createElement('div');
   line1.className = 'welcome-farewell';
-  line1.textContent = `Welcome back, ${displayName}`;
+  line1.textContent = `Welcome, ${displayName}`;
   content.appendChild(line1);
 
   const line2 = document.createElement('div');
