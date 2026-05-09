@@ -274,3 +274,23 @@
     font-size: 0.9rem;
   }
 }
+
+/* ===== 2048 ===== */
+.two048-grid > div {
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+}
+
+.two048-wrap {
+  max-width: min(360px, 90vw);
+}
+
+.two048-grid {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .two048-wrap {
+    max-width: 400px;
+  }
+}

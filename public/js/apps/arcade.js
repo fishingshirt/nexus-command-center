@@ -4,7 +4,7 @@ const GAMES = [
   { id: 'pong', name: 'Pong', desc: 'VS CPU paddle battle.', icon: '🏓', comingSoon: false },
   { id: 'tetromino', name: 'Tetromino', desc: 'Block stacking with hold + preview.', icon: '🧱', comingSoon: false },
   { id: 'minesweeper', name: 'Minesweeper', desc: 'Find all mines. Flag carefully.', icon: '💣', comingSoon: false },
-  { id: 'two048', name: '2048', desc: 'Merge tiles to reach 2048.', icon: '🔢', comingSoon: true },
+  { id: 'two048', name: '2048', desc: 'Merge tiles to reach 2048.', icon: '🔢', comingSoon: false },
   { id: 'typing', name: 'Typing Speed', desc: 'Words per minute test.', icon: '⌨️', comingSoon: true },
   { id: 'reaction', name: 'Reaction', desc: 'Click when green. Measure ms.', icon: '⚡', comingSoon: true },
 ];
@@ -115,6 +115,11 @@ function launchGame(gameId) {
     canvas.style.display = 'none';
     dom.style.display = 'block';
     startMinesweeper(dom);
+  } else if (gameId === 'two048') {
+    const dom = document.getElementById('arcade-game-dom');
+    canvas.style.display = 'none';
+    dom.style.display = 'block';
+    startTwo048(dom);
   } else {
     drawPlaceholder(canvas, game);
   }
@@ -126,6 +131,7 @@ function launchGame(gameId) {
     stopPong();
     stopTetromino();
     stopMinesweeper();
+    stopTwo048();
     canvas.style.display = 'block';
     document.getElementById('arcade-game-dom').style.display = 'none';
     panel.classList.remove('active');
@@ -1580,6 +1586,277 @@ function startMinesweeper(container) {
 function stopMinesweeper() {
   if (mineState && mineState.cleanup) mineState.cleanup();
   mineState = null;
+}
+
+let t048State = null;
+let t048Timer = 0;
+
+function startTwo048(container) {
+  stopTwo048();
+  container.innerHTML = '';
+
+  const status = document.getElementById('arcade-game-status');
+  const scoreEl = document.getElementById('arcade-game-score');
+
+  const GRID_SIZE = 4;
+  let board = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+  let score = 0;
+  let best = getHighScores().two048 || 0;
+  let undoBoard = null;
+  let undoScore = 0;
+  let alive = true;
+  let won = false;
+
+  function addRandom() {
+    const empty = [];
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        if (board[y][x] === 0) empty.push({ x, y });
+      }
+    }
+    if (empty.length === 0) return false;
+    const cell = empty[Math.floor(Math.random() * empty.length)];
+    board[cell.y][cell.x] = Math.random() < 0.9 ? 2 : 4;
+    return true;
+  }
+
+  function newGame() {
+    board = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+    score = 0;
+    undoBoard = null;
+    undoScore = 0;
+    alive = true;
+    won = false;
+    addRandom();
+    addRandom();
+    render();
+    scoreEl.textContent = score;
+    if (status) status.textContent = 'Arrow keys or swipe to move';
+  }
+
+  function clone(b) {
+    return b.map(row => row.slice());
+  }
+
+  function slideRow(row) {
+    let filtered = row.filter(v => v !== 0);
+    for (let i = 0; i < filtered.length - 1; i++) {
+      if (filtered[i] === filtered[i + 1]) {
+        filtered[i] *= 2;
+        score += filtered[i];
+        filtered[i + 1] = 0;
+      }
+    }
+    filtered = filtered.filter(v => v !== 0);
+    while (filtered.length < GRID_SIZE) filtered.push(0);
+    return filtered;
+  }
+
+  function moveLeft() {
+    const before = clone(board);
+    for (let y = 0; y < GRID_SIZE; y++) {
+      board[y] = slideRow(board[y]);
+    }
+    return boardChanged(before);
+  }
+
+  function moveRight() {
+    const before = clone(board);
+    for (let y = 0; y < GRID_SIZE; y++) {
+      board[y] = slideRow(board[y].slice().reverse()).reverse();
+    }
+    return boardChanged(before);
+  }
+
+  function moveUp() {
+    const before = clone(board);
+    for (let x = 0; x < GRID_SIZE; x++) {
+      const col = [];
+      for (let y = 0; y < GRID_SIZE; y++) col.push(board[y][x]);
+      const merged = slideRow(col);
+      for (let y = 0; y < GRID_SIZE; y++) board[y][x] = merged[y];
+    }
+    return boardChanged(before);
+  }
+
+  function moveDown() {
+    const before = clone(board);
+    for (let x = 0; x < GRID_SIZE; x++) {
+      const col = [];
+      for (let y = 0; y < GRID_SIZE; y++) col.push(board[y][x]);
+      const merged = slideRow(col.reverse()).reverse();
+      for (let y = 0; y < GRID_SIZE; y++) board[y][x] = merged[y];
+    }
+    return boardChanged(before);
+  }
+
+  function boardChanged(before) {
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        if (before[y][x] !== board[y][x]) return true;
+      }
+    }
+    return false;
+  }
+
+  function hasMoves() {
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        if (board[y][x] === 0) return true;
+        if (x < GRID_SIZE - 1 && board[y][x] === board[y][x + 1]) return true;
+        if (y < GRID_SIZE - 1 && board[y][x] === board[y + 1][x]) return true;
+      }
+    }
+    return false;
+  }
+
+  function tryMove(fn) {
+    if (!alive) return;
+    undoBoard = clone(board);
+    undoScore = score;
+    const changed = fn();
+    if (changed) {
+      addRandom();
+      if (!won && board.flat().includes(2048)) {
+        won = true;
+        if (status) status.textContent = 'You reached 2048! Keep going.';
+      }
+      if (!hasMoves()) {
+        alive = false;
+        if (status) status.textContent = 'Game Over — SPACE or tap to restart';
+        arcadeReportScore('two048', score);
+      }
+      render();
+      scoreEl.textContent = score;
+    }
+  }
+
+  const TILE_COLORS = {
+    2: { bg: 'rgba(255,255,255,0.18)', text: '#e2e8f0' },
+    4: { bg: 'rgba(255,255,255,0.22)', text: '#e2e8f0' },
+    8: { bg: '#fb923c33', text: '#fdba74' },
+    16: { bg: '#f9731633', text: '#fb923c' },
+    32: { bg: '#ef444433', text: '#fca5a5' },
+    64: { bg: '#dc262633', text: '#fecaca' },
+    128: { bg: '#eab30833', text: '#fde047' },
+    256: { bg: '#ca8a0433', text: '#fcd34d' },
+    512: { bg: '#a855f733', text: '#e9d5ff' },
+    1024: { bg: '#7c3aed33', text: '#c4b5fd' },
+    2048: { bg: 'var(--accent)', text: '#fff' },
+  };
+
+  function render() {
+    container.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'two048-wrap';
+    wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.75rem;width:100%;max-width:360px;';
+
+    const scoreRow = document.createElement('div');
+    scoreRow.style.cssText = 'display:flex;gap:0.75rem;justify-content:center;width:100%;';
+
+    function mkBox(label, value) {
+      const b = document.createElement('div');
+      b.style.cssText = 'flex:1;background:var(--surface-raised);border-radius:var(--radius);padding:0.4rem 0.6rem;text-align:center;border:1px solid var(--border);';
+      b.innerHTML = `<div style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;">${label}</div><div style="font-size:1.1rem;font-weight:700;color:var(--text);">${value}</div>`;
+      return b;
+    }
+    scoreRow.appendChild(mkBox('Score', score));
+    scoreRow.appendChild(mkBox('Best', Math.max(best, score)));
+    wrap.appendChild(scoreRow);
+
+    const grid = document.createElement('div');
+    grid.className = 'two048-grid';
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;background:rgba(255,255,255,0.06);padding:0.5rem;border-radius:var(--radius-lg);width:100%;aspect-ratio:1;';
+
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const val = board[y][x];
+        const cell = document.createElement('div');
+        const style = TILE_COLORS[val] || { bg: 'transparent', text: 'var(--text)' };
+        cell.style.cssText = `display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${val >= 1000 ? '1.1rem' : '1.35rem'};border-radius:var(--radius);background:${style.bg};color:${style.text};transition:transform 0.15s,background 0.15s;`;
+        cell.textContent = val || '';
+        grid.appendChild(cell);
+      }
+    }
+    wrap.appendChild(grid);
+
+    const controls = document.createElement('div');
+    controls.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;';
+    const btn = (label, action) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.style.cssText = 'padding:0.35rem 0.7rem;font-size:0.8rem;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;';
+      b.addEventListener('click', action);
+      return b;
+    };
+    controls.appendChild(btn('New Game', newGame));
+    controls.appendChild(btn('Undo', () => {
+      if (undoBoard && alive) {
+        board = clone(undoBoard);
+        score = undoScore;
+        undoBoard = null;
+        render();
+        scoreEl.textContent = score;
+      }
+    }));
+    wrap.appendChild(controls);
+
+    container.appendChild(wrap);
+  }
+
+  function onKey(e) {
+    if (!alive && e.code === 'Space') { e.preventDefault(); newGame(); return; }
+    if (!alive) return;
+    if (['ArrowLeft','KeyA'].includes(e.code)) { e.preventDefault(); tryMove(moveLeft); }
+    else if (['ArrowRight','KeyD'].includes(e.code)) { e.preventDefault(); tryMove(moveRight); }
+    else if (['ArrowUp','KeyW'].includes(e.code)) { e.preventDefault(); tryMove(moveUp); }
+    else if (['ArrowDown','KeyS'].includes(e.code)) { e.preventDefault(); tryMove(moveDown); }
+    else if (e.code === 'KeyZ' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); /* undo shortcut handled by button */ }
+    else if (e.code === 'Escape') {
+      e.preventDefault();
+      stopTwo048();
+      document.getElementById('arcade-game-panel').classList.remove('active');
+    }
+  }
+
+  let touchStartX = 0, touchStartY = 0;
+  function onTouchStart(e) {
+    if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  }
+  function onTouchEnd(e) {
+    if (!alive) { newGame(); return; }
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const absDx = Math.abs(dx), absDy = Math.abs(dy);
+    if (Math.max(absDx, absDy) < 24) return;
+    if (absDx > absDy) {
+      if (dx > 0) tryMove(moveRight); else tryMove(moveLeft);
+    } else {
+      if (dy > 0) tryMove(moveDown); else tryMove(moveUp);
+    }
+  }
+
+  document.addEventListener('keydown', onKey);
+  container.addEventListener('touchstart', onTouchStart, { passive: true });
+  container.addEventListener('touchend', onTouchEnd, { passive: true });
+
+  t048State = {
+    cleanup() {
+      document.removeEventListener('keydown', onKey);
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchend', onTouchEnd);
+    }
+  };
+
+  newGame();
+}
+
+function stopTwo048() {
+  if (t048State && t048State.cleanup) t048State.cleanup();
+  t048State = null;
 }
 
 /* Public API for game modules */
