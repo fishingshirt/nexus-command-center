@@ -673,7 +673,8 @@ body {
   font-weight: 500;
 }
 
-.settings-row select {
+.settings-row select,
+.settings-row input[type="text"] {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -681,6 +682,14 @@ body {
   color: var(--text);
   font-size: var(--font-size-sm);
   cursor: pointer;
+}
+
+.settings-row input[type="text"] {
+  cursor: text;
+  min-width: 180px;
+  flex: 1;
+  margin-left: var(--space-4);
+  max-width: 260px;
 }
 
 .toggle {
@@ -748,6 +757,64 @@ body {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
   margin-bottom: var(--space-1);
+}
+
+.settings-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+  line-height: 1.4;
+}
+
+.sync-status-row {
+  justify-content: flex-start;
+  gap: var(--space-4);
+}
+
+.sync-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.sync-status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sync-status-badge.linked {
+  background: rgba(99,102,241,0.12);
+  color: #6366f1;
+}
+
+.sync-status-badge.synced {
+  background: rgba(16,185,129,0.12);
+  color: #10b981;
+}
+
+.sync-status-badge.error {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+}
+
+.sync-actions {
+  justify-content: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sync-actions .btn-secondary {
+  width: auto;
+  margin-bottom: 0;
 }
 
 .settings-backdrop {

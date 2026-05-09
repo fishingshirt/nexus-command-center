@@ -15,6 +15,7 @@ export function initApp() {
   initNavigation();
   initTheme();
   initSettings();
+  initCalendarSync();
   initWelcome();
   initChat();
   initFeedback();
@@ -251,6 +252,95 @@ function initSettings() {
       setTimeout(() => location.reload(), 1200);
     }
   });
+}
+
+/* ===== CALENDAR SYNC ===== */
+function initCalendarSync() {
+  const clientIdEl = document.getElementById('sync-client-id');
+  const apiKeyEl = document.getElementById('sync-api-key');
+  const autoEl = document.getElementById('sync-auto');
+  const intervalEl = document.getElementById('sync-interval');
+  const badge = document.getElementById('sync-status-badge');
+  const syncNowBtn = document.getElementById('btn-sync-now');
+  const unlinkBtn = document.getElementById('btn-sync-unlink');
+
+  // Restore saved config
+  const settings = loadSettings();
+  const sync = settings.calendarSync || {};
+  if (clientIdEl) clientIdEl.value = sync.clientId || '';
+  if (apiKeyEl) apiKeyEl.value = sync.apiKey || '';
+  if (autoEl) autoEl.checked = sync.autoSync || false;
+  if (intervalEl) intervalEl.value = String(sync.intervalMin || 60);
+
+  updateSyncBadge(sync.status || 'none');
+  if (unlinkBtn) unlinkBtn.style.display = (sync.status === 'linked' || sync.status === 'synced') ? 'inline-flex' : 'none';
+
+  function persist() {
+    const next = {
+      clientId: clientIdEl?.value.trim() || '',
+      apiKey: apiKeyEl?.value.trim() || '',
+      autoSync: autoEl?.checked || false,
+      intervalMin: parseInt(intervalEl?.value || '60', 10),
+      status: (loadSettings().calendarSync || {}).status || 'none'
+    };
+    saveSettings({ calendarSync: next });
+  }
+
+  clientIdEl?.addEventListener('input', () => {
+    persist();
+    if (clientIdEl.value.trim()) updateSyncBadge('linked');
+    else updateSyncBadge('none');
+    if (unlinkBtn) unlinkBtn.style.display = clientIdEl.value.trim() ? 'inline-flex' : 'none';
+  });
+
+  apiKeyEl?.addEventListener('input', persist);
+  autoEl?.addEventListener('change', () => { persist(); toast(autoEl.checked ? 'Auto-sync enabled' : 'Auto-sync disabled'); });
+  intervalEl?.addEventListener('change', persist);
+
+  syncNowBtn?.addEventListener('click', () => {
+    if (!clientIdEl?.value.trim() && !apiKeyEl?.value.trim()) {
+      toast('Enter an API key or OAuth client ID first', 'error');
+      return;
+    }
+    updateSyncBadge('synced');
+    const cfg = loadSettings().calendarSync || {};
+    cfg.status = 'synced';
+    cfg.lastSynced = new Date().toISOString();
+    saveSettings({ calendarSync: cfg });
+    toast('Calendar synced (stub — full sync in T-009-e-b/c)');
+  });
+
+  unlinkBtn?.addEventListener('click', () => {
+    if (!confirm('Unlink Google Calendar?')) return;
+    if (clientIdEl) clientIdEl.value = '';
+    if (apiKeyEl) apiKeyEl.value = '';
+    saveSettings({ calendarSync: { status: 'none' } });
+    updateSyncBadge('none');
+    unlinkBtn.style.display = 'none';
+    toast('Calendar unlinked');
+  });
+
+  function updateSyncBadge(status) {
+    if (!badge) return;
+    badge.className = 'sync-status-badge';
+    const map = {
+      none: { text: 'Not linked', cls: '' },
+      linked: { text: 'Linked', cls: 'linked' },
+      synced: { text: 'Synced', cls: 'synced' },
+      error: { text: 'Error', cls: 'error' }
+    };
+    const m = map[status] || map.none;
+    badge.textContent = m.text;
+    if (m.cls) badge.classList.add(m.cls);
+
+    // Update toolbar dot in Calendar app
+    const dot = document.getElementById('calendar-sync-dot');
+    if (dot) {
+      dot.className = 'calendar-sync-dot';
+      if (m.cls) dot.classList.add(m.cls);
+      dot.title = `Google Calendar: ${m.text}`;
+    }
+  }
 }
 
 /* ===== WELCOME ===== */

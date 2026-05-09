@@ -10,13 +10,13 @@
 | Metric | Value |
 |--------|-------|
 || **Project Phase** | `APP_EXPANSION` |
-|| **Last Agent Run** | 2026-05-09 (T-010 Notes + T-011 To-Do done) |
+|| **Last Agent Run** | 2026-05-09 (T-009-e-a Google Calendar sync settings UI done) |
 || **Active Tasks** | 7 (T-009, T-021, T-022 in progress/done + T-024/25/26/27/28 pending) |
-|| **Completed Tasks** | 16 (T-001 through T-008, T-009-a/b/c/d, T-021-a, T-023, T-010, T-011) |
-| **Bugs Found** | 0 |
-| **Next Wake** | *(set by cron)* |
+|| **Completed Tasks** | 17 (T-001 through T-008, T-009-a/b/c/d/e-a, T-021-a, T-023, T-010, T-011) |
+|| **Bugs Found** | 0 |
+|| **Next Wake** | *(set by cron)* |
 
-|**Current Focus:** Agent can pick up highest-priority pending task: T-009-e (Google Calendar sync) or any new user-requested feature.
+||**Current Focus:** Agent can pick up highest-priority pending task: T-009-e-b (Google Calendar OAuth/API wiring) or any new user-requested feature.
 
 ---
 
@@ -37,13 +37,17 @@
 ### 🟡 HIGH (Next Sprint)
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| `T-009` | Calendar app — full CRUD, month/week/day views, localStorage persistence | `IN_PROGRESS` | Month view + CRUD + persistence done. Week/day view pending T-009-d. |
+| `T-009` | Calendar app — full CRUD, month/week/day views, localStorage persistence | `IN_PROGRESS` | Month/week/day + CRUD + persistence done. Google Calendar sync sub-tasks in progress (T-009-e-a done, T-009-e-b/c/d pending). Recurring events pending T-009-f. |
 | `T-009-a` | Calendar month grid renderer + navigation | `DONE` | Month view with prev/next/today buttons. |
 | `T-009-b` | Calendar event CRUD modal | `DONE` | Add/edit/delete events with title/time/description/category. |
 | `T-009-c` | Calendar localStorage persistence | `DONE` | Events load/save to `ncc-calendar-events`. |
 | `T-009-d` | Calendar week/day views | `DONE` | Month/week/day switchable. Responsive. Events clickable. |
-| `T-009-e` | **Google Calendar sync** — OAuth2 + API integration, settings panel auth, auto/manual sync, status indicator | `PENDING` | **User directive.** Settings panel needs Google Calendar token/API field. Manual + auto sync checks. Shows 'linked' / 'synced' / 'error' status. Falls back to localStorage if no auth. |
-| `T-009-f` | Calendar recurring events engine | `PENDING` | Weekly/monthly/yearly recurrence rules. |
+| `T-009-e` | **Google Calendar sync** — OAuth2 + API integration, settings panel auth, auto/manual sync, status indicator | `IN_PROGRESS` | Broken into sub-tasks below. |
+| `T-009-e-a` | Google Calendar sync — Settings panel UI for auth, toggle, manual sync button, status display | `DONE` | Settings section with API key / OAuth fields, auto-sync toggle, manual sync trigger, status indicator (linked/synced/error). Stores config in ncc-settings.calendarSync. Toolbar dot reflects status. |
+| `T-009-e-b` | Google Calendar sync — OAuth2 + API client wiring (gapi script injection, token refresh) | `PENDING` | Requires Google Cloud project. Script loads gapi, handles sign-in, stores token. |
+| `T-009-e-c` | Google Calendar sync — Sync engine (read events, merge with localStorage) | `PENDING` | Fetch events list, merge into ncc-calendar-events with gcalId field, handle conflicts. |
+| `T-009-e-d` | Google Calendar sync — Auto-sync background loop + Calendar header status dot | `PENDING` | Poll every N minutes when enabled. Show green/amber/red dot in calendar toolbar. |
+|| `T-009-f` | Calendar recurring events engine | `PENDING` | Weekly/monthly/yearly recurrence rules. |
 || `T-010` | Notes app — rich text or markdown editor, folders/tags, search | `DONE` | Plain-text editor with CRUD, auto-save, search, and sidebar list. localStorage persistence. Markdown rendering + folders/tags deferred. |
 || `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `DONE` | CRUD, priorities, due dates, filters (all/active/completed), clear completed, localStorage persistence, reactive badge count. Recurring + drag-and-drop deferred. |
 | `T-012` | Hermes API bridge — real chat backend integration | `PENDING` | Research how to pipe messages to/from Hermes. |
@@ -222,7 +226,7 @@ nexus-command-center/
 
 ## 🕐 LAST UPDATED
 
-*2026-05-09* — Initial scaffold complete. Agent can now pick up T-009 and beyond.
+*2026-05-09* — T-009-e-a Google Calendar sync settings UI complete.
 
 ---
 
