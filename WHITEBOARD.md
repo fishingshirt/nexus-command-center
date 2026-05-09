@@ -10,11 +10,11 @@
 | Metric | Value |
 |--------|-------|
 | **Project Phase** | `SECURITY & CLOUD` |
-| **Last Agent Run** | 2026-05-09 (T-029 IT Hub complete, T-030/031 added) |
+| **Last Agent Run** | 2026-05-09 (T-014-b/c PIN auth frontend + IT Hub card complete) |
 | **Active Tasks** | 9 (T-024 through T-028, T-030-f, T-031, T-032, T-033) |
-| **Completed Tasks** | 36 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-029 + subtasks, T-030 + subtasks a–e) |
+| **Completed Tasks** | 39 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-029 + subtasks, T-030 + subtasks a–e) |
 
-|**Current Focus:** T-030-d DONE. Backup history endpoint live + download support. Next: T-030-e (restore endpoint) so the Backup UI has full end-to-end protection — create, download, restore.
+|**Current Focus:** T-014 opt-in PIN auth system complete (frontend overlay, settings integration, IT Hub card). Next: T-030-f (Backup health auto-check) or T-024 (Phone Bridge).
 
 ---
 
@@ -50,10 +50,10 @@
 | `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `DONE` | CRUD, priorities, due dates, filters (all/active/completed), clear completed, localStorage persistence, reactive badge count. Recurring + drag-and-drop deferred. |
 | `T-012` | Hermes API bridge — real chat backend integration | `PENDING` | Research how to pipe messages to/from Hermes. |
 | `T-013` | Data persistence layer — migrate from `localStorage` to a real DB (SQLite/JSON file on server) | `PENDING` | Required before multi-device sync. |
-|| `T-014` | **Opt-in Auth System** — no login required by default. Optional per-app PIN lock (Calendar, Notes, To-Do). Configured in IT Hub. All data stays local. | `IN_PROGRESS` | **User directive.** Default = no auth, site loads immediately on open. IT Hub shows "Auth: Off" with gray badge. User can enable a simple 4–6 digit PIN (bcrypt-hashed on server in `~/.hermes/nexus-auth.json`). When enabled, targeted apps show an unlock overlay before content. No JWT/session cookies — just a `pinVerified` flag in session-level `sessionStorage` per app. If PIN is forgotten, user resets via IT Hub after re-entering current PIN or deleting the hash file on server. Broken into subtasks below. |
+|| `T-014` | **Opt-in Auth System** — no login required by default. Optional per-app PIN lock (Calendar, Notes, To-Do). Configured in IT Hub. All data stays local. | `DONE` | **User directive.** Default = no auth, site loads immediately on open. IT Hub shows "Auth: Off" with gray badge. User can enable a simple 4–6 digit PIN. Frontend overlay (T-014-b), settings integration, and IT Hub card (T-014-c) complete. Server endpoints: status, register, verify, remove. All subtasks done. |
 || `T-014-a` | Server-side PIN hash endpoint — `GET /api/auth/status`, `POST /api/auth/register` (set PIN via PBKDF2+HMAC+salt), `POST /api/auth/verify` | `DONE` | Stores hashed PIN + salt in `~/.hermes/nexus-auth.json`. Returns `{pinEnabled:boolean}` and `{ok:boolean}` for verify. Python `hashlib` only, no bcrypt dep needed. PIN is 4-6 digits; PBKDF2 500k rounds. POST handled in do_POST and _api_handler. |
-|| `T-014-b` | Frontend PIN overlay + settings integration | `PENDING` | Unlock overlay for locked apps (Calendar, Notes, To-Do). Settings section "Security" with PIN create/confirm, per-app checkboxes, status badge. |
-|| `T-014-c` | IT Hub Auth card update — show real PIN status instead of "Not implemented" | `PENDING` | Once T-014-b lands, wire `it-auth` card to display "Auth: Off/On" and lock status per app. |
+||| `T-014-b` | Frontend PIN overlay + settings integration | `DONE` | Unlock overlay for locked apps (Calendar, Notes, To-Do). Settings section "Security" with PIN create/confirm, per-app checkboxes, status badge. |
+||| `T-014-c` | IT Hub Auth card update — show real PIN status instead of "Not implemented" | `DONE` | `it-auth` card displays "Auth: Off/On" and lock status per app. Server `/api/auth/remove` added. Settings disable flow uses new endpoint. |
 | `T-015` | Offline mode — service worker caches assets + data | `DONE` | Indicator in header, stale-while-revalidate caching, offline-aware Google Calendar sync pause, data queue for background sync. |
 | `T-015-a` | Enhanced service worker with stale-while-revalidate for assets and offline indicator in header bar | `DONE` | SW version bumped to nexus-v2, caches all app CSS/JS/assets. |
 

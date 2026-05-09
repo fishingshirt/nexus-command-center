@@ -88,18 +88,14 @@ function initAuthSettings() {
   document.getElementById('btn-auth-disable').addEventListener('click', async () => {
     const pin = prompt('Enter current PIN to remove lock:');
     if (!pin) return;
-    const resp = await fetch('/api/auth/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pin}) });
+    const resp = await fetch('/api/auth/remove', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pin}) });
     const data = await resp.json().catch(() => ({}));
     if (data.ok) {
-      if (!confirm('Remove PIN lock? All app locks will be disabled.')) return;
-      try {
-        await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pin}) });
-      } catch {}
       saveSettings({ lockedApps: {} });
       toast('PIN lock disabled');
       refreshAuthUI();
     } else {
-      toast('Incorrect PIN', 'error');
+      toast(data.error || 'Incorrect PIN', 'error');
     }
   });
 

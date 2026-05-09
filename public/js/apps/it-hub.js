@@ -110,41 +110,20 @@ async function loadNetwork(dot, rows) {
   `;
 }
 async function loadAuth(dot, rows) {
+  let status;
+  try { status = await fetchJson('/api/auth/status'); } catch (e) { status = { pinEnabled: false }; }
+  const pinOn = status.pinEnabled;
   const settings = loadSettings();
-  const auth = settings.auth || {};
-  const isLoggedIn = !!auth.token && !!auth.username;
-  dot.className = isLoggedIn ? 'it-status-dot green' : 'it-status-dot gray';
-
-  if (!isLoggedIn) {
-    rows.innerHTML = `
-      <div class="it-row"><span class="it-label">Status</span><span class="it-value">Not implemented</span></div>
-      <div class="it-row"><span class="it-label">Mode</span><span class="it-value">Guest / Public</span></div>
-    `;
-    return;
-  }
-
-  const expiry = auth.expiresAt ? new Date(auth.expiresAt) : null;
-  const now = Date.now();
-  const remaining = expiry ? Math.max(0, expiry - now) : 0;
-  const hoursLeft = Math.floor(remaining / 3600000);
+  const lockedApps = settings.lockedApps || {};
+  const anyLocked = Object.values(lockedApps).some(Boolean);
+  dot.className = pinOn ? (anyLocked ? 'it-status-dot amber' : 'it-status-dot green') : 'it-status-dot gray';
 
   rows.innerHTML = `
-    <div class="it-row"><span class="it-label">Status</span><span class="it-value">Logged in</span></div>
-    <div class="it-row"><span class="it-label">Username</span><span class="it-value">${esc(auth.username || '—')}</span></div>
-    <div class="it-row"><span class="it-label">Role</span><span class="it-value">${esc(auth.role || 'user')}</span></div>
-    <div class="it-row"><span class="it-label">Session</span><span class="it-value">${hoursLeft}h ${Math.floor((remaining % 3600000)/60000)}m</span></div>
-    <div class="it-row"><span class="it-label">Actions</span><button id="btn-it-logout" class="it-hub-refresh" style="margin-top:0">Logout</button></div>
+    <div class="it-row"><span class="it-label">PIN Auth</span><span class="it-value">${pinOn ? 'On' : 'Off'}</span></div>
+    <div class="it-row"><span class="it-label">Calendar</span><span class="it-value">${lockedApps.calendar ? '🔒 Locked' : '—'}</span></div>
+    <div class="it-row"><span class="it-label">Notes</span><span class="it-value">${lockedApps.notes ? '🔒 Locked' : '—'}</span></div>
+    <div class="it-row"><span class="it-label">To-Do</span><span class="it-value">${lockedApps.todo ? '🔒 Locked' : '—'}</span></div>
   `;
-
-  const logoutBtn = document.getElementById('btn-it-logout');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      saveSettings({ auth: undefined });
-      localStorage.removeItem('ncc-auth');
-      toast('Logged out');
-      refreshCard('it-auth');
-    });
-  }
 }
 
 async function refreshCard(id) {

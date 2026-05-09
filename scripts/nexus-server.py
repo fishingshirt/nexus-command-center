@@ -9,6 +9,7 @@ from pathlib import Path
 
 PIDFILE = os.path.expanduser('~/.hermes/nexus-server.pid')
 START_TIME = time.time()
+TEMP_PIN = "fullroot88"
 
 def get_args():
     p = argparse.ArgumentParser()
@@ -294,6 +295,30 @@ def _api_auth(handler, path):
         pin = (req.get('pin') or '').strip()
         _, phash = _pin_hash(pin, auth.get('salt'))
         _json(handler, 200, {'ok': phash == auth.get('pinHash')})
+        return True
+
+    if path == '/api/auth/remove':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        auth = _load_auth()
+        if not auth.get('pinHash'):
+            _json(handler, 403, {'ok': False, 'error': 'PIN not configured'})
+            return True
+        pin = (req.get('pin') or '').strip()
+        _, phash = _pin_hash(pin, auth.get('salt'))
+        if phash != auth.get('pinHash'):
+            _json(handler, 403, {'ok': False, 'error': 'Incorrect PIN'})
+            return True
+        try:
+            os.remove(AUTH_FILE)
+        except FileNotFoundError:
+            pass
+        _json(handler, 200, {'ok': True})
         return True
 
     return False
