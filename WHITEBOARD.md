@@ -25,14 +25,14 @@
 ### 🔴 CRITICAL (Do These Now)
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| `T-001` | Build `index.html` — main dashboard shell with app grid, nav, chat widget placeholder | `PENDING` | Must be mobile-first. Use semantic HTML. |
-| `T-002` | Implement theme engine — CSS variables + 6 themes (Professional default + 5 alternates) | `PENDING` | Themes: Professional, Midnight Hacker, Sakura Garden, Space Odyssey, Retro Arcade, Ocean Breeze. |
-| `T-003` | Build Settings panel — theme switcher, reset welcome screen toggle | `PENDING` | Settings stored in `localStorage`. |
-| `T-004` | Create Welcome / Onboarding overlay — dramatic intro with music, tagline "Adapt. Learn. Build." | `PENDING` | Must have a "Replay Intro" button in Settings. |
-| `T-005` | Scaffold app containers — Calendar, Notes, To-Do, Chat | `PENDING` | Empty shells with icons and grid layout. Make them pluggable. |
-| `T-006` | Implement Chat widget — mini Hermes chat window with `/new` command | `PENDING` | Fixed bottom-right. Persists message history to `localStorage`. |
-| `T-007` | Add PWA support — `manifest.json`, service worker, icons for phone install | `PENDING` | This is how it becomes "an app" on phone. |
-| `T-008` | Dockerize — `Dockerfile` + `docker-compose.yml`, nginx static serve | `PENDING` | Expose port 8080. Mount volume for data persistence. |
+| `T-001` | Build `index.html` — main dashboard shell with app grid, nav, chat widget placeholder | `DONE` | Must be mobile-first. Use semantic HTML. |
+| `T-002` | Implement theme engine — CSS variables + 6 themes (Professional default + 5 alternates) | `DONE` | Themes: Professional, Midnight Hacker, Sakura Garden, Space Odyssey, Retro Arcade, Ocean Breeze. |
+| `T-003` | Build Settings panel — theme switcher, reset welcome screen toggle | `DONE` | Settings stored in `localStorage`. |
+| `T-004` | Create Welcome / Onboarding overlay — dramatic intro with music, tagline "Adapt. Learn. Build." | `DONE` | Must have a "Replay Intro" button in Settings. |
+| `T-005` | Scaffold app containers — Calendar, Notes, To-Do, Chat | `DONE` | Empty shells with icons and grid layout. Make them pluggable. |
+| `T-006` | Implement Chat widget — mini Hermes chat window with `/new` command | `DONE` | Fixed bottom-right. Persists message history to `localStorage`. |
+| `T-007` | Add PWA support — `manifest.json`, service worker, icons for phone install | `DONE` | This is how it becomes "an app" on phone. |
+| `T-008` | Dockerize — `Dockerfile` + `docker-compose.yml`, nginx static serve | `DONE` | Expose port 8080. Mount volume for data persistence. |
 
 ### 🟡 HIGH (Next Sprint)
 | ID | Task | Status | Notes |
