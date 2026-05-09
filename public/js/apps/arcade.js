@@ -3,7 +3,7 @@ const GAMES = [
   { id: 'snake', name: 'Snake', desc: 'Classic snake. Eat, grow, don\'t crash.', icon: '🐍', comingSoon: false },
   { id: 'pong', name: 'Pong', desc: 'VS CPU paddle battle.', icon: '🏓', comingSoon: false },
   { id: 'tetromino', name: 'Tetromino', desc: 'Block stacking with hold + preview.', icon: '🧱', comingSoon: false },
-  { id: 'minesweeper', name: 'Minesweeper', desc: 'Find all mines. Flag carefully.', icon: '💣', comingSoon: true },
+  { id: 'minesweeper', name: 'Minesweeper', desc: 'Find all mines. Flag carefully.', icon: '💣', comingSoon: false },
   { id: 'two048', name: '2048', desc: 'Merge tiles to reach 2048.', icon: '🔢', comingSoon: true },
   { id: 'typing', name: 'Typing Speed', desc: 'Words per minute test.', icon: '⌨️', comingSoon: true },
   { id: 'reaction', name: 'Reaction', desc: 'Click when green. Measure ms.', icon: '⚡', comingSoon: true },
@@ -110,6 +110,11 @@ function launchGame(gameId) {
     startPong(canvas);
   } else if (gameId === 'tetromino') {
     startTetromino(canvas);
+  } else if (gameId === 'minesweeper') {
+    const dom = document.getElementById('arcade-game-dom');
+    canvas.style.display = 'none';
+    dom.style.display = 'block';
+    startMinesweeper(dom);
   } else {
     drawPlaceholder(canvas, game);
   }
@@ -120,6 +125,9 @@ function launchGame(gameId) {
     stopSnake();
     stopPong();
     stopTetromino();
+    stopMinesweeper();
+    canvas.style.display = 'block';
+    document.getElementById('arcade-game-dom').style.display = 'none';
     panel.classList.remove('active');
   };
 }
@@ -1265,6 +1273,313 @@ function stopTetromino() {
   clearInterval(tetroInterval);
   if (tetroState && tetroState.cleanup) tetroState.cleanup();
   tetroState = null;
+}
+
+/* ===== MINESWEEPER ===== */
+let mineTimer = 0;
+let mineState = null;
+
+function startMinesweeper(container) {
+  stopMinesweeper();
+  container.innerHTML = '';
+
+  const DIFFICULTIES = {
+    easy:   { cols: 9,  rows: 9,  mines: 10 },
+    medium: { cols: 16, rows: 16, mines: 40 },
+    hard:   { cols: 30, rows: 16, mines: 99 },
+  };
+
+  let difficulty = 'easy';
+  let { cols, rows, mines } = DIFFICULTIES[difficulty];
+  let board = []; // each cell: { mine, revealed, flagged, neighborMines }
+  let alive = false;
+  let started = false;
+  let flags = 0;
+  let time = 0;
+  let timerInterval = 0;
+  let firstClick = true;
+
+  const status = document.getElementById('arcade-game-status');
+  const scoreEl = document.getElementById('arcade-game-score');
+
+  function buildUI() {
+    container.innerHTML = '';
+    container.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.75rem;background:#0a0a0a;padding:0.5rem;overflow:auto;';
+
+    // Toolbar
+    const toolbar = document.createElement('div');
+    toolbar.className = 'minesweeper-toolbar';
+    toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;justify-content:center;flex-wrap:wrap;';
+
+    ['easy','medium','hard'].forEach(d => {
+      const btn = document.createElement('button');
+      btn.textContent = d[0].toUpperCase() + d.slice(1);
+      btn.className = 'minesweeper-diff-btn';
+      btn.style.cssText = 'padding:0.35rem 0.6rem;font-size:0.75rem;border-radius:0.4rem;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-weight:600;';
+      if (d === difficulty) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)'; }
+      btn.onclick = () => { difficulty = d; newGame(); };
+      toolbar.appendChild(btn);
+    });
+
+    const stats = document.createElement('div');
+    stats.className = 'minesweeper-stats';
+    stats.style.cssText = 'display:flex;gap:1rem;font-size:0.85rem;color:var(--text-secondary);font-variant-numeric:tabular-nums;';
+    const minesEl = document.createElement('span');
+    const timeEl = document.createElement('span');
+    stats.appendChild(minesEl);
+    stats.appendChild(timeEl);
+
+    toolbar.appendChild(stats);
+    container.appendChild(toolbar);
+
+    // Grid
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'minesweeper-grid-wrap';
+    gridWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;flex:1;overflow:auto;width:100%;';
+
+    const grid = document.createElement('div');
+    grid.id = 'minesweeper-grid';
+    grid.className = 'minesweeper-grid';
+    grid.style.cssText = `display:grid;grid-template-columns:repeat(${cols}, 1fr);gap:2px;background:var(--border);padding:2px;border-radius:var(--radius);`;
+    grid.setAttribute('role', 'grid');
+    grid.setAttribute('aria-label', 'Minesweeper board');
+
+    gridWrap.appendChild(grid);
+    container.appendChild(gridWrap);
+
+    return { grid, minesEl, timeEl };
+  }
+
+  const { grid, minesEl, timeEl } = buildUI();
+
+  function updateStats() {
+    minesEl.textContent = `Mines: ${mines - flags}`;
+    timeEl.textContent = `Time: ${time}`;
+    if (scoreEl) scoreEl.textContent = String(time);
+  }
+
+  function newGame() {
+    stopTimer();
+    ({ cols, rows, mines } = DIFFICULTIES[difficulty]);
+    const ui = buildUI();
+    Object.assign(grid, ui.grid);
+    Object.assign(minesEl, ui.minesEl);
+    Object.assign(timeEl, ui.timeEl);
+    board = [];
+    alive = true;
+    started = true;
+    flags = 0;
+    time = 0;
+    firstClick = true;
+    updateStats();
+    renderGrid();
+    if (status) status.textContent = 'Left click = reveal. Long-press / right-click = flag';
+  }
+
+  function placeMines(excludeIndex) {
+    const cells = Array.from({ length: cols * rows }, (_, i) => i);
+    // Exclude area around first click (3x3)
+    const exX = excludeIndex % cols;
+    const exY = Math.floor(excludeIndex / cols);
+    const safeSet = new Set();
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = exX + dx, ny = exY + dy;
+        if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) safeSet.add(ny * cols + nx);
+      }
+    }
+    const candidates = cells.filter(i => !safeSet.has(i));
+    // Fisher-Yates shuffle for randomness
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    const mineSet = new Set(candidates.slice(0, mines));
+    board = Array.from({ length: rows }, (_, y) =
+      Array.from({ length: cols }, (_, x) => {
+        const idx = y * cols + x;
+        return { mine: mineSet.has(idx), revealed: false, flagged: false, neighborMines: 0 };
+      })
+    );
+    // Count neighbors
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x + dx, ny = y + dy;
+            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && board[ny][nx].mine) n++;
+          }
+        }
+        board[y][x].neighborMines = n;
+      }
+    }
+  }
+
+  function renderGrid() {
+    const g = document.getElementById('minesweeper-grid');
+    if (!g) return;
+    g.innerHTML = '';
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const cell = board[y][x];
+        const el = document.createElement('button');
+        el.className = 'minesweeper-cell';
+        el.dataset.x = x;
+        el.dataset.y = y;
+        el.setAttribute('role', 'gridcell');
+        el.style.cssText = 'width:28px;height:28px;border:none;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.1s;';
+        if (cell.revealed) {
+          el.style.background = 'rgba(255,255,255,0.08)';
+          if (cell.mine) {
+            el.textContent = '💥';
+            el.style.background = '#ef4444';
+          } else if (cell.neighborMines > 0) {
+            const colors = ['','#3b82f6','#22c55e','#ef4444','#a855f7','#f97316','#06b6d4','#000','#64748b'];
+            el.textContent = String(cell.neighborMines);
+            el.style.color = colors[cell.neighborMines] || '#fff';
+          }
+          el.disabled = true;
+          el.style.cursor = 'default';
+        } else {
+          el.style.background = 'rgba(255,255,255,0.2)';
+          if (cell.flagged) {
+            el.textContent = '🚩';
+            el.style.color = '#ef4444';
+          }
+        }
+        el.addEventListener('click', e => onCellClick(x, y, e));
+        el.addEventListener('contextmenu', e => { e.preventDefault(); onCellFlag(x, y); });
+        // Long-press for flag on touch
+        let longPressTimer;
+        el.addEventListener('touchstart', e => {
+          longPressTimer = setTimeout(() => { onCellFlag(x, y); longPressTimer = null; }, 500);
+        }, { passive: true });
+        el.addEventListener('touchend', e => {
+          if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        });
+        el.addEventListener('touchmove', e => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } });
+        g.appendChild(el);
+      }
+    }
+  }
+
+  function onCellClick(x, y, e) {
+    if (!alive) { if (!started) newGame(); return; }
+    const cell = board[y][x];
+    if (cell.flagged || cell.revealed) return;
+    if (firstClick) {
+      placeMines(y * cols + x);
+      firstClick = false;
+      startTimer();
+    }
+    revealCell(x, y);
+    checkWin();
+  }
+
+  function onCellFlag(x, y) {
+    if (!alive) return;
+    const cell = board[y][x];
+    if (cell.revealed) return;
+    if (cell.flagged) { cell.flagged = false; flags--; }
+    else { if (flags < mines) { cell.flagged = true; flags++; } }
+    updateStats();
+    renderGrid();
+  }
+
+  function revealCell(x, y) {
+    const cell = board[y][x];
+    if (cell.revealed || cell.flagged) return;
+    cell.revealed = true;
+    if (cell.mine) {
+      die();
+      renderGrid();
+      return;
+    }
+    if (cell.neighborMines === 0) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = x + dx, ny = y + dy;
+          if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) revealCell(nx, ny);
+        }
+      }
+    }
+  }
+
+  function die() {
+    alive = false;
+    stopTimer();
+    // Reveal all mines
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        if (board[y][x].mine) board[y][x].revealed = true;
+      }
+    }
+    renderGrid();
+    if (status) status.textContent = 'Game Over — Click any cell to restart';
+    arcadeReportScore('minesweeper', 0); // zero score on death
+  }
+
+  function checkWin() {
+    let unrevealedSafe = 0;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        if (!board[y][x].mine && !board[y][x].revealed) unrevealedSafe++;
+      }
+    }
+    if (unrevealedSafe === 0) {
+      alive = false;
+      stopTimer();
+      // Flag all remaining mines
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          if (board[y][x].mine && !board[y][x].flagged) board[y][x].flagged = true;
+        }
+      }
+      flags = mines;
+      updateStats();
+      renderGrid();
+      if (status) status.textContent = `Win! Time: ${time}s`;
+      arcadeReportScore('minesweeper', time);
+    }
+  }
+
+  function startTimer() {
+    timerInterval = setInterval(() => { time++; updateStats(); }, 1000);
+  }
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = 0;
+  }
+
+  function onKey(e) {
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      stopMinesweeper();
+      document.getElementById('arcade-game-panel').classList.remove('active');
+    }
+    if (e.code === 'KeyR') {
+      e.preventDefault();
+      newGame();
+    }
+  }
+  document.addEventListener('keydown', onKey);
+
+  mineState = {
+    cleanup() {
+      stopTimer();
+      document.removeEventListener('keydown', onKey);
+    }
+  };
+
+  newGame();
+}
+
+function stopMinesweeper() {
+  if (mineState && mineState.cleanup) mineState.cleanup();
+  mineState = null;
 }
 
 /* Public API for game modules */
