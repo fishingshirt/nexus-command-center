@@ -635,8 +635,16 @@
             <div id="phone-inbox"><div class="phone-empty">Loading messages…</div></div>
           </div>
           <div class="phone-tab-panel" id="phone-panel-thread">
-            <h4 id="phone-thread-header">Select a thread</h4>
-            <div class="phone-thread-list" id="phone-thread-list"></div>
+            <div class="phone-thread-wrapper">
+              <h4 id="phone-thread-header">Select a thread</h4>
+              <div class="phone-thread-scroll" id="phone-thread-scroll">
+                <div class="phone-thread-list" id="phone-thread-list"></div>
+              </div>
+              <div class="phone-thread-reply">
+                <textarea id="phone-thread-body" rows="2" placeholder="Reply..."></textarea>
+                <button class="btn-primary" id="phone-thread-send-btn">Send</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

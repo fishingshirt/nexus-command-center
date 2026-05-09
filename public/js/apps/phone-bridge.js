@@ -1,6 +1,6 @@
 /**
  * Nexus Phone Bridge — ADB Android integration
- * Dashboard: connection status, battery, signal, SMS inbox, compose
+ * Dashboard: connection status, battery, signal, SMS inbox, compose, threads
  */
 const LS_KEY = 'ncc-phone-bridge';
 const POLL_INTERVAL = 10000;
@@ -16,7 +16,6 @@ export function initPhoneBridge() {
   const view = document.getElementById('view-phone');
   if (!view) return;
 
-  // Polling
   refresh();
   const timer = setInterval(refresh, POLL_INTERVAL);
 
@@ -24,14 +23,40 @@ export function initPhoneBridge() {
   const sendBtn = document.getElementById('phone-send-btn');
   const toInp = document.getElementById('phone-to');
   const bodyInp = document.getElementById('phone-body');
-  sendBtn?.addEventListener('click', () => sendSms(toInp?.value?.trim() || '', bodyInp?.value?.trim() || ''));
+  sendBtn?.addEventListener('click', () => {
+    sendSms(toInp?.value?.trim() || '', bodyInp?.value?.trim() || '');
+  });
+
+  // Character counter for compose
+  bodyInp?.addEventListener('input', () => {
+    const len = bodyInp.value.length;
+    let counter = document.getElementById('phone-compose-counter');
+    if (!counter) {
+      counter = document.createElement('div');
+      counter.id = 'phone-compose-counter';
+      counter.className = 'phone-compose-counter';
+      bodyInp.parentNode.insertBefore(counter, sendBtn);
+    }
+    counter.textContent = `${len}/160`;
+    counter.classList.toggle('over-limit', len > 160);
+  });
 
   // View switchers
   view.querySelectorAll('.phone-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
-  // Cleanup on view hide (simple: leave interval running since view may reappear)
+  // Thread reply send
+  const threadSendBtn = document.getElementById('phone-thread-send-btn');
+  const threadBody = document.getElementById('phone-thread-body');
+  threadSendBtn?.addEventListener('click', () => {
+    const num = threadBody?.dataset?.threadNumber;
+    const text = threadBody?.value?.trim();
+    if (num && text) {
+      sendSms(num, text, true);
+    }
+  });
+
   window.addEventListener('beforeunload', () => clearInterval(timer));
 }
 
@@ -54,6 +79,7 @@ function updateStatus(data) {
   const battery = document.getElementById('phone-battery-val');
   const signal = document.getElementById('phone-signal-val');
   const bar = document.getElementById('phone-battery-bar');
+  const adbStatus = document.getElementById('phone-adb-status');
 
   // Dashboard card summary
   const cardDot = document.getElementById('phone-card-dot');
@@ -86,6 +112,7 @@ function updateStatus(data) {
     bar.style.width = `${pct}%`;
     bar.dataset.level = pct < 20 ? 'low' : pct < 50 ? 'mid' : 'good';
   }
+  if (adbStatus) adbStatus.textContent = data.adbInstalled ? 'Ready' : 'Missing';
 
   if (cardDot) cardDot.className = `app-card-status ${statusColor}`;
   if (cardText) cardText.textContent = statusText;
@@ -94,72 +121,142 @@ function updateStatus(data) {
 async function refreshInbox() {
   try {
     const data = await fetchJson('/api/adb/sms/read');
-    renderInbox(data.messages || []);
+    const messages = data.messages || [];
+    lsSave({ inboxCache: messages });
+    renderInbox(messages);
   } catch (e) {
-    renderInbox([]);
+    // If server fails, try cached
+    renderInbox(lsLoad().inboxCache || []);
   }
+}
+
+function normalizeNumber(num) {
+  return (num || '').replace(/\D/g, '').slice(-10);
+}
+
+function getDisplayName(num) {
+  if (!num) return 'Unknown';
+  // Try local contact map if ever stored
+  const contacts = lsLoad().contacts || {};
+  if (contacts[normalizeNumber(num)]) return contacts[normalizeNumber(num)];
+  return num;
 }
 
 function renderInbox(messages) {
   const list = document.getElementById('phone-inbox');
   if (!list) return;
-  if (!messages.length) {
+
+  const localSent = lsLoad().sentLog || [];
+  const all = [...messages];
+
+  // Merge sent messages into the all array
+  localSent.forEach(s => {
+    all.push({
+      from: s.to,
+      to: s.to,
+      date: s.time,
+      body: s.body,
+      type: 'sent'
+    });
+  });
+
+  if (!all.length) {
     list.innerHTML = '<div class="phone-empty">No messages on device.</div>';
     return;
   }
-  // Merge with local sent log
-  const local = lsLoad().sentLog || [];
-  const all = [...messages, ...local.map(s => ({ ...s, type: 'sent', from: s.to }))]
-    .sort((a, b) => (b.date || b.time || 0) - (a.date || a.time || 0));
 
-  // Group by thread (phone number)
+  // Sort newest first
+  all.sort((a, b) => (b.date || 0) - (a.date || 0));
+
+  // Group by phone number
   const threads = {};
   all.forEach(m => {
-    const key = m.from || m.to || 'Unknown';
-    threads[key] ||= [];
-    threads[key].push(m);
+    const key = normalizeNumber(m.from || m.to);
+    if (!key) return;
+    threads[key] ||= { num: m.from || m.to, msgs: [] };
+    threads[key].msgs.push(m);
   });
 
-  list.innerHTML = Object.entries(threads).map(([num, msgs]) => {
-    const last = msgs[0];
-    const time = last.date ? fmtDate(last.date) : (last.time ? fmtDate(last.time) : '');
+  list.innerHTML = Object.values(threads).map(thread => {
+    const last = thread.msgs[0];
+    const time = fmtDate(last.date);
+    const preview = (last.body || '').slice(0, 70);
+    const displayName = getDisplayName(thread.num);
     return `
-      <div class="phone-thread" onclick="window.__phoneOpenThread('${esc(num)}')">
+      <div class="phone-thread" data-num="${esc(thread.num)}" role="button" tabindex="0" aria-label="Thread with ${esc(displayName)}">
         <div class="phone-thread-info">
-          <span class="phone-thread-num">${esc(num)}</span>
+          <span class="phone-thread-name">${esc(displayName)}</span>
           <span class="phone-thread-time">${esc(time)}</span>
         </div>
-        <div class="phone-thread-preview">${esc((last.body || last.message || '').slice(0, 60))}</div>
-        <span class="phone-thread-count">${msgs.length}</span>
+        <div class="phone-thread-preview">${esc(preview)}${preview.length >= 70 ? '…' : ''}</div>
+        <span class="phone-thread-count">${thread.msgs.length}</span>
       </div>`;
   }).join('');
+
+  // Wire click handlers
+  list.querySelectorAll('.phone-thread').forEach(el => {
+    const open = () => openThread(el.dataset.num);
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    });
+  });
 }
 
-window.__phoneOpenThread = function(num) {
+function openThread(num) {
   switchTab('thread');
   const header = document.getElementById('phone-thread-header');
-  if (header) header.textContent = `Thread: ${num}`;
+  if (header) header.textContent = getDisplayName(num);
+
   const list = document.getElementById('phone-thread-list');
   if (!list) return;
-  const local = lsLoad().sentLog || [];
-  const all = [];
-  // Server-side messages
-  // We re-fetch if needed; for now show merged from localStorage cache
-  // In a full implementation we'd keep a server-cache of inbox and merge with local sent
+
+  // Update reply box target
+  const replyBox = document.getElementById('phone-thread-body');
+  if (replyBox) replyBox.dataset.threadNumber = num;
+
   const cachedInbox = lsLoad().inboxCache || [];
-  const msgs = [...cachedInbox.filter(m => (m.from || '').includes(num) || (m.to || '').includes(num)),
-                ...local.filter(s => (s.to || '').includes(num))];
-  msgs.sort((a, b) => (b.date || b.time || 0) - (a.date || a.time || 0));
+  const localSent = lsLoad().sentLog || [];
+  const norm = normalizeNumber(num);
+
+  const msgs = [
+    ...cachedInbox.filter(m => normalizeNumber(m.from) === norm || normalizeNumber(m.to) === norm),
+    ...localSent.filter(s => normalizeNumber(s.to) === norm).map(s => ({
+      from: s.to,
+      to: s.to,
+      date: s.time,
+      body: s.body,
+      type: 'sent'
+    }))
+  ];
+
+  msgs.sort((a, b) => (a.date || 0) - (b.date || 0));
+
   list.innerHTML = msgs.map(m => {
     const isOut = m.type === 'sent' || m.to;
-    return `<div class="phone-bubble ${isOut ? 'out' : 'in'}"><span>${esc(m.body || m.message || '')}</span></div>`;
+    const time = fmtTime(m.date);
+    return `
+      <div class="phone-bubble-wrap ${isOut ? 'out' : 'in'}">
+        <div class="phone-bubble ${isOut ? 'out' : 'in'}">
+          <span>${esc(m.body || m.message || '')}</span>
+          <span class="phone-bubble-time">${esc(time)}</span>
+        </div>
+      </div>`;
   }).join('');
-};
 
-async function sendSms(to, body) {
+  // Scroll to bottom
+  const container = document.getElementById('phone-thread-scroll');
+  (container || list).scrollTop = (container || list).scrollHeight;
+}
+
+async function sendSms(to, body, fromThread = false) {
   if (!to || !body) return;
-  const btn = document.getElementById('phone-send-btn');
-  if (btn) btn.textContent = 'Sending…';
+  const btn = fromThread
+    ? document.getElementById('phone-thread-send-btn')
+    : document.getElementById('phone-send-btn');
+  const originalText = btn?.textContent || 'Send';
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
   try {
     const res = await fetch('/api/adb/sms/send', {
       method: 'POST',
@@ -171,16 +268,31 @@ async function sendSms(to, body) {
       const log = lsLoad().sentLog || [];
       log.push({ to, body, time: Date.now() });
       lsSave({ sentLog: log.slice(-200) });
-      document.getElementById('phone-body').value = '';
-      refreshInbox();
+
+      // Clear inputs
+      if (!fromThread) {
+        const bodyInp = document.getElementById('phone-body');
+        if (bodyInp) bodyInp.value = '';
+        const counter = document.getElementById('phone-compose-counter');
+        if (counter) counter.textContent = '0/160';
+      } else {
+        const replyBox = document.getElementById('phone-thread-body');
+        if (replyBox) replyBox.value = '';
+      }
+
+      // Refresh views
+      await refreshInbox();
+      if (fromThread) openThread(to);
+
       if (typeof toast !== 'undefined') toast('SMS sent!');
     } else {
-      if (typeof toast !== 'undefined') toast(json.error || 'Send failed');
+      if (typeof toast !== 'undefined') toast(json.error || 'Send failed', 'error');
     }
   } catch (e) {
-    if (typeof toast !== 'undefined') toast('Send error: ' + e.message);
+    if (typeof toast !== 'undefined') toast('Send error: ' + e.message, 'error');
   }
-  if (btn) btn.textContent = 'Send';
+
+  if (btn) { btn.disabled = false; btn.textContent = originalText; }
 }
 
 function switchTab(tab) {
@@ -195,11 +307,20 @@ async function fetchJson(url) {
 }
 
 function fmtDate(ts) {
+  if (!ts) return '';
   const d = new Date(ts);
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
+  const isYesterday = new Date(now - 86400000).toDateString() === d.toDateString();
   if (isToday) return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  if (isYesterday) return 'Yesterday';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
 function esc(s) {

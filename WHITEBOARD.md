@@ -10,9 +10,9 @@
 | Metric | Value |
 |--------|-------|
 || **Project Phase** | `SECURITY & CLOUD` |
-|| **Last Agent Run** | 2026-05-09 (T-024-a/b/c Phone Bridge shell + server + UI) |
-|| **Active Tasks** | 8 (T-024 through T-028, T-031, T-032, T-033) |
-|| **Completed Tasks** | 50 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024-a/b/c, T-029 + subtasks, T-030 + subtasks a–f, T-033-a/b/c/d/e/f/g) |
+||| **Last Agent Run** | 2026-05-09 (T-024-d/e/f Phone Bridge inbox, compose, thread view) |
+||| **Active Tasks** | 7 (T-025 through T-028, T-031, T-032, T-033) |
+||| **Completed Tasks** | 51 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033-a/b/c/d/e/f/g) |
 
 |**Current Focus:** T-033 (Welcome Rebrand) IN_PROGRESS — core cinematic intro implemented, needs browser testing. |
 
@@ -75,13 +75,13 @@
 ||| `T-021-c` | Whiteboard task generator — convert feedback entries into WHITEBOARD.md format for agent ingestion | `DONE` | Button on each submission generates formatted markdown with task ID, priority badge, status, and clarifying answers. Copyable to clipboard. |
 | `T-022` | **Agent Stats Panel** — in Settings: live agent metrics (tasks done, bugs fixed, commits, wake cycles, upcoming tasks, last/next run) | `DONE` | Live indicator dot in header with breathe animation, server-side `/api/agent/status` + `/api/agent/heartbeat` endpoints, and `/api/agent/notify` + `/api/agent/notifications` for build notifications. `liveAgentStatus()` JS helper ready for heartbeat wiring. |
 | `T-023` | **Jarvis Theme** — Iron Man HUD aesthetic, electric arc-blue, holographic glow, HUD grid lines | `DONE` | **User directive.** Theme file `jarvis.css` added to `public/css/themes/`. Electric arc-blue `#39d0f2`, scanline overlay, glowing accents, HUD grid background. |
-|| `T-024` | **Phone Bridge App** — ADB Android integration: send/read SMS, connection status, battery/signal telemetry | `IN_PROGRESS` | **User directive.** Agent controls connected Android phone via ADB. Dashboard shows phone status. Supports one-way message log + two-way compose. |
+||| `T-024` | **Phone Bridge App** — ADB Android integration: send/read SMS, connection status, battery/signal telemetry | `DONE` | **User directive.** Agent controls connected Android phone via ADB. Dashboard shows phone status. Supports one-way message log + two-way compose. Thread view with chat bubbles. All sub-tasks complete (a–f). |
 || `T-024-a` | ADB device detector script — detect USB/wireless ADB, auto-pair if needed | `DONE` | Python script `scripts/adb-bridge.py` detects device, polls battery/signal, reads SMS inbox, sends SMS. Writes state to `~/.hermes/nexus-adb-state.json` for dashboard polling. |
 || `T-024-b` | Nexus server ADB API — extend nexus-server.py with `/api/adb/status`, `/api/adb/sms/read`, `/api/adb/sms/send` | `DONE` | Zero build-step backend. CORS enabled. Status reads state file; read returns cached inbox; send shells out to adb-bridge.py. |
 || `T-024-c` | Dashboard Phone Bridge app UI — connection status indicator, battery/phone info panel | `DONE` | Green/amber/red dot for ADB connection. Battery bar, signal dBm. Compose tab with To + body + Send. Inbox tab with thread grouping and sent-log merging. Thread tab with chat bubbles. Responsive mobile-first. |
-| `T-024-d` | SMS Inbox viewer — one-way message history pulled from phone via ADB | `PENDING` | Display SMS threads with contact names, body, timestamp. Sorted newest-first. |
-| `T-024-e` | SMS Compose & Send — two-way messaging from dashboard to phone number | `PENDING` | Text input + To: field. Uses `/api/adb/sms/send`. Stores sent messages in local log. |
-| `T-024-f` | Per-contact conversation thread view — chat-bubble style thread | `PENDING` | Group messages by phone number into threads. Show outgoing/incoming bubble colors. |
+|| `T-024-d` | SMS Inbox viewer — one-way message history pulled from phone via ADB | `DONE` | Thread grouping, contact display name, timestamps newest-first, cached inbox fallback. |
+|| `T-024-e` | SMS Compose & Send — two-way messaging from dashboard to phone number | `DONE` | Compose tab + thread reply box. Character counter. Sending state with disabled button. Clears input on success. Toast feedback. |
+|| `T-024-f` | Per-contact conversation thread view — chat-bubble style thread | `DONE` | Bubble UI for in/out messages, timestamps, scrollable thread container, inline reply textarea, keyboard accessible, mobile-first. |
 | `T-025` | **Smart PDF Editor** — upload PDF + natural language instruction, agent loads PDF skills to edit text/merge pages/replace content/export | `PENDING` | **User directive.** User uploads PDF and types instruction (e.g. "change title to X", "merge with doc2.pdf"). Dashboard triggers agent which loads `nano-pdf` or `ocr-and-documents` skill, performs edit, returns download link. |
 | `T-025-a` | PDF upload dropzone + UI — accept `.pdf` via drag/drop, show thumbnail, list of uploaded PDFs in localStorage | `PENDING` | Uses `<input type=file accept=.pdf>` + `FileReader` for preview. Stores metadata in `ncc-pdf-library`. |
 | `T-025-b` | Natural language instruction parser — parse user text into structured edit command (replace text, insert page, merge, extract pages, OCR) | `PENDING` | Simple keyword-match → command object. Falls back to "generic edit" if unclear. |

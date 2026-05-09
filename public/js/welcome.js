@@ -1,94 +1,88 @@
 /**
  * welcome.js — Cinematic Onboarding Experience (T-033)
  * Song-driven, beat-reactive welcome intro for Nexus Command Center.
- * Phases:
- *   1. Name prompt (pre-audio)
- *   2. Beat-reactive text sequence (0:00 – 0:22)
- *   3. Feature showcase montage (0:22 – 1:45)
- *   4. Landing / fade-out (1:45 – 2:00)
  */
 
 const AUDIO_PATH = 'assets/audio/we-do-what-we-want-edit.mp3';
 const BPM_FALLBACK = 128;
-const BEAT_INTERVAL = 60 / BPM_FALLBACK; // ~0.46875s
 
-// ========== CONFIG ==========
 const COPY_LINES = [
-  { time: 2.0,   text: "I DON'T SLEEP.",                        tile: null,   effect: 'flash' },
-  { time: 4.5,   text: "I DON'T EAT.",                          tile: null,   effect: 'flash' },
-  { time: 7.0,   text: "I WORK 24/7 FOR YOU.",                  tile: null,   effect: 'pulse' },
-  { time: 10.0,  text: "Sick? I'll text and email who needs to know.", tile: 'phone', effect: 'zoom' },
-  { time: 14.0,  text: "Not sick and just wanna call off? No problem.", tile: 'phone', effect: 'zoom' },
-  { time: 18.0,  text: "Welcome to the future.",                tile: null,   effect: 'pulse' },
-  { time: 21.0,  text: "Are you ready?",                        tile: null,   effect: 'flash' },
+  { time: 2.0,   text: "I DON'T SLEEP." },
+  { time: 4.5,   text: "I DON'T EAT." },
+  { time: 7.0,   text: "I WORK 24/7 FOR YOU." },
+  { time: 10.0,  text: "Sick? I'll put in a good word for you." },
+  { time: 14.0,  text: "Not sick and just wanna call off? No problem." },
+  { time: 18.0,  text: "Welcome to the future." },
+  { time: 21.0,  text: "Are you ready?" },
 ];
 
 const SHOWCASE_BEATS = [
-  { time: 24.0,  text: "Your calendar — optimized by AI.",                           tile: 'calendar', icon: '📅', effect: 'zoom' },
-  { time: 33.0,  text: "Your tasks — auto-prioritized. I sort the noise.",           tile: 'todo',     icon: '✅', effect: 'zoom' },
-  { time: 42.0,  text: "Your notes — summarized in seconds.",                        tile: 'notes',    icon: '📝', effect: 'zoom' },
-  { time: 51.0,  text: "Your weather — always one glance away.",                     tile: 'weather',  icon: '☀️', effect: 'zoom' },
-  { time: 60.0,  text: "Your system — monitored 24/7. I see everything.",            tile: 'feedback', icon: '💬', effect: 'zoom' },
-  { time: 69.0,  text: "Your data — backed up and encrypted. Even I can't peek.",    tile: 'phone',    icon: '📱', effect: 'zoom' },
-  { time: 78.0,  text: "Your inbox — sorted by AI before you wake up.",            tile: 'chat',     icon: '💬', effect: 'zoom' },
-  { time: 87.0,  text: "Your terminal — real-time system control.",                 tile: 'feedback', icon: '🖥️', effect: 'zoom' },
-  { time: 96.0,  text: "Your games — right here when you need a break.",             tile: 'feedback', icon: '🎮', effect: 'zoom' },
-  { time: 105.0, text: "Your command center awaits.",                                tile: null,       icon: '🔷', effect: 'pulse' },
+  { time: 24.0,  text: "Your calendar — optimized by AI.",                           icon: '📅' },
+  { time: 33.0,  text: "Your tasks — auto-prioritized. I sort the noise.",           icon: '✅' },
+  { time: 42.0,  text: "Your notes — summarized in seconds.",                        icon: '📝' },
+  { time: 51.0,  text: "Your weather — always one glance away.",                     icon: '☀️' },
+  { time: 60.0,  text: "Your system — monitored 24/7. I see everything.",            icon: '💬' },
+  { time: 69.0,  text: "Your data — backed up and encrypted. Even I can't peek.",    icon: '📱' },
+  { time: 78.0,  text: "Your inbox — sorted by AI before you wake up.",            icon: '💬' },
+  { time: 87.0,  text: "Your terminal — real-time system control.",                 icon: '🖥️' },
+  { time: 96.0,  text: "Your games — right here when you need a break.",             icon: '🎮' },
+  { time: 105.0, text: "Your command center awaits.",                                icon: '🔷' },
 ];
 
-const PHASE_THRESHOLDS = {
-  START:      0,
-  SHOWCASE:   22,
-  LANDING:    105,
-  END:        120,
-};
+const PHASE = { START: 0, SHOWCASE: 22, LANDING: 105, END: 120 };
 
-let audioCtx, analyser, audio, source;
-let beatFrameId, phaseFrameId, particleFrameId;
+let audioCtx, analyser, audio;
+let phaseRaf, beatRaf, particleRaf;
 let currentPhase = 0;
 let userName = '';
+let isCleanedUp = false;
 
-// ========== DOM REFS ==========
-function getOverlay()  { return document.getElementById('welcome-overlay'); }
-function getContent()  { return document.querySelector('.welcome-content'); }
+function getOverlay() { return document.getElementById('welcome-overlay'); }
+function getContent() { return document.querySelector('.welcome-content'); }
+function getApp()     { return document.getElementById('app'); }
 
-// ========== PUBLIC INIT ==========
+/* ========= PUBLIC INIT ========= */
 export function initWelcome() {
   const overlay = getOverlay();
-  if (!overlay) return;
+  if (!overlay) { showAppImmediately(); return; }
 
-  // Skip if user prefers reduced motion
+  // Respect reduced motion
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    overlay.style.display = 'none';
-    return;
+    hideOverlay(); showAppImmediately(); return;
   }
 
   const settings = loadSettings();
-  const hasSeen = localStorage.getItem('ncc-welcome-shown') === 'true';
+  const hasSeen  = localStorage.getItem('ncc-welcome-shown') === 'true';
   const shouldShow = settings.showWelcomeOnBoot || !hasSeen;
 
   if (!shouldShow) {
-    overlay.style.display = 'none';
-    document.getElementById('app')?.classList.remove('hidden');
+    hideOverlay();
+    showAppImmediately();
     return;
   }
 
+  // SURPRISE MODE: hide app BEFORE showing overlay — zero flash
+  hideApp();
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
-  document.getElementById('app')?.classList.add('hidden');
 
   buildPhase1();
 }
 
-// ========== PHASE 1: NAME PROMPT ==========
+/* ========= PHASE 1: NAME PROMPT ========= */
 function buildPhase1() {
   const content = getContent();
+  if (!content) return;
   content.innerHTML = '';
   content.className = 'welcome-content phase1';
 
-  const vignette = document.createElement('div');
-  vignette.className = 'welcome-vignette';
-  overlay.appendChild(vignette);
+  // Vignette goes INSIDE overlay (fixed reference)
+  const overlay = getOverlay();
+  if (overlay && !overlay.querySelector('.welcome-vignette')) {
+    const vig = document.createElement('div');
+    vig.className = 'welcome-vignette';
+    overlay.appendChild(vig);
+  }
 
   const brand = document.createElement('div');
   brand.className = 'welcome-brand';
@@ -100,25 +94,24 @@ function buildPhase1() {
   prompt.textContent = "What's your name?";
   content.appendChild(prompt);
 
-  const inputWrap = document.createElement('div');
-  inputWrap.className = 'welcome-input-wrap';
-
+  const wrap = document.createElement('div');
+  wrap.className = 'welcome-input-wrap';
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'welcome-name-input';
   input.placeholder = 'Enter your name';
   input.maxLength = 30;
   input.autocomplete = 'off';
-  inputWrap.appendChild(input);
-  content.appendChild(inputWrap);
+  wrap.appendChild(input);
+  content.appendChild(wrap);
 
   const btn = document.createElement('button');
   btn.className = 'welcome-cta';
   btn.id = 'welcome-start-btn';
   btn.innerHTML = '<span>START</span>';
+  btn.disabled = true; // until audio ready
   content.appendChild(btn);
 
-  // Audio preload status
   const status = document.createElement('div');
   status.className = 'welcome-audio-status';
   status.textContent = '🎵 Loading audio…';
@@ -145,186 +138,159 @@ function buildPhase1() {
     startCinematic();
   });
 
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') btn.click();
-  });
-
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
   skip.addEventListener('click', dismissWelcome);
 }
 
-// ========== AUDIO PRELOAD ==========
+/* ========= AUDIO PRELOAD ========= */
 function preloadAudio(statusEl, onReady) {
+  let fired = false;
+  const fire = () => { if (!fired) { fired = true; onReady(); } };
+
   audio = new Audio(AUDIO_PATH);
   audio.preload = 'auto';
 
   const fail = () => {
     statusEl.textContent = '⚠️ Audio unavailable. Starting without music.';
     statusEl.classList.add('warning');
-    onReady();
+    fire();
   };
 
   audio.addEventListener('canplaythrough', () => {
     statusEl.textContent = '🎵 Audio ready. Press START.';
     statusEl.classList.add('ready');
-    onReady();
+    fire();
   }, { once: true });
 
-  audio.addEventListener('error', fail, { once: true });
-  audio.load();
+  audio.addEventListener('error', () => {
+    console.warn('[welcome] audio load error');
+    fail();
+  }, { once: true });
 
-  // Fallback timeout
-  setTimeout(() => {
-    if (audio.readyState < 3) fail();
-  }, 5000);
+  // Some browsers block autoplay; catch play() promise later
+  audio.load();
+  setTimeout(() => { if (audio.readyState < 3 && !fired) fail(); }, 5000);
 }
 
-// ========== START CINEMATIC ==========
+/* ========= START CINEMATIC ========= */
 function startCinematic() {
   const content = getContent();
-  content.innerHTML = '';
-  content.className = 'welcome-content cinematic';
+  if (content) {
+    content.innerHTML = '';
+    content.className = 'welcome-content cinematic';
+  }
 
-  // Init Web Audio for beat detection
+  // Wire Web Audio (may fail on autoplay policies — that's OK)
   try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    source = audioCtx.createMediaElementSource(audio);
-    source.connect(analyser);
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!analyser) {
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+    }
+    const src = audioCtx.createMediaElementSource(audio);
+    src.connect(analyser);
     analyser.connect(audioCtx.destination);
   } catch (e) {
-    console.warn('[welcome] Web Audio API unavailable, using timed fallback');
+    console.warn('[welcome] Web Audio unavailable:', e.message);
   }
 
   audio.volume = 1.0;
   audio.currentTime = 0;
-  const playProm = audio.play();
-  if (playProm && playProm.catch) playProm.catch(() => {});
+  audio.play().catch(err => {
+    console.warn('[welcome] audio play blocked:', err.message);
+    // If autoplay blocked, fall through to timed visual-only mode
+  });
 
   currentPhase = 1;
+  isCleanedUp = false;
   runPhaseEngine();
   runBeatEngine();
   runParticleEngine();
 }
 
-// ========== PHASE ENGINE ==========
+/* ========= PHASE ENGINE ========= */
 function runPhaseEngine() {
-  const content = getContent();
-  const overlay = getOverlay();
-
   function tick() {
-    if (!audio || audio.paused) {
-      phaseFrameId = requestAnimationFrame(tick);
+    if (isCleanedUp) return;
+    const t = audio ? audio.currentTime : 0;
+    if (audio && audio.paused && t === 0) {
+      phaseRaf = requestAnimationFrame(tick);
       return;
     }
-    const t = audio.currentTime;
 
-    // Phase 2: Beat-reactive text (0:00 – 0:22)
-    if (t < PHASE_THRESHOLDS.SHOWCASE) {
-      if (currentPhase !== 2) {
-        currentPhase = 2;
-        content.classList.add('phase2');
-        renderBeatText();
-      }
+    if (t < PHASE.SHOWCASE) {
+      if (currentPhase !== 2) { currentPhase = 2; renderBeatText(); }
       updateBeatText(t);
-    }
-    // Phase 3: Showcase montage (0:22 – 1:45)
-    else if (t < PHASE_THRESHOLDS.LANDING) {
-      if (currentPhase !== 3) {
-        currentPhase = 3;
-        content.classList.remove('phase2');
-        content.classList.add('phase3');
-        renderShowcase();
-      }
+    } else if (t < PHASE.LANDING) {
+      if (currentPhase !== 3) { currentPhase = 3; renderShowcase(); }
       updateShowcase(t);
-    }
-    // Phase 4: Landing (1:45 – 2:00)
-    else if (t < PHASE_THRESHOLDS.END) {
-      if (currentPhase !== 4) {
-        currentPhase = 4;
-        content.classList.remove('phase3');
-        content.classList.add('phase4');
-        startFadeOut();
-      }
-    }
-    // End
-    else {
+    } else if (t < PHASE.END) {
+      if (currentPhase !== 4) { currentPhase = 4; startFadeOut(); }
+    } else {
       dismissWelcome();
       return;
     }
 
-    phaseFrameId = requestAnimationFrame(tick);
+    phaseRaf = requestAnimationFrame(tick);
   }
   tick();
 }
 
-// ========== BEAT ENGINE (Web Audio) ==========
+/* ========= BEAT ENGINE ========= */
 function runBeatEngine() {
-  if (!analyser) return; // fallback handled by timestamps
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  let lastBeatTime = 0;
-  const BEAT_COOLDOWN = 0.35; // seconds
+  if (!analyser) return;
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  let lastBeat = 0;
 
   function tick() {
-    if (!audio || audio.paused) {
-      beatFrameId = requestAnimationFrame(tick);
-      return;
-    }
-    analyser.getByteFrequencyData(dataArray);
-
-    // Bass (20–150Hz) ≈ bins 0–5 at 44.1kHz / 256 FFT
+    if (isCleanedUp) return;
+    if (!audio || audio.paused) { beatRaf = requestAnimationFrame(tick); return; }
+    analyser.getByteFrequencyData(data);
     let bass = 0;
-    const binCount = Math.min(6, dataArray.length);
-    for (let i = 0; i < binCount; i++) bass += dataArray[i];
-    bass /= binCount;
-
-    const t = audio.currentTime;
-    if (bass > 180 && (t - lastBeatTime) > BEAT_COOLDOWN) {
-      lastBeatTime = t;
-      onBeat(t);
+    for (let i = 0; i < Math.min(6, data.length); i++) bass += data[i];
+    bass /= Math.min(6, data.length);
+    const now = performance.now() / 1000;
+    if (bass > 180 && (now - lastBeat) > 0.35) {
+      lastBeat = now;
+      onBeat();
     }
-    beatFrameId = requestAnimationFrame(tick);
+    beatRaf = requestAnimationFrame(tick);
   }
   tick();
 }
 
-function onBeat(t) {
-  // Trigger visual pulse on active text/tile
+function onBeat() {
   const active = document.querySelector('.beat-text.active, .showcase-line.active');
   if (active) {
     active.classList.remove('beat-pulse');
-    void active.offsetWidth; // reflow
+    void active.offsetWidth;
     active.classList.add('beat-pulse');
   }
-
-  // Screen flash
   const flash = document.querySelector('.welcome-flash');
   if (flash) {
     flash.style.opacity = '0.12';
-    setTimeout(() => { if (flash) flash.style.opacity = '0'; }, 80);
+    requestAnimationFrame(() => setTimeout(() => {
+      if (flash) flash.style.opacity = '0';
+    }, 80));
   }
-
   spawnParticles(8);
 }
 
-// ========== RENDER PHASE 2 (Beat Text) ==========
+/* ========= PHASE 2: BEAT TEXT ========= */
 let beatTextEls = [];
 
 function renderBeatText() {
-  const content = getContent();
-  content.innerHTML = '';
-
-  const flash = document.createElement('div');
-  flash.className = 'welcome-flash';
-  content.appendChild(flash);
-
-  COPY_LINES.forEach((line, i) => {
-    const el = document.createElement('div');
-    el.className = 'beat-text';
-    el.dataset.time = line.time;
-    el.textContent = line.text;
-    el.style.opacity = '0';
-    el.style.transform = 'scale(0.9)';
+  const content = getContent(); if (!content) return;
+  addFlash(content);
+  beatTextEls = [];
+  COPY_LINES.forEach(line => {
+    const el = Object.assign(document.createElement('div'), {
+      className: 'beat-text', textContent: line.text
+    });
+    el.dataset.time = String(line.time);
     content.appendChild(el);
     beatTextEls.push(el);
   });
@@ -333,14 +299,12 @@ function renderBeatText() {
 function updateBeatText(t) {
   beatTextEls.forEach(el => {
     const time = parseFloat(el.dataset.time);
-    const active = Math.abs(t - time) < 1.5;
+    const active = t >= time && t < time + 1.5;
     el.classList.toggle('active', active);
     if (active) {
       el.style.opacity = '1';
       el.style.transform = 'scale(1)';
-      // Slight letter-spacing breath
-      const breath = Math.sin((t - time) * 3) * 2;
-      el.style.letterSpacing = `${breath}px`;
+      el.style.letterSpacing = `${Math.sin((t - time) * 3) * 2}px`;
     } else if (t > time + 1.5) {
       el.style.opacity = '0';
       el.style.transform = 'scale(1.05)';
@@ -348,41 +312,20 @@ function updateBeatText(t) {
   });
 }
 
-// ========== RENDER PHASE 3 (Showcase) ==========
+/* ========= PHASE 3: SHOWCASE ========= */
 let showcaseEls = [];
 
 function renderShowcase() {
-  const content = getContent();
+  const content = getContent(); if (!content) return;
   content.innerHTML = '';
-
-  const flash = document.createElement('div');
-  flash.className = 'welcome-flash';
-  content.appendChild(flash);
-
-  // Particle container
-  const particles = document.createElement('div');
-  particles.className = 'particle-layer';
-  particles.id = 'particle-layer';
-  content.appendChild(particles);
-
-  SHOWCASE_BEATS.forEach((beat, i) => {
+  addFlash(content);
+  addParticleLayer(content);
+  showcaseEls = [];
+  SHOWCASE_BEATS.forEach(beat => {
     const el = document.createElement('div');
     el.className = 'showcase-line';
-    el.dataset.time = beat.time;
-    el.dataset.tile = beat.tile || '';
-
-    const iconSpan = document.createElement('span');
-    iconSpan.className = 'showcase-icon';
-    iconSpan.textContent = beat.icon;
-
-    const textSpan = document.createElement('span');
-    textSpan.className = 'showcase-text';
-    textSpan.textContent = beat.text;
-
-    el.appendChild(iconSpan);
-    el.appendChild(textSpan);
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px) scale(0.95)';
+    el.dataset.time = String(beat.time);
+    el.innerHTML = `<span class="showcase-icon">${beat.icon}</span><span class="showcase-text">${beat.text}</span>`;
     content.appendChild(el);
     showcaseEls.push(el);
   });
@@ -391,58 +334,43 @@ function renderShowcase() {
 function updateShowcase(t) {
   showcaseEls.forEach(el => {
     const time = parseFloat(el.dataset.time);
-    const delta = t - time;
-    const active = delta >= 0 && delta < 8;
+    const dt = t - time;
+    const active = dt >= 0 && dt < 8;
     el.classList.toggle('active', active);
-
-    if (delta < 0) {
-      // Before this beat
+    if (dt < 0) {
       el.style.opacity = '0';
       el.style.transform = 'translateY(20px) scale(0.95)';
-    } else if (delta < 0.5) {
-      // Pop in
-      const p = delta / 0.5;
+    } else if (dt < 0.5) {
+      const p = dt / 0.5;
       el.style.opacity = String(p);
       el.style.transform = `translateY(${(1 - p) * 20}px) scale(${0.95 + p * 0.05})`;
-    } else if (delta < 6) {
-      // Hold
+    } else if (dt < 6) {
       el.style.opacity = '1';
       el.style.transform = 'translateY(0) scale(1)';
     } else {
-      // Fade out
-      const p = 1 - (delta - 6) / 2;
-      el.style.opacity = String(Math.max(0, p));
+      const p = Math.max(0, 1 - (dt - 6) / 2);
+      el.style.opacity = String(p);
       el.style.transform = `translateY(-${(1 - p) * 20}px) scale(${1 + (1 - p) * 0.03})`;
     }
   });
 }
 
-// ========== PARTICLE ENGINE ==========
+/* ========= PARTICLE ENGINE ========= */
 function runParticleEngine() {
-  const layer = document.getElementById('particle-layer') || getContent();
-
   function tick() {
-    const p = layer.querySelectorAll('.particle');
-    p.forEach(pt => {
-      let x = parseFloat(pt.dataset.x);
-      let y = parseFloat(pt.dataset.y);
-      let vx = parseFloat(pt.dataset.vx);
-      let vy = parseFloat(pt.dataset.vy);
-      let life = parseFloat(pt.dataset.life);
-      life -= 0.02;
-      if (life <= 0) {
-        pt.remove();
-        return;
-      }
+    if (isCleanedUp) return;
+    document.querySelectorAll('.particle').forEach(pt => {
+      let x = parseFloat(pt.dataset.x), y = parseFloat(pt.dataset.y);
+      let vx = parseFloat(pt.dataset.vx), vy = parseFloat(pt.dataset.vy);
+      let life = parseFloat(pt.dataset.life) - 0.015;
+      if (life <= 0) { pt.remove(); return; }
       x += vx; y += vy;
-      vy += 0.05; // gravity
-      pt.dataset.x = String(x);
-      pt.dataset.y = String(y);
-      pt.dataset.life = String(life);
+      vy += 0.04; // gravity
+      Object.assign(pt.dataset, { x: String(x), y: String(y), vy: String(vy), life: String(life) });
       pt.style.transform = `translate(${x}px, ${y}px)`;
       pt.style.opacity = String(life);
     });
-    particleFrameId = requestAnimationFrame(tick);
+    particleRaf = requestAnimationFrame(tick);
   }
   tick();
 }
@@ -450,95 +378,139 @@ function runParticleEngine() {
 function spawnParticles(count = 6) {
   const layer = document.getElementById('particle-layer') || getContent();
   if (!layer) return;
-  const rect = layer.getBoundingClientRect();
-  const cx = rect.width / 2;
-  const cy = rect.height / 2;
-
+  const { width: cx, height: cy } = layer.getBoundingClientRect();
+  const cx2 = cx / 2, cy2 = cy / 2;
   for (let i = 0; i < count; i++) {
-    const pt = document.createElement('div');
-    pt.className = 'particle';
     const angle = Math.random() * Math.PI * 2;
     const speed = 1 + Math.random() * 3;
-    pt.dataset.x = '0';
-    pt.dataset.y = '0';
-    pt.dataset.vx = String(Math.cos(angle) * speed);
-    pt.dataset.vy = String(Math.sin(angle) * speed);
-    pt.dataset.life = '1';
-    pt.style.left = `${cx}px`;
-    pt.style.top = `${cy}px`;
+    const pt = document.createElement('div');
+    pt.className = 'particle';
+    Object.assign(pt.dataset, {
+      x: '0', y: '0',
+      vx: String(Math.cos(angle) * speed),
+      vy: String(Math.sin(angle) * speed),
+      life: '1'
+    });
+    pt.style.left = `${cx2}px`;
+    pt.style.top  = `${cy2}px`;
     layer.appendChild(pt);
   }
 }
 
-// ========== PHASE 4: FADE OUT ==========
+/* ========= PHASE 4: FADE OUT & LANDING ========= */
 function startFadeOut() {
-  const content = getContent();
+  const content = getContent(); if (!content) { dismissWelcome(); return; }
   content.innerHTML = '';
   content.className = 'welcome-content phase4';
 
   const farewell = document.createElement('div');
   farewell.className = 'welcome-farewell';
-  farewell.textContent = userName ? `Welcome back, ${userName}` : 'Welcome back.';
+  const saved = localStorage.getItem('ncc-welcome-name');
+  farewell.textContent = saved ? `Welcome back, ${saved}` : 'Welcome back.';
   content.appendChild(farewell);
 
-  // Fade audio over 15s
-  const fadeStart = audio.currentTime;
-  const fadeDuration = 15;
-
-  const fadeTick = () => {
-    if (!audio) return;
+  const fadeStart = audio ? audio.currentTime : 0;
+  function tick() {
+    if (isCleanedUp || !audio) { dismissWelcome(); return; }
     const elapsed = audio.currentTime - fadeStart;
-    const vol = Math.max(0, 1 - elapsed / fadeDuration);
+    const vol = Math.max(0, 1 - elapsed / 15);
     audio.volume = vol;
-    if (vol > 0 && elapsed < fadeDuration) {
-      requestAnimationFrame(fadeTick);
+    if (vol > 0.01 && elapsed < 15) {
+      requestAnimationFrame(tick);
     } else {
-      audio.pause();
+      if (audio) audio.pause();
       dismissWelcome();
     }
-  };
-  requestAnimationFrame(fadeTick);
+  }
+  requestAnimationFrame(tick);
 }
 
-// ========== DISMISS ==========
-function dismissWelcome() {
-  cancelAnimationFrame(phaseFrameId);
-  cancelAnimationFrame(beatFrameId);
-  cancelAnimationFrame(particleFrameId);
+/* ========= DISMISS & CLEANUP ========= */
+export function dismissWelcome() {
+  if (isCleanedUp) return;
+  isCleanedUp = true;
 
-  if (audio) {
-    audio.pause();
-    audio.currentTime = 0;
-    audio.volume = 1;
-  }
-  if (audioCtx && audioCtx.state !== 'closed') {
-    audioCtx.suspend?.();
+  cancelAnimationFrame(phaseRaf);
+  cancelAnimationFrame(beatRaf);
+  cancelAnimationFrame(particleRaf);
+
+  // Kill audio cleanly
+  try {
+    if (audio) { audio.pause(); audio.currentTime = 0; audio.volume = 1; }
+    if (audioCtx && audioCtx.state !== 'closed') audioCtx.suspend?.();
+  } catch (e) { /* no-op */ }
+
+  const overlay = getOverlay();
+  if (overlay) {
+    overlay.style.transition = 'opacity 0.8s ease';
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.style.display = 'none';
+      cleanupOverlay();
+      showAppImmediately();
+    }, 800);
+  } else {
+    showAppImmediately();
   }
 
+  // Persist flags
+  localStorage.setItem('ncc-welcome-shown', 'true');
+  const settings = loadSettings();
+  saveSettings({ ...settings, showWelcomeOnBoot: false });
+  const cb = document.getElementById('show-welcome');
+  if (cb) cb.checked = false;
+}
+
+function cleanupOverlay() {
+  const overlay = getOverlay();
+  if (!overlay) return;
+  overlay.querySelectorAll('.welcome-vignette').forEach(el => el.remove());
+  const content = getContent();
+  if (content) content.innerHTML = '';
+}
+
+/* ========= APP VISIBILITY HELPERS ========= */
+function hideApp() {
+  const app = getApp();
+  if (app) app.classList.add('hidden');
+}
+function showAppImmediately() {
+  const app = getApp();
+  if (app) {
+    app.classList.remove('hidden');
+    app.focus?.();
+  }
+}
+function hideOverlay() {
   const overlay = getOverlay();
   if (overlay) {
     overlay.classList.remove('active');
     overlay.setAttribute('aria-hidden', 'true');
-    overlay.style.transition = 'opacity 1.5s ease';
-    overlay.style.opacity = '0';
-    setTimeout(() => {
-      overlay.style.display = 'none';
-      document.getElementById('app')?.classList.remove('hidden');
-      document.getElementById('app')?.focus?.();
-    }, 1500);
+    overlay.style.display = 'none';
+    overlay.style.opacity = '';
+    overlay.style.transition = '';
   }
-
-  localStorage.setItem('ncc-welcome-shown', 'true');
-  const settings = loadSettings();
-  saveSettings({ ...settings, showWelcomeOnBoot: false });
-  document.getElementById('show-welcome').checked = false;
 }
 
-// ========== SETTINGS HELPERS (shared with app.js) ==========
+/* ========= DOM UTILITIES ========= */
+function addFlash(container) {
+  const f = document.createElement('div');
+  f.className = 'welcome-flash';
+  container.appendChild(f);
+}
+function addParticleLayer(container) {
+  const p = document.createElement('div');
+  p.className = 'particle-layer';
+  p.id = 'particle-layer';
+  container.appendChild(p);
+}
+
+/* ========= SETTINGS HELPERS ========= */
 function loadSettings() {
-  try {
-    return JSON.parse(localStorage.getItem('ncc-settings') || '{}');
-  } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem('ncc-settings') || '{}'); }
+  catch { return {}; }
 }
 function saveSettings(patch) {
   const s = loadSettings();
