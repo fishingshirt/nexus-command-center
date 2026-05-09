@@ -109,7 +109,32 @@
 | `T-028-c` | Game: Memory Match — card flip matching, timer, moves counter | `PENDING` | DOM-based grid. |
 | `T-028-d` | Game: Word Scramble — unscramble words against timer | `PENDING` | Word list from API or hardcoded. |
 | `T-028-e` | Game: Trivia Quiz — multiple choice, categories, streak counter | `PENDING` | Question bank in JSON. |
-| `T-028-f` | Game: Sudoku — generator + solver hint, 4 difficulties | `PENDING` | DOM grid. Highlight conflicts. |
+|| `T-028-f` | Game: Sudoku — generator + solver hint, 4 difficulties | `PENDING` | DOM grid. Highlight conflicts. |
+
+### 🔵 IT HUB / SYSTEM STATUS (User Requested — Agent Directive)
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| `T-029` | **IT Hub app** — new dashboard page that shows live system status, health, and connection state of all Nexus services | `PENDING` | **User directive.** Single-pane-of-glass for IT/sysadmin overview. Must feel like a server room HUD. |
+| `T-029-a` | IT Hub shell + route + nav icon — register new app in APP_REGISTRY, create `public/apps/it-hub.html` + `public/js/apps/it-hub.js`, wire router | `PENDING` | Icon: 🖥️. Route: `#it-hub`. Grid layout: sidebar nav + main cards. |
+| `T-029-b` | Login/Auth status card — show current auth state (logged in / guest), display username/role, session expiry countdown, logout button | `PENDING` | Reads from `ncc-settings.auth`. If no auth system yet, show "Auth: Not Implemented" with gray badge. |
+| `T-029-c` | System health telemetry card — CPU usage %, RAM usage %, disk usage %, uptime, load average. Live numbers updated every 5s via `/api/system/health` | `PENDING` | Backend endpoint in `nexus-server.py`. Use `psutil` if available (try `uv pip install psutil` if missing). JSON response. |
+| `T-029-d` | Tailscale / network status card — show tailnet IP, tailscale connection state (up/down), advertised routes, connected peers count, MagicDNS status | `PENDING` | Shell out to `tailscale status --json` in Python endpoint. Cache for 10s. Handle "tailscale not installed" gracefully. |
+| `T-029-e` | Google Calendar API status card — show GCal sync state (linked/unlinked), last sync timestamp, next auto-sync countdown, event count synced, OAuth token expiry | `PENDING` | Reads from `ncc-settings.calendarSync`. Green/amber/red dot based on `lastSyncTime` age. |
+| `T-029-f` | Server / process status card — show `nexus-server.py` PID, port, uptime, last git push timestamp, git branch, uncommitted changes count, last commit hash | `PENDING` | Endpoint `/api/server/status`. Reads git info from repo dir. |
+| `T-029-g` | Debug & logs card — display last 20 lines of `~/.hermes/logs/errors.log`, `nexus-server.py` stdout path, Hermes gateway status (running/stopped), cron job status | `PENDING` | Endpoint `/api/system/logs`. Limit lines. Color-code ERROR/WARNING/INFO. |
+| `T-029-h` | Service dependency matrix — grid showing: PostgreSQL? Redis? Tailscale? Google API? GitHub Push? HTTPS? DNS? Each cell: green ✓ / red ✗ / amber ⚠ with hover tooltip explaining check | `PENDING` | Each check is a lightweight Python probe (socket connect, HTTP ping, file existence). Endpoint `/api/system/deps`. |
+| `T-029-i` | IT Hub theme styling — dark ``Midnight Hacker`` aesthetic: monospace fonts, neon green accents, amber warnings, red alerts, terminal-style panels with `┌─` borders, scanline overlay, blinking cursors on live metrics | `PENDING` | Use CSS custom properties. Responsive: stack cards on mobile, 2-col on tablet, 3-col on desktop. |
+| `T-029-j` | IT Hub settings integration — add toggle to Settings for "Show IT Hub in main grid", default `false` until stable. Add "Refresh All" button and per-card manual refresh. | `PENDING` | Store visibility toggle in `ncc-settings.itHubVisible`. |
+| `T-029-k` | IT Hub export / alert — "Copy status report" button that generates a markdown diagnostic summary for pasting into chat or GitHub issues | `PENDING` | Markdown table of all status checks. Auto-generated timestamp. |
+
+**Backend API spec for `nexus-server.py`:**
+- `GET /api/system/health` → `{cpu_percent, ram_percent, disk_percent, uptime_seconds, load_avg_1m}`
+- `GET /api/system/network` → `{tailscale_ip, tailscale_status, peers_count, magic_dns, error?}`
+- `GET /api/server/status` → `{pid, port, uptime_seconds, git_branch, last_commit, uncommitted_count, last_push_time}`
+- `GET /api/system/logs` → `{errors_log_tail: [...], gateway_running: bool, cron_enabled: bool}`
+- `GET /api/system/deps` → `{services: [{name, status, message}]}`
+
+**Notes:** All endpoints must return CORS headers for dashboard fetch. Use `json.dumps()` with `default=str` for datetime objects. Cache heavy checks (psutil, tailscale) for 5-10 seconds.
 
 ---
 
