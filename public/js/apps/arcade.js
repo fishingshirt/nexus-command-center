@@ -5,7 +5,7 @@ const GAMES = [
   { id: 'tetromino', name: 'Tetromino', desc: 'Block stacking with hold + preview.', icon: '🧱', comingSoon: false },
   { id: 'minesweeper', name: 'Minesweeper', desc: 'Find all mines. Flag carefully.', icon: '💣', comingSoon: false },
   { id: 'two048', name: '2048', desc: 'Merge tiles to reach 2048.', icon: '🔢', comingSoon: false },
-  { id: 'typing', name: 'Typing Speed', desc: 'Words per minute test.', icon: '⌨️', comingSoon: true },
+  { id: 'typing', name: 'Typing Speed', desc: 'Words per minute test.', icon: '⌨️', comingSoon: false },
   { id: 'reaction', name: 'Reaction', desc: 'Click when green. Measure ms.', icon: '⚡', comingSoon: true },
 ];
 
@@ -120,6 +120,11 @@ function launchGame(gameId) {
     canvas.style.display = 'none';
     dom.style.display = 'block';
     startTwo048(dom);
+  } else if (gameId === 'typing') {
+    const dom = document.getElementById('arcade-game-dom');
+    canvas.style.display = 'none';
+    dom.style.display = 'block';
+    startTyping(dom);
   } else {
     drawPlaceholder(canvas, game);
   }
@@ -132,6 +137,7 @@ function launchGame(gameId) {
     stopTetromino();
     stopMinesweeper();
     stopTwo048();
+    stopTyping();
     canvas.style.display = 'block';
     document.getElementById('arcade-game-dom').style.display = 'none';
     panel.classList.remove('active');
@@ -1857,6 +1863,315 @@ function startTwo048(container) {
 function stopTwo048() {
   if (t048State && t048State.cleanup) t048State.cleanup();
   t048State = null;
+}
+
+/* ===== TYPING SPEED TEST ===== */
+let typingState = null;
+let typingTimer = null;
+
+const TYPING_CORPUS = [
+  "The quick brown fox jumps over the lazy dog while the sun continues to rise above the distant mountains on a crisp autumn morning.",
+  "In the middle of every difficulty lies opportunity that can transform challenges into stepping stones for greater achievements.",
+  "Technology is best when it brings people together and creates meaningful connections across vast distances in real time.",
+  "Consistency is the key to mastery because small daily improvements compound into extraordinary results over the long term.",
+  "The only way to do great work is to love what you do and persist through uncertainty with courage and curiosity.",
+  "A journey of a thousand miles begins with a single step taken with purpose and sustained by unwavering determination.",
+  "Simplicity is the ultimate sophistication that separates elegant solutions from unnecessary complexity in design.",
+  "Creativity is intelligence having fun when constraints inspire innovation and lead to breakthrough discoveries.",
+  "Success usually comes to those who are too busy to be looking for it while they build value for others.",
+  "Your time is limited so do not waste it living someone else's life or following paths that do not belong to you.",
+  "The best way to predict the future is to create it by taking deliberate action today rather than waiting for permission.",
+  "Quality is not an act, it is a habit formed through repetition and refinement over countless deliberate iterations.",
+  "It always seems impossible until it is done because perspective shifts once effort meets opportunity.",
+  "Do not count the days, make the days count by choosing purpose over distraction every single morning.",
+  "Change your thoughts and you change your world because perception shapes action and action shapes reality.",
+];
+
+function startTyping(container) {
+  stopTyping();
+  container.innerHTML = '';
+  const status = document.getElementById('arcade-game-status');
+  const scoreEl = document.getElementById('arcade-game-score');
+
+  const MODES = { time: '60s Time Attack', words: '25 Words', zen: 'Zen (No Limit)' };
+  let mode = 'time';
+  let targetWords = 25;
+  let timeLimit = 60;
+  let started = false;
+  let ended = false;
+  let startTime = 0;
+  let elapsed = 0;
+  let wordsTyped = 0;
+  let charsTyped = 0;
+  let correctChars = 0;
+  let mistakes = 0;
+  let currentWordIndex = 0;
+  let currentText = '';
+  let wordElements = [];
+
+  function pickParagraph() {
+    const p = TYPING_CORPUS[Math.floor(Math.random() * TYPING_CORPUS.length)];
+    return p.toLowerCase().replace(/[^a-z ]/g, '');
+  }
+
+  function buildText() {
+    // Build enough words from corpus paragraphs
+    let words = [];
+    while (words.length < Math.max(targetWords, 60)) {
+      words.push(...pickParagraph().split(/\s+/).filter(Boolean));
+    }
+    return words;
+  }
+
+  function newGame() {
+    started = false;
+    ended = false;
+    elapsed = 0;
+    wordsTyped = 0;
+    charsTyped = 0;
+    correctChars = 0;
+    mistakes = 0;
+    currentWordIndex = 0;
+    wordElements = [];
+    scoreEl.textContent = '0 WPM';
+    if (status) status.textContent = MODES[mode];
+
+    const words = buildText();
+    currentText = words.join(' ');
+    renderUI(words);
+    input.focus();
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'typing-wrap';
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.75rem;width:100%;max-width:720px;padding:0 0.5rem;';
+
+  // Mode selector
+  const modeRow = document.createElement('div');
+  modeRow.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;';
+  Object.keys(MODES).forEach(k => {
+    const b = document.createElement('button');
+    b.textContent = MODES[k];
+    b.dataset.mode = k;
+    b.style.cssText = 'padding:0.3rem 0.7rem;font-size:0.8rem;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;';
+    b.addEventListener('click', () => {
+      if (started && !ended) return;
+      mode = k;
+      updateModeButtons();
+      newGame();
+    });
+    modeRow.appendChild(b);
+  });
+  wrap.appendChild(modeRow);
+
+  function updateModeButtons() {
+    Array.from(modeRow.children).forEach(b => {
+      if (b.dataset.mode === mode) {
+        b.style.background = 'var(--accent)';
+        b.style.color = '#fff';
+        b.style.borderColor = 'var(--accent)';
+      } else {
+        b.style.background = 'var(--surface)';
+        b.style.color = 'var(--text)';
+        b.style.borderColor = 'var(--border)';
+      }
+    });
+  }
+
+  // Stats row
+  const statsRow = document.createElement('div');
+  statsRow.style.cssText = 'display:flex;gap:0.75rem;justify-content:center;width:100%;';
+  function statBox(label, value) {
+    const b = document.createElement('div');
+    b.style.cssText = 'flex:1;background:var(--surface-raised);border-radius:var(--radius);padding:0.35rem 0.5rem;text-align:center;border:1px solid var(--border);min-width:0;';
+    b.innerHTML = `<div style="font-size:0.6rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;">${label}</div><div style="font-size:1rem;font-weight:700;color:var(--text);white-space:nowrap;">${value}</div>`;
+    return b;
+  }
+  const wpmBox = statBox('WPM', '0');
+  const accBox = statBox('Acc', '100%');
+  const errBox = statBox('Errors', '0');
+  const timeBox = statBox('Time', '0s');
+  statsRow.appendChild(wpmBox);
+  statsRow.appendChild(accBox);
+  statsRow.appendChild(errBox);
+  statsRow.appendChild(timeBox);
+  wrap.appendChild(statsRow);
+
+  // Word display
+  const textDisplay = document.createElement('div');
+  textDisplay.className = 'typing-display';
+  textDisplay.style.cssText = 'width:100%;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;min-height:120px;font-size:clamp(0.85rem,2.2vw,1.05rem);line-height:1.7;color:var(--text-secondary);overflow-wrap:break-word;user-select:none;-webkit-user-select:none;caret-color:transparent;';
+  wrap.appendChild(textDisplay);
+
+  // Hidden input (captures keyboard events, mobile keyboard)
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.autocomplete = 'off';
+  input.autocapitalize = 'off';
+  input.spellcheck = false;
+  input.style.cssText = 'position:absolute;opacity:0;pointer-events:none;';
+  wrap.appendChild(input);
+
+  // Restart + controls hint
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size:0.75rem;color:var(--text-secondary);text-align:center;';
+  hint.textContent = 'Start typing to begin. SPACE to submit word.';
+  wrap.appendChild(hint);
+
+  container.appendChild(wrap);
+
+  function renderUI(words) {
+    textDisplay.innerHTML = '';
+    wordElements = [];
+    words.forEach((w, i) => {
+      const span = document.createElement('span');
+      span.textContent = w;
+      span.dataset.index = i;
+      span.style.cssText = 'display:inline-block;padding:0.05rem 0.25rem;margin:0.05rem;border-radius:var(--radius);transition:color 0.15s, background 0.15s;';
+      if (i === 0) span.style.background = 'rgba(255,255,255,0.08)';
+      textDisplay.appendChild(span);
+      wordElements.push(span);
+    });
+  }
+
+  function updateStats() {
+    const now = performance.now();
+    const minutes = (now - startTime) / 60000;
+    let wpm = 0;
+    if (minutes > 0) {
+      const grossWpm = (charsTyped / 5) / minutes;
+      const accuracy = charsTyped > 0 ? (charsTyped - mistakes) / charsTyped : 1;
+      wpm = Math.max(0, Math.round(grossWpm * accuracy));
+    }
+    const accuracy = charsTyped > 0 ? Math.round(((charsTyped - mistakes) / charsTyped) * 100) : 100;
+    wpmBox.lastElementChild.textContent = String(wpm);
+    accBox.lastElementChild.textContent = accuracy + '%';
+    errBox.lastElementChild.textContent = String(mistakes);
+    const timeVal = mode === 'time' ? Math.max(0, Math.round(timeLimit - (now - startTime) / 1000)) : Math.round((now - startTime) / 1000);
+    timeBox.lastElementChild.textContent = timeVal + 's';
+    scoreEl.textContent = wpm + ' WPM';
+  }
+
+  function endGame(reason) {
+    if (ended) return;
+    ended = true;
+    started = false;
+    if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
+    updateStats();
+    const wpm = Number(wpmBox.lastElementChild.textContent) || 0;
+    const accuracy = Number(accBox.lastElementChild.textContent.textContent?.replace('%','')) || 100;
+    const finalScore = Math.round(wpm * (accuracy / 100));
+    if (status) status.textContent = `${reason} — Final: ${wpm} WPM, ${accuracy}% acc`;
+    arcadeReportScore('typing', finalScore);
+    hint.textContent = 'SPACE or tap to restart';
+  }
+
+  function onInput() {
+    if (ended) { newGame(); return; }
+    if (!started) {
+      started = true;
+      startTime = performance.now();
+      if (mode === 'time') {
+        typingTimer = setInterval(() => {
+          const elapsedSec = (performance.now() - startTime) / 1000;
+          if (elapsedSec >= timeLimit) { endGame('Time up'); }
+          else { updateStats(); }
+        }, 500);
+      } else {
+        typingTimer = setInterval(() => { updateStats(); }, 500);
+      }
+    }
+    const val = input.value.trimStart();
+    input.value = val; // strip leading spaces
+    const target = wordElements[currentWordIndex]?.textContent || '';
+
+    // Check if space pressed -> commit word
+    if (input.value.endsWith(' ')) {
+      const typedWord = input.value.trim();
+      const targetWord = wordElements[currentWordIndex]?.textContent || '';
+      wordsTyped++;
+      if (typedWord === targetWord) {
+        correctChars += typedWord.length + 1;
+        charsTyped += typedWord.length + 1;
+        wordElements[currentWordIndex].style.color = '#22c55e';
+      } else {
+        charsTyped += typedWord.length + 1;
+        mistakes += typedWord.length + 1;
+        wordElements[currentWordIndex].style.color = '#ef4444';
+      }
+      wordElements[currentWordIndex].style.background = 'transparent';
+      currentWordIndex++;
+      input.value = '';
+      if (wordElements[currentWordIndex]) {
+        wordElements[currentWordIndex].style.background = 'rgba(255,255,255,0.08)';
+        wordElements[currentWordIndex].style.color = 'var(--text)';
+      }
+      // Scroll active word into view
+      wordElements[currentWordIndex]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+      if (mode === 'words' && wordsTyped >= targetWords) {
+        endGame('Goal reached');
+        return;
+      }
+      if (currentWordIndex >= wordElements.length) {
+        endGame('Finished text');
+        return;
+      }
+      updateStats();
+      return;
+    }
+
+    // Live character-level feedback on current word
+    const typed = input.value;
+    let correctSoFar = true;
+    for (let i = 0; i < typed.length; i++) {
+      if (typed[i] !== target[i]) correctSoFar = false;
+    }
+    const el = wordElements[currentWordIndex];
+    if (el) {
+      if (!correctSoFar || typed.length > target.length) {
+        el.style.color = '#f59e0b'; // amber warning
+      } else {
+        el.style.color = 'var(--text)';
+      }
+    }
+  }
+
+  function onKey(e) {
+    if (!started && e.code === 'Space') { e.preventDefault(); return; }
+    if (ended && e.code === 'Space') { e.preventDefault(); newGame(); return; }
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      stopTyping();
+      document.getElementById('arcade-game-panel').classList.remove('active');
+      return;
+    }
+    input.focus();
+  }
+
+  // Tap display to focus input (mobile)
+  function onTap() { input.focus(); }
+
+  input.addEventListener('input', onInput);
+  document.addEventListener('keydown', onKey);
+  textDisplay.addEventListener('click', onTap);
+
+  typingState = {
+    cleanup() {
+      if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
+      input.removeEventListener('input', onInput);
+      document.removeEventListener('keydown', onKey);
+      textDisplay.removeEventListener('click', onTap);
+    }
+  };
+
+  updateModeButtons();
+  newGame();
+}
+
+function stopTyping() {
+  if (typingState && typingState.cleanup) typingState.cleanup();
+  typingState = null;
 }
 
 /* Public API for game modules */

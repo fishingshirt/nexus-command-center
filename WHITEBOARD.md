@@ -93,7 +93,7 @@
 || `T-026-d` | Game: Tetromino (Tetris clone) — 7-bag randomizer, hold piece, next preview, line clear scoring | `DONE` | Canvas-based. Touch controls: tap to rotate, swipe to move/drop. 7-bag, hold, ghost piece, level/speed scaling, particle effects. |
 |||| `T-026-e` | Game: Minesweeper — classic, 3 difficulties, flag mode, chord reveal, timer | `DONE` | DOM-based grid. Right-click / long-press to flag. Chord reveal deferred. |
 || `T-026-f` | Game: 2048 — swipe/arrow to merge tiles, undo once per game, score + best | `DONE` | DOM-based grid. Tile colors per value. New Game + Undo buttons. Keyboard + swipe controls. Win at 2048, can keep playing. |
-| `T-026-g` | Game: Typing Speed Test — WPM / accuracy / time attack modes | `PENDING` | Text corpus from quotes API or hardcoded list. Real-time WPM calculation. |
+|| `T-026-g` | Game: Typing Speed Test — WPM / accuracy / time attack modes | `DONE` | Text corpus from quotes API or hardcoded list. Real-time WPM calculation. |
 | `T-026-h` | Game: Reaction Time Tester — click when green, measure ms, average of 5 | `PENDING` | Simple state machine. Anti-cheat: detect early clicks. |
 | `T-026-i` | Arcade high score leaderboard — global per-game scores in `localStorage` | `PENDING` | Simple array sort. Show top 10 with dates. |
 | `T-027` | **Work Simulator** — "look busy" mode: fake IDE, fake terminal scrolling, fake build notifications, fake Slack messages, all designed to make it look like you're deep in work | `PENDING` | **User directive.** Paranoia/theater mode for open offices / shoulder surfers. |
