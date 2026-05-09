@@ -1,10 +1,8 @@
 /**
  * welcome.js — Cinematic Onboarding Experience (T-033)
- * Song-driven, beat-reactive welcome intro for Nexus Command Center.
  */
 
 const AUDIO_PATH = 'assets/audio/we-do-what-we-want-edit.mp3';
-const BPM_FALLBACK = 128;
 
 const COPY_LINES = [
   { time: 2.0,   text: "I DON'T SLEEP." },
@@ -36,6 +34,7 @@ let phaseRaf, beatRaf, particleRaf;
 let currentPhase = 0;
 let userName = '';
 let isCleanedUp = false;
+let cineStart = 0;           // performance.now() when cinematic began
 
 function getOverlay() { return document.getElementById('welcome-overlay'); }
 function getContent() { return document.querySelector('.welcome-content'); }
@@ -44,11 +43,11 @@ function getApp()     { return document.getElementById('app'); }
 /* ========= PUBLIC INIT ========= */
 export function initWelcome() {
   const overlay = getOverlay();
-  if (!overlay) { showAppImmediately(); return; }
+  if (!overlay) { revealApp(); return; }
 
   // Respect reduced motion
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    hideOverlay(); showAppImmediately(); return;
+    hideOverlay(); revealApp(); return;
   }
 
   const settings = loadSettings();
@@ -56,13 +55,10 @@ export function initWelcome() {
   const shouldShow = settings.showWelcomeOnBoot || !hasSeen;
 
   if (!shouldShow) {
-    hideOverlay();
-    showAppImmediately();
-    return;
+    hideOverlay(); revealApp(); return;
   }
 
-  // SURPRISE MODE: hide app BEFORE showing overlay — zero flash
-  hideApp();
+  // SURPRISE: only show overlay; #app stays hidden via inline style until dismissed
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
 
@@ -71,12 +67,11 @@ export function initWelcome() {
 
 /* ========= PHASE 1: NAME PROMPT ========= */
 function buildPhase1() {
-  const content = getContent();
-  if (!content) return;
+  const content = getContent(); if (!content) return;
   content.innerHTML = '';
   content.className = 'welcome-content phase1';
 
-  // Vignette goes INSIDE overlay (fixed reference)
+  // Vignette appended to overlay
   const overlay = getOverlay();
   if (overlay && !overlay.querySelector('.welcome-vignette')) {
     const vig = document.createElement('div');
@@ -109,7 +104,7 @@ function buildPhase1() {
   btn.className = 'welcome-cta';
   btn.id = 'welcome-start-btn';
   btn.innerHTML = '<span>START</span>';
-  btn.disabled = true; // until audio ready
+  btn.disabled = true; // enabled when audio ready
   content.appendChild(btn);
 
   const status = document.createElement('div');
@@ -138,7 +133,10 @@ function buildPhase1() {
     startCinematic();
   });
 
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') btn.click();
+  });
+
   skip.addEventListener('click', dismissWelcome);
 }
 
@@ -150,12 +148,6 @@ function preloadAudio(statusEl, onReady) {
   audio = new Audio(AUDIO_PATH);
   audio.preload = 'auto';
 
-  const fail = () => {
-    statusEl.textContent = '⚠️ Audio unavailable. Starting without music.';
-    statusEl.classList.add('warning');
-    fire();
-  };
-
   audio.addEventListener('canplaythrough', () => {
     statusEl.textContent = '🎵 Audio ready. Press START.';
     statusEl.classList.add('ready');
@@ -163,28 +155,30 @@ function preloadAudio(statusEl, onReady) {
   }, { once: true });
 
   audio.addEventListener('error', () => {
-    console.warn('[welcome] audio load error');
-    fail();
+    statusEl.textContent = '⚠️ Audio unavailable. Starting without music.';
+    statusEl.classList.add('warning');
+    fire();
   }, { once: true });
 
-  // Some browsers block autoplay; catch play() promise later
+  audio.addEventListener('ended', () => {
+    console.log('[welcome] audio ended');
+  }, { once: true });
+
   audio.load();
-  setTimeout(() => { if (audio.readyState < 3 && !fired) fail(); }, 5000);
+  setTimeout(() => { if (audio.readyState < 3 && !fired) fire(); }, 5000);
 }
 
 /* ========= START CINEMATIC ========= */
 function startCinematic() {
-  const content = getContent();
-  if (content) {
-    content.innerHTML = '';
-    content.className = 'welcome-content cinematic';
-  }
+  const content = getContent(); if (!content) return;
+  content.innerHTML = '';
+  content.className = 'welcome-content cinematic';
 
-  // Wire Web Audio (may fail on autoplay policies — that's OK)
+  cineStart = performance.now();
+
+  // Wire Web Audio (may fail on autoplay policies — that's OK, visual timer runs regardless)
   try {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     if (!analyser) {
       analyser = audioCtx.createAnalyser();
@@ -194,15 +188,16 @@ function startCinematic() {
     src.connect(analyser);
     analyser.connect(audioCtx.destination);
   } catch (e) {
-    console.warn('[welcome] Web Audio unavailable:', e.message);
+    console.warn('[welcome] Web Audio setup failed:', e.message);
   }
 
-  audio.volume = 1.0;
   audio.currentTime = 0;
-  audio.play().catch(err => {
-    console.warn('[welcome] audio play blocked:', err.message);
-    // If autoplay blocked, fall through to timed visual-only mode
-  });
+  audio.volume = 1.0;
+
+  const playAttempt = audio.play();
+  if (playAttempt && typeof playAttempt.then === 'function') {
+    playAttempt.catch(err => console.warn('[welcome] Autoplay blocked:', err.message));
+  }
 
   currentPhase = 1;
   isCleanedUp = false;
@@ -211,15 +206,20 @@ function startCinematic() {
   runParticleEngine();
 }
 
+/* ========= TIME SOURCE ========= */
+function getCineTime() {
+  // Always returns a monotonically increasing time in seconds.
+  // If audio is playing, tracks the song position.
+  // If audio is paused/blocked/ended, falls back to wall-clock since cineStart.
+  if (audio && !audio.paused) return audio.currentTime;
+  return (performance.now() - cineStart) / 1000;
+}
+
 /* ========= PHASE ENGINE ========= */
 function runPhaseEngine() {
   function tick() {
     if (isCleanedUp) return;
-    const t = audio ? audio.currentTime : 0;
-    if (audio && audio.paused && t === 0) {
-      phaseRaf = requestAnimationFrame(tick);
-      return;
-    }
+    const t = getCineTime();
 
     if (t < PHASE.SHOWCASE) {
       if (currentPhase !== 2) { currentPhase = 2; renderBeatText(); }
@@ -266,15 +266,13 @@ function onBeat() {
   const active = document.querySelector('.beat-text.active, .showcase-line.active');
   if (active) {
     active.classList.remove('beat-pulse');
-    void active.offsetWidth;
+    void active.offsetWidth; // force reflow to retrigger css animation
     active.classList.add('beat-pulse');
   }
   const flash = document.querySelector('.welcome-flash');
   if (flash) {
     flash.style.opacity = '0.12';
-    requestAnimationFrame(() => setTimeout(() => {
-      if (flash) flash.style.opacity = '0';
-    }, 80));
+    setTimeout(() => { if (flash) flash.style.opacity = '0'; }, 80);
   }
   spawnParticles(8);
 }
@@ -287,9 +285,9 @@ function renderBeatText() {
   addFlash(content);
   beatTextEls = [];
   COPY_LINES.forEach(line => {
-    const el = Object.assign(document.createElement('div'), {
-      className: 'beat-text', textContent: line.text
-    });
+    const el = document.createElement('div');
+    el.className = 'beat-text';
+    el.textContent = line.text;
     el.dataset.time = String(line.time);
     content.appendChild(el);
     beatTextEls.push(el);
@@ -364,8 +362,7 @@ function runParticleEngine() {
       let vx = parseFloat(pt.dataset.vx), vy = parseFloat(pt.dataset.vy);
       let life = parseFloat(pt.dataset.life) - 0.015;
       if (life <= 0) { pt.remove(); return; }
-      x += vx; y += vy;
-      vy += 0.04; // gravity
+      x += vx; y += vy; vy += 0.04;
       Object.assign(pt.dataset, { x: String(x), y: String(y), vy: String(vy), life: String(life) });
       pt.style.transform = `translate(${x}px, ${y}px)`;
       pt.style.opacity = String(life);
@@ -378,8 +375,8 @@ function runParticleEngine() {
 function spawnParticles(count = 6) {
   const layer = document.getElementById('particle-layer') || getContent();
   if (!layer) return;
-  const { width: cx, height: cy } = layer.getBoundingClientRect();
-  const cx2 = cx / 2, cy2 = cy / 2;
+  const { width, height } = layer.getBoundingClientRect();
+  const cx = width / 2, cy = height / 2;
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = 1 + Math.random() * 3;
@@ -391,8 +388,8 @@ function spawnParticles(count = 6) {
       vy: String(Math.sin(angle) * speed),
       life: '1'
     });
-    pt.style.left = `${cx2}px`;
-    pt.style.top  = `${cy2}px`;
+    pt.style.left = `${cx}px`;
+    pt.style.top  = `${cy}px`;
     layer.appendChild(pt);
   }
 }
@@ -409,13 +406,15 @@ function startFadeOut() {
   farewell.textContent = saved ? `Welcome back, ${saved}` : 'Welcome back.';
   content.appendChild(farewell);
 
-  const fadeStart = audio ? audio.currentTime : 0;
+  const fadeStart = getCineTime();
   function tick() {
-    if (isCleanedUp || !audio) { dismissWelcome(); return; }
-    const elapsed = audio.currentTime - fadeStart;
-    const vol = Math.max(0, 1 - elapsed / 15);
-    audio.volume = vol;
-    if (vol > 0.01 && elapsed < 15) {
+    if (isCleanedUp) return;
+    const elapsed = getCineTime() - fadeStart;
+    if (audio && !audio.paused) {
+      const vol = Math.max(0, 1 - elapsed / 15);
+      audio.volume = vol;
+    }
+    if (elapsed < 15) {
       requestAnimationFrame(tick);
     } else {
       if (audio) audio.pause();
@@ -434,7 +433,6 @@ export function dismissWelcome() {
   cancelAnimationFrame(beatRaf);
   cancelAnimationFrame(particleRaf);
 
-  // Kill audio cleanly
   try {
     if (audio) { audio.pause(); audio.currentTime = 0; audio.volume = 1; }
     if (audioCtx && audioCtx.state !== 'closed') audioCtx.suspend?.();
@@ -448,14 +446,15 @@ export function dismissWelcome() {
       overlay.classList.remove('active');
       overlay.setAttribute('aria-hidden', 'true');
       overlay.style.display = 'none';
+      overlay.style.opacity = '';
+      overlay.style.transition = '';
       cleanupOverlay();
-      showAppImmediately();
+      revealApp();
     }, 800);
   } else {
-    showAppImmediately();
+    revealApp();
   }
 
-  // Persist flags
   localStorage.setItem('ncc-welcome-shown', 'true');
   const settings = loadSettings();
   saveSettings({ ...settings, showWelcomeOnBoot: false });
@@ -472,14 +471,11 @@ function cleanupOverlay() {
 }
 
 /* ========= APP VISIBILITY HELPERS ========= */
-function hideApp() {
-  const app = getApp();
-  if (app) app.classList.add('hidden');
-}
-function showAppImmediately() {
+function revealApp() {
   const app = getApp();
   if (app) {
-    app.classList.remove('hidden');
+    // .welcome-ready overrides the inline `display:none !important` on #app
+    app.classList.add('welcome-ready');
     app.focus?.();
   }
 }
