@@ -4,7 +4,7 @@
    Adds /api/* endpoints for IT Hub telemetry.
    Usage: python3 nexus-server.py [--port 8080] [--dir /path/to/public]
 """
-import http.server, socketserver, os, sys, argparse, signal, atexit, json, time, subprocess, socket, shutil
+import http.server, socketserver, os, sys, argparse, signal, atexit, json, time, subprocess, socket, shutil, hashlib
 from pathlib import Path
 
 PIDFILE = os.path.expanduser('~/.hermes/nexus-server.pid')
@@ -237,6 +237,66 @@ def agent_heartbeat():
     with open(hb_path, 'w') as f:
         json.dump({'timestamp': ts}, f)
     return {'timestamp': ts, 'ok': True}
+
+# ── PIN Auth helpers ──────────────────────────
+AUTH_FILE = os.path.expanduser('~/.hermes/nexus-auth.json')
+def _load_auth():
+    try:
+        with open(AUTH_FILE, 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, ValueError):
+        return {}
+
+def _pin_hash(pin, salt=None):
+    import secrets
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac('sha256', pin.encode(), salt.encode(), 500_000)
+    return salt, hashlib.sha256(digest).hexdigest()  # double hash storage
+
+def _api_auth(handler, path):
+    # GET /api/auth/status
+    if path == '/api/auth/status':
+        auth = _load_auth()
+        _json(handler, 200, {'pinEnabled': bool(auth.get('pinHash'))})
+        return True
+
+    if path == '/api/auth/register':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        pin = (req.get('pin') or '').strip()
+        if not pin.isdigit() or not (4 <= len(pin) <= 6):
+            _json(handler, 400, {'ok': False, 'error': 'PIN must be 4-6 digits'})
+            return True
+        salt, phash = _pin_hash(pin)
+        os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
+        with open(AUTH_FILE, 'w') as f:
+            json.dump({'pinHash': phash, 'salt': salt, 'updatedAt': time.strftime('%Y-%m-%dT%H:%M:%S')}, f)
+        _json(handler, 200, {'ok': True})
+        return True
+
+    if path == '/api/auth/verify':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        auth = _load_auth()
+        if not auth.get('pinHash'):
+            _json(handler, 403, {'ok': False, 'error': 'PIN not configured'})
+            return True
+        pin = (req.get('pin') or '').strip()
+        _, phash = _pin_hash(pin, auth.get('salt'))
+        _json(handler, 200, {'ok': phash == auth.get('pinHash')})
+        return True
+
+    return False
 
 # ── Request Handler ─────────────────────────────
 def _api_backup(handler, path, repo):
@@ -581,6 +641,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/backup/'):
             return _api_backup(self, path, repo)
 
+        if path.startswith('/api/auth/'):
+            return _api_auth(self, path)
+
         return False
 
     def do_OPTIONS(self):
@@ -598,6 +661,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             repo = os.path.dirname(os.path.abspath(self.args_dir))
             if path.startswith('/api/backup/'):
                 if _api_backup(self, path, repo):
+                    return
+            if path.startswith('/api/auth/'):
+                if _api_auth(self, path):
                     return
         self.send_response(405)
         self.end_headers()

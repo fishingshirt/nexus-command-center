@@ -5,6 +5,7 @@ import { initGoogleSync } from './apps/gcal-sync.js';
 import { initBackup } from './apps/backup.js';
 import { initWeather } from './apps/weather.js';
 import { initITHub } from './apps/it-hub.js';
+import { initAuth, ensureAuthEnabled } from './apps/auth.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -32,6 +33,7 @@ export function initApp() {
   initNotes();
   initTodo();
   initGoogleSync();
+  initAuth();
   updateDashboardDate();
   registerServiceWorker();
 }
@@ -76,6 +78,12 @@ function switchView(viewId) {
     target.classList.add('active');
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
+    // Per-app auth check
+    if (['calendar','notes','todo'].includes(viewId)) {
+      if (typeof ensureAuthEnabled === 'function') {
+        ensureAuthEnabled(viewId);
+      }
+    }
   } else {
     document.getElementById('view-dashboard').classList.add('active');
   }
