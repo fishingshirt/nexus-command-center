@@ -10,11 +10,11 @@
 | Metric | Value |
 |--------|-------|
 || **Project Phase** | `SECURITY & CLOUD` |
-||| **Last Agent Run** | 2026-05-09 (T-038 — Logic bug sweep: 5 subtasks + 8 bugs found & fixed across calendar, notes, auth, phone-bridge, finance) |
-||| **Active Tasks** | 9 (T-025, T-026, T-027, T-028, T-031, T-032, T-036, T-038) |
-|||| **Completed Tasks** | 62 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033 + subtasks a–g, T-026-a, T-026-b, T-034, T-035, T-037, T-036-a/c/d, T-038 + subtasks a–e) |
-
-||| **Current Focus:** T-036 (Stocks & Crypto paper trading) + T-038 (Logic bug sweep) |
+|||| **Last Agent Run** | 2026-05-09 (T-026-d — Tetromino game implemented: 7-bag randomizer, hold piece, next preview, ghost piece, line clear scoring with particles, keyboard + touch controls) |
+|||| **Active Tasks** | 9 (T-025, T-026, T-027, T-028, T-031, T-032, T-036, T-038) |
+||||| **Completed Tasks** | 63 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033 + subtasks a–g, T-026-a/b/c/d, T-034, T-035, T-037, T-036-a/c/d, T-038 + subtasks a–e) |
+|||| **Current Focus:** T-026 (Arcade expansion — Minesweeper next) |
+|||| **Current Focus:** T-026 (Arcade expansion — Minesweeper next) |
 
 ---
 
@@ -91,8 +91,8 @@
 || T-026-a | Arcade app shell + game launcher grid — 3x3 (or scrollable) grid of game cards with high scores | `DONE` | App card added to dashboard, nav link, CSS/JS modules. 7 games listed (Snake, Pong, Tetromino, Minesweeper, 2048, Typing, Reaction). All show "Coming Soon" placeholder. High score storage API ready (`saveHighScore`, `arcadeReportScore`). |
 || T-026-b | Game: Snake — classic snake, touch + keyboard controls, score + high score | `DONE` | Canvas-based. Speed increases with score. Particle effects on eat. Mobile swipe controls. Escape to exit. |
 ||| T-026-c | Game: Pong — vs CPU, difficulty levels, score tracking | `DONE` | Canvas-based. Touch drag for paddle on mobile. Keyboard arrows/W/S. First to 7 wins. Particle effects on paddle hits. Auto difficulty ramp. |
-|| T-026-d | Game: Tetromino (Tetris clone) — 7-bag randomizer, hold piece, next preview, line clear scoring | `PENDING` | Canvas-based. Touch controls: tap to rotate, swipe to move/drop. |
-| `T-026-e` | Game: Minesweeper — classic, 3 difficulties, flag mode, chord reveal, timer | `PENDING` | DOM-based grid. Right-click / long-press to flag. |
+|| `T-026-d` | Game: Tetromino (Tetris clone) — 7-bag randomizer, hold piece, next preview, line clear scoring | `DONE` | Canvas-based. Touch controls: tap to rotate, swipe to move/drop. 7-bag, hold, ghost piece, level/speed scaling, particle effects. |
+|| `T-026-e` | Game: Minesweeper — classic, 3 difficulties, flag mode, chord reveal, timer | `PENDING` | DOM-based grid. Right-click / long-press to flag. |
 | `T-026-f` | Game: 2048 — swipe/arrow to merge tiles, undo once per game, score + best | `PENDING` | DOM-based or canvas. Smooth slide animation via CSS transform. |
 | `T-026-g` | Game: Typing Speed Test — WPM / accuracy / time attack modes | `PENDING` | Text corpus from quotes API or hardcoded list. Real-time WPM calculation. |
 | `T-026-h` | Game: Reaction Time Tester — click when green, measure ms, average of 5 | `PENDING` | Simple state machine. Anti-cheat: detect early clicks. |

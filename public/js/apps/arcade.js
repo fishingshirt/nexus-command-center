@@ -2,7 +2,7 @@
 const GAMES = [
   { id: 'snake', name: 'Snake', desc: 'Classic snake. Eat, grow, don\'t crash.', icon: '🐍', comingSoon: false },
   { id: 'pong', name: 'Pong', desc: 'VS CPU paddle battle.', icon: '🏓', comingSoon: false },
-  { id: 'tetromino', name: 'Tetromino', desc: 'Block stacking with hold + preview.', icon: '🧱', comingSoon: true },
+  { id: 'tetromino', name: 'Tetromino', desc: 'Block stacking with hold + preview.', icon: '🧱', comingSoon: false },
   { id: 'minesweeper', name: 'Minesweeper', desc: 'Find all mines. Flag carefully.', icon: '💣', comingSoon: true },
   { id: 'two048', name: '2048', desc: 'Merge tiles to reach 2048.', icon: '🔢', comingSoon: true },
   { id: 'typing', name: 'Typing Speed', desc: 'Words per minute test.', icon: '⌨️', comingSoon: true },
@@ -108,6 +108,8 @@ function launchGame(gameId) {
     startSnake(canvas);
   } else if (gameId === 'pong') {
     startPong(canvas);
+  } else if (gameId === 'tetromino') {
+    startTetromino(canvas);
   } else {
     drawPlaceholder(canvas, game);
   }
@@ -117,6 +119,7 @@ function launchGame(gameId) {
   backBtn.onclick = () => {
     stopSnake();
     stopPong();
+    stopTetromino();
     panel.classList.remove('active');
   };
 }
@@ -180,6 +183,8 @@ function bindEvents() {
       const gameId = canvas.dataset.currentGame;
       if (gameId === 'snake') {
         // Snake handles its own resize via CSS + re-init on next frame
+      } else if (gameId === 'pong' || gameId === 'tetromino') {
+        // Pong / Tetromino recalculate layout each draw frame; no action needed
       } else {
         const game = GAMES.find(g => g.id === gameId);
         if (game) drawPlaceholder(canvas, game);
@@ -752,6 +757,514 @@ function stopPong() {
   clearInterval(pongInterval);
   if (pongState && pongState.cleanup) pongState.cleanup();
   pongState = null;
+}
+
+/* ===== TETROMINO GAME ===== */
+let tetroRaf = 0;
+let tetroInterval = 0;
+let tetroState = null;
+
+const TETRO_SHAPES = {
+  I: { shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], color: '#06b6d4' },
+  O: { shape: [[1,1],[1,1]], color: '#eab308' },
+  T: { shape: [[0,1,0],[1,1,1],[0,0,0]], color: '#a855f7' },
+  L: { shape: [[0,0,1],[1,1,1],[0,0,0]], color: '#f97316' },
+  J: { shape: [[1,0,0],[1,1,1],[0,0,0]], color: '#2563eb' },
+  S: { shape: [[0,1,1],[1,1,0],[0,0,0]], color: '#22c55e' },
+  Z: { shape: [[1,1,0],[0,1,1],[0,0,0]], color: '#ef4444' }
+};
+
+function newBag() {
+  const keys = Object.keys(TETRO_SHAPES);
+  for (let i = keys.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [keys[i], keys[j]] = [keys[j], keys[i]];
+  }
+  return keys;
+}
+
+function rotateMatrix(m) {
+  const N = m.length;
+  const res = Array.from({ length: N }, () => Array(N).fill(0));
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      res[x][N - 1 - y] = m[y][x];
+    }
+  }
+  return res;
+}
+
+function startTetromino(canvas) {
+  stopTetromino();
+  const status = document.getElementById('arcade-game-status');
+  const scoreEl = document.getElementById('arcade-game-score');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = Math.floor(canvas.width / dpr);
+  const H = Math.floor(canvas.height / dpr);
+
+  // Board geometry
+  const COLS = 10;
+  const ROWS = 20;
+  const PREVIEW_CELLS = 4;
+  const HOLD_CELLS = 4;
+  const PADDING = 10;
+  const INFO_WIDTH = 90; // side panels
+  const GAME_W = W - INFO_WIDTH * 2 - PADDING * 4;
+  const GAME_H = H - PADDING * 2;
+  const CS = Math.min(Math.floor(GAME_W / COLS), Math.floor(GAME_H / ROWS)); // cell size
+  const OFFX = INFO_WIDTH + PADDING * 2 + Math.floor((GAME_W - COLS * CS) / 2);
+  const OFFY = PADDING + Math.floor((GAME_H - ROWS * CS) / 2);
+
+  let board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  let bag = newBag();
+  let hold = null;
+  let holdUsed = false;
+  let piece = null;
+  let nextPieces = [];
+  let score = 0;
+  let lines = 0;
+  let level = 1;
+  let started = false;
+  let gameOver = false;
+  let particles = [];
+  let dropTimer = 0;
+  let dropInterval = 800;
+
+  function nextPiece() {
+    if (bag.length === 0) bag = newBag();
+    const type = bag.shift();
+    const def = TETRO_SHAPES[type];
+    return { type, matrix: def.shape.map(r => [...r]), color: def.color, x: 3, y: 0 };
+  }
+
+  function ensureNext(n = 3) {
+    while (nextPieces.length < n) nextPieces.push(nextPiece());
+  }
+
+  function spawnPiece() {
+    ensureNext();
+    piece = nextPieces.shift();
+    ensureNext();
+    holdUsed = false;
+    if (collides(piece.matrix, piece.x, piece.y)) {
+      gameOver = true;
+      if (status) status.textContent = 'Game Over — SPACE to restart';
+      arcadeReportScore('tetromino', score);
+    }
+  }
+
+  function collides(mat, px, py) {
+    for (let y = 0; y < mat.length; y++) {
+      for (let x = 0; x < mat[y].length; x++) {
+        if (!mat[y][x]) continue;
+        const bx = px + x;
+        const by = py + y;
+        if (bx < 0 || bx >= COLS || by >= ROWS) return true;
+        if (by >= 0 && board[by][bx]) return true;
+      }
+    }
+    return false;
+  }
+
+  function lockPiece() {
+    for (let y = 0; y < piece.matrix.length; y++) {
+      for (let x = 0; x < piece.matrix[y].length; x++) {
+        if (!piece.matrix[y][x]) continue;
+        const by = piece.y + y;
+        const bx = piece.x + x;
+        if (by >= 0 && by < ROWS && bx >= 0 && bx < COLS) board[by][bx] = piece.color;
+      }
+    }
+    // Clear lines
+    let cleared = 0;
+    for (let y = ROWS - 1; y >= 0; y--) {
+      if (board[y].every(c => c !== null)) {
+        board.splice(y, 1);
+        board.unshift(Array(COLS).fill(null));
+        cleared++;
+        y++; // recheck same row index
+      }
+    }
+    if (cleared > 0) {
+      const points = [0, 100, 300, 500, 800][cleared] * level;
+      score += points;
+      lines += cleared;
+      level = Math.floor(lines / 10) + 1;
+      dropInterval = Math.max(80, 800 - (level - 1) * 60);
+      spawnLineParticles(cleared);
+    }
+    if (scoreEl) scoreEl.textContent = score;
+    spawnPiece();
+  }
+
+  function tryRotate() {
+    const rotated = rotateMatrix(piece.matrix);
+    // Wall kicks: try original, then shift left, right, up
+    const kicks = [0, -1, 1, -2, 2, 0, -1, 1];
+    for (let i = 0; i < kicks.length; i++) {
+      const dx = kicks[i];
+      const dy = i >= 5 ? -1 : 0;
+      if (!collides(rotated, piece.x + dx, piece.y + dy)) {
+        piece.matrix = rotated;
+        piece.x += dx;
+        piece.y += dy;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function tryMove(dx, dy) {
+    if (!collides(piece.matrix, piece.x + dx, piece.y + dy)) {
+      piece.x += dx;
+      piece.y += dy;
+      return true;
+    }
+    return false;
+  }
+
+  function hardDrop() {
+    while (tryMove(0, 1)) { score += 2; }
+    lockPiece();
+  }
+
+  function swapHold() {
+    if (holdUsed) return;
+    if (!hold) {
+      hold = { type: piece.type, matrix: TETRO_SHAPES[piece.type].shape.map(r => [...r]), color: piece.color };
+      spawnPiece();
+    } else {
+      const old = hold;
+      hold = { type: piece.type, matrix: TETRO_SHAPES[piece.type].shape.map(r => [...r]), color: piece.color };
+      piece = { type: old.type, matrix: old.matrix.map(r => [...r]), color: old.color, x: 3, y: 0 };
+      if (collides(piece.matrix, piece.x, piece.y)) {
+        gameOver = true;
+        if (status) status.textContent = 'Game Over — SPACE to restart';
+        arcadeReportScore('tetromino', score);
+      }
+    }
+    holdUsed = true;
+  }
+
+  function spawnLineParticles(clearedRows) {
+    for (let i = 0; i < 20; i++) {
+      particles.push({
+        x: OFFX + Math.random() * COLS * CS,
+        y: OFFY + (ROWS - clearedRows * 0.5) * CS,
+        vx: (Math.random() - 0.5) * 6,
+        vy: -Math.random() * 4 - 1,
+        life: 1, r: Math.random() * 3 + 2,
+        color: ['#22d3ee','#f472b6','#fbbf24','#a3e635'][Math.floor(Math.random()*4)]
+      });
+    }
+  }
+
+  function drawBlock(cx, cy, color, size) {
+    ctx.fillStyle = color;
+    roundRect(ctx, cx + 1, cy + 1, size - 2, size - 2, 3);
+    ctx.fill();
+    // Highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(cx + 3, cy + 3, size * 0.35, size * 0.25);
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(cx + size * 0.55, cy + size * 0.65, size * 0.4, size * 0.3);
+  }
+
+  function drawMini(matrix, ox, oy, size) {
+    for (let y = 0; y < matrix.length; y++) {
+      for (let x = 0; x < matrix[y].length; x++) {
+        if (matrix[y][x]) {
+          drawBlock(ox + x * size, oy + y * size, TETRO_SHAPES[Object.keys(TETRO_SHAPES).find(k => TETRO_SHAPES[k].color === TETRO_SHAPES[Object.keys(TETRO_SHAPES).find(z => matrix === TETRO_SHAPES[z]?.shape ? false : true)])?.color] || '#94a3b8', size);
+        }
+      }
+    }
+  }
+
+  function drawGhost() {
+    if (!piece) return;
+    let gy = piece.y;
+    while (!collides(piece.matrix, piece.x, gy + 1)) gy++;
+    for (let y = 0; y < piece.matrix.length; y++) {
+      for (let x = 0; x < piece.matrix[y].length; x++) {
+        if (!piece.matrix[y][x]) continue;
+        const bx = piece.x + x;
+        const by = gy + y;
+        if (by >= 0 && by < ROWS && bx >= 0 && bx < COLS) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(OFFX + bx * CS + 1, OFFY + by * CS + 1, CS - 2, CS - 2);
+        }
+      }
+    }
+  }
+
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, W, H);
+
+    // Side panel backgrounds
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    roundRect(ctx, PADDING, PADDING, INFO_WIDTH, H - PADDING * 2, 8);
+    ctx.fill();
+    roundRect(ctx, W - INFO_WIDTH - PADDING, PADDING, INFO_WIDTH, H - PADDING * 2, 8);
+    ctx.fill();
+
+    // Labels
+    ctx.fillStyle = 'var(--text-secondary, #94a3b8)';
+    ctx.font = `bold ${Math.max(10, Math.floor(INFO_WIDTH * 0.14))}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('HOLD', PADDING + INFO_WIDTH / 2, PADDING + 8);
+    ctx.fillText('NEXT', W - INFO_WIDTH / 2 - PADDING, PADDING + 8);
+
+    // Hold piece
+    if (hold) {
+      const ms = Math.min(INFO_WIDTH * 0.55, HOLD_CELLS * 14);
+      const hox = PADDING + (INFO_WIDTH - hold.matrix[0].length * ms) / 2;
+      const hoy = PADDING + 30;
+      for (let y = 0; y < hold.matrix.length; y++) {
+        for (let x = 0; x < hold.matrix[y].length; x++) {
+          if (hold.matrix[y][x]) drawBlock(hox + x * ms, hoy + y * ms, hold.color, ms);
+        }
+      }
+    }
+
+    // Next pieces
+    const ns = Math.min(INFO_WIDTH * 0.45, PREVIEW_CELLS * 12);
+    let ny = PADDING + 30;
+    for (let i = 0; i < Math.min(3, nextPieces.length); i++) {
+      const np = nextPieces[i];
+      const nox = W - INFO_WIDTH - PADDING + (INFO_WIDTH - np.matrix[0].length * ns) / 2;
+      for (let y = 0; y < np.matrix.length; y++) {
+        for (let x = 0; x < np.matrix[y].length; x++) {
+          if (np.matrix[y][x]) drawBlock(nox + x * ns, ny + y * ns, np.color, ns);
+        }
+      }
+      ny += ns * 3.5;
+    }
+
+    // Board border
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(OFFX, OFFY, COLS * CS, ROWS * CS);
+
+    // Board background
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(OFFX, OFFY, COLS * CS, ROWS * CS);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= COLS; x++) {
+      ctx.beginPath();
+      ctx.moveTo(OFFX + x * CS, OFFY);
+      ctx.lineTo(OFFX + x * CS, OFFY + ROWS * CS);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= ROWS; y++) {
+      ctx.beginPath();
+      ctx.moveTo(OFFX, OFFY + y * CS);
+      ctx.lineTo(OFFX + COLS * CS, OFFY + y * CS);
+      ctx.stroke();
+    }
+
+    // Locked blocks
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (board[y][x]) drawBlock(OFFX + x * CS, OFFY + y * CS, board[y][x], CS);
+      }
+    }
+
+    // Ghost + active piece
+    if (piece) {
+      drawGhost();
+      for (let y = 0; y < piece.matrix.length; y++) {
+        for (let x = 0; x < piece.matrix[y].length; x++) {
+          if (!piece.matrix[y][x]) continue;
+          const bx = piece.x + x;
+          const by = piece.y + y;
+          if (by >= 0 && by < ROWS && bx >= 0 && bx < COLS) {
+            drawBlock(OFFX + bx * CS, OFFY + by * CS, piece.color, CS);
+          }
+        }
+      }
+    }
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= 0.04;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      p.x += p.vx;
+      p.y += p.vy;
+    }
+
+    // HUD inside side panels bottom
+    ctx.fillStyle = 'var(--text-secondary, #94a3b8)';
+    ctx.font = `bold ${Math.max(10, Math.floor(INFO_WIDTH * 0.14))}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('LEVEL', PADDING + INFO_WIDTH / 2, H - PADDING - 72);
+    ctx.fillText(String(level), PADDING + INFO_WIDTH / 2, H - PADDING - 52);
+    ctx.fillText('LINES', PADDING + INFO_WIDTH / 2, H - PADDING - 30);
+    ctx.fillText(String(lines), PADDING + INFO_WIDTH / 2, H - PADDING - 10);
+
+    // Overlay screens
+    if (!started) {
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(OFFX, OFFY, COLS * CS, ROWS * CS);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.floor(Math.min(COLS * CS, ROWS * CS) * 0.08)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('TETROMINO', OFFX + COLS * CS / 2, OFFY + ROWS * CS / 2 - 18);
+      ctx.font = `${Math.floor(Math.min(COLS * CS, ROWS * CS) * 0.04)}px sans-serif`;
+      ctx.fillStyle = 'var(--text-secondary, #94a3b8)';
+      ctx.fillText('SPACE or TAP to start', OFFX + COLS * CS / 2, OFFY + ROWS * CS / 2 + 18);
+    }
+
+    if (gameOver) {
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(OFFX, OFFY, COLS * CS, ROWS * CS);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.floor(Math.min(COLS * CS, ROWS * CS) * 0.09)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('GAME OVER', OFFX + COLS * CS / 2, OFFY + ROWS * CS / 2 - 22);
+      ctx.font = `${Math.floor(Math.min(COLS * CS, ROWS * CS) * 0.05)}px sans-serif`;
+      ctx.fillText(`Score ${score}`, OFFX + COLS * CS / 2, OFFY + ROWS * CS / 2 + 14);
+      ctx.font = `${Math.floor(Math.min(COLS * CS, ROWS * CS) * 0.035)}px sans-serif`;
+      ctx.fillStyle = 'var(--text-secondary, #94a3b8)';
+      ctx.fillText('SPACE to restart', OFFX + COLS * CS / 2, OFFY + ROWS * CS / 2 + 48);
+    }
+
+    tetroRaf = requestAnimationFrame(draw);
+  }
+
+  function tick() {
+    if (!started || gameOver || !piece) return;
+    dropTimer += 1000 / 60; // assume 60fps tick interval; actually we use setInterval at ~16ms
+    if (dropTimer >= dropInterval) {
+      dropTimer = 0;
+      if (!tryMove(0, 1)) lockPiece();
+    }
+  }
+
+  function resetGame() {
+    board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    bag = newBag();
+    hold = null;
+    holdUsed = false;
+    nextPieces = [];
+    score = 0;
+    lines = 0;
+    level = 1;
+    dropInterval = 800;
+    dropTimer = 0;
+    started = true;
+    gameOver = false;
+    particles = [];
+    if (scoreEl) scoreEl.textContent = '0';
+    if (status) status.textContent = 'Level 1';
+    spawnPiece();
+  }
+
+  function onKey(e) {
+    if (e.code === 'Space') {
+      if (!started) { e.preventDefault(); resetGame(); return; }
+      if (gameOver) { e.preventDefault(); resetGame(); return; }
+      // Hard drop on space if already started
+      e.preventDefault();
+      hardDrop();
+      return;
+    }
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      stopTetromino();
+      document.getElementById('arcade-game-panel').classList.remove('active');
+      return;
+    }
+    if (!started || gameOver) return;
+    if (['ArrowLeft', 'KeyA'].includes(e.code)) { e.preventDefault(); tryMove(-1, 0); }
+    if (['ArrowRight', 'KeyD'].includes(e.code)) { e.preventDefault(); tryMove(1, 0); }
+    if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); if (tryMove(0, 1)) score += 1; }
+    if (['ArrowUp', 'KeyW', 'KeyX'].includes(e.code)) { e.preventDefault(); tryRotate(); }
+    if (e.code === 'KeyC' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') { e.preventDefault(); swapHold(); }
+    if (e.code === 'KeyZ') { e.preventDefault(); tryRotate(); } // same as up
+    if (scoreEl) scoreEl.textContent = score;
+  }
+
+  // Touch controls: tap = rotate, swipe left/right = move, swipe down = soft drop, swipe up = hard drop
+  let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+  function onTouchStart(e) {
+    if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    }
+  }
+  function onTouchEnd(e) {
+    if (!started) { resetGame(); return; }
+    if (gameOver) { resetGame(); return; }
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const dt = Date.now() - touchStartTime;
+    const absDx = Math.abs(dx), absDy = Math.abs(dy);
+    // Tap (short time, little movement) = rotate
+    if (dt < 250 && Math.max(absDx, absDy) < 16) {
+      tryRotate();
+      return;
+    }
+    if (Math.max(absDx, absDy) < 24) return;
+    if (absDx > absDy) {
+      if (dx > 0) tryMove(1, 0);
+      else tryMove(-1, 0);
+    } else {
+      if (dy > 0) { if (tryMove(0, 1)) score += 1; }
+      else hardDrop();
+    }
+    if (scoreEl) scoreEl.textContent = score;
+  }
+
+  function onClick() {
+    if (!started) { resetGame(); }
+    else if (gameOver) { resetGame(); }
+  }
+
+  document.addEventListener('keydown', onKey);
+  canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+  canvas.addEventListener('touchend', onTouchEnd, { passive: true });
+  canvas.addEventListener('click', onClick);
+
+  tetroState = {
+    cleanup() {
+      document.removeEventListener('keydown', onKey);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('click', onClick);
+    }
+  };
+
+  if (status) status.textContent = 'Press SPACE to start';
+  if (scoreEl) scoreEl.textContent = '0';
+  ensureNext();
+  tetroRaf = requestAnimationFrame(draw);
+  tetroInterval = setInterval(tick, 1000 / 60);
+}
+
+function stopTetromino() {
+  cancelAnimationFrame(tetroRaf);
+  clearInterval(tetroInterval);
+  if (tetroState && tetroState.cleanup) tetroState.cleanup();
+  tetroState = null;
 }
 
 /* Public API for game modules */
