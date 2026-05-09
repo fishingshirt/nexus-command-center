@@ -173,43 +173,6 @@ def _logs():
     }
 
 # ── Request Handler ─────────────────────────────
-class SPAHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *a, **k):
-        self.args_dir = k.pop('args_dir')
-        super().__init__(*a, directory=self.args_dir, **k)
-
-    def _api_handler(self):
-        path = self.path.split('?')[0]
-        repo = os.path.dirname(os.path.abspath(self.args_dir))
-
-        if path == '/api/server/status':
-            info = {'pid': os.getpid(), 'port': self.server.server_address[1],
-                    'uptime_seconds': int(time.time() - START_TIME)}
-            info.update(_git_info(repo))
-            _json(self, 200, info)
-            return True
-
-        if path == '/api/system/health':
-            _json(self, 200, _health())
-            return True
-
-        if path == '/api/system/deps':
-            _json(self, 200, _deps())
-            return True
-
-        if path == '/api/system/network':
-            _json(self, 200, _network())
-            return True
-
-        if path == '/api/system/logs':
-            _json(self, 200, _logs())
-            return True
-
-        if path.startswith('/api/backup/'):
-            return _api_backup(self, path, repo)
-
-        return False
-
 def _api_backup(handler, path, repo):
     import tempfile, glob, re
 
@@ -348,6 +311,43 @@ def _api_backup(handler, path, repo):
 
     _json(handler, 404, {'ok': False, 'error': 'Unknown backup endpoint'})
     return True
+
+class SPAHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *a, **k):
+        self.args_dir = k.pop('args_dir')
+        super().__init__(*a, directory=self.args_dir, **k)
+
+    def _api_handler(self):
+        path = self.path.split('?')[0]
+        repo = os.path.dirname(os.path.abspath(self.args_dir))
+
+        if path == '/api/server/status':
+            info = {'pid': os.getpid(), 'port': self.server.server_address[1],
+                    'uptime_seconds': int(time.time() - START_TIME)}
+            info.update(_git_info(repo))
+            _json(self, 200, info)
+            return True
+
+        if path == '/api/system/health':
+            _json(self, 200, _health())
+            return True
+
+        if path == '/api/system/deps':
+            _json(self, 200, _deps())
+            return True
+
+        if path == '/api/system/network':
+            _json(self, 200, _network())
+            return True
+
+        if path == '/api/system/logs':
+            _json(self, 200, _logs())
+            return True
+
+        if path.startswith('/api/backup/'):
+            return _api_backup(self, path, repo)
+
+        return False
 
     def do_OPTIONS(self):
         self.send_response(204)
