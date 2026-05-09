@@ -9,8 +9,8 @@
 
 - **Project phase:** Agent Task System
 - **Last updated:** 2026-05-09
-- **Active tasks:** 10
-- **Completed tasks:** 64 (T-001 through T-038-e)
+- **Active tasks:** 9
+- **Completed tasks:** 65 (T-001 through T-012)
 
 ---
 
@@ -18,7 +18,6 @@
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| HIGH | `T-012` | Hermes API bridge | `PENDING` | [`tasks/T-012.md`](tasks/T-012.md) |
 | HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
@@ -52,6 +51,7 @@
 | `T-036` | Stocks & crypto + paper trading |
 | `T-037` | Settings icon relocation |
 | `T-038` | Logic bug sweep (calendar, notes, phone-bridge, auth, finance) |
+| `T-012` | Hermes API bridge (Telegram Bot API relay + dashboard chat polling) |
 
 ---
 
