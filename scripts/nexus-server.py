@@ -140,6 +140,30 @@ def _deps():
         services.append({'name': 'DNS', 'status': 'error', 'message': 'DNS unavailable'})
     return {'services': services}
 
+def _network():
+    result = {'tailscale_ip': None, 'tailscale_status': 'not_installed', 'peers_count': 0, 'magic_dns': False, 'error': None}
+    try:
+        import json
+        out = subprocess.check_output(['tailscale', 'status', '--json'], stderr=subprocess.DEVNULL, timeout=5)
+        data = json.loads(out)
+        # tailscale status json has Self with TailscaleIPs and Peer entries
+        self_obj = data.get('Self', {})
+        ips = self_obj.get('TailscaleIPs', [])
+        result['tailscale_ip'] = ips[0] if ips else None
+        result['tailscale_status'] = 'up' if self_obj.get('Online') else 'down'
+        result['peers_count'] = len(data.get('Peer', {}))
+        result['magic_dns'] = data.get('MagicDNSSuffix') is not None
+    except FileNotFoundError:
+        result['tailscale_status'] = 'not_installed'
+        result['error'] = 'tailscale binary not found'
+    except subprocess.TimeoutExpired:
+        result['tailscale_status'] = 'error'
+        result['error'] = 'Timed out querying tailscale status'
+    except Exception as e:
+        result['tailscale_status'] = 'error'
+        result['error'] = str(e)
+    return result
+
 def _logs():
     errors_path = os.path.expanduser('~/.hermes/logs/errors.log')
     return {
@@ -171,6 +195,10 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/system/deps':
             _json(self, 200, _deps())
+            return True
+
+        if path == '/api/system/network':
+            _json(self, 200, _network())
             return True
 
         if path == '/api/system/logs':

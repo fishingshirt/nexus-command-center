@@ -213,6 +213,17 @@ function initSettings() {
     toast(showWelcome.checked ? 'Welcome screen will replay on next visit' : 'Welcome screen disabled');
   });
 
+  // IT Hub visibility
+  const itHubVisible = document.getElementById('it-hub-visible');
+  if (itHubVisible) {
+    itHubVisible.checked = settings.itHubVisible || false;
+    itHubVisible.addEventListener('change', () => {
+      saveSettings({ itHubVisible: itHubVisible.checked });
+      toggleItHubGrid(itHubVisible.checked);
+      toast(itHubVisible.checked ? 'IT Hub shown on main grid' : 'IT Hub hidden from main grid');
+    });
+  }
+
   // Export data
   document.getElementById('btn-export').addEventListener('click', () => {
     const data = {};
@@ -521,6 +532,12 @@ function updateDashboardDate() {
     const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     el.textContent = now.toLocaleDateString(undefined, opts);
   }
+}
+
+function toggleItHubGrid(visible) {
+  const card = document.querySelector('[data-app="backup"]');
+  if (!card) return;
+  card.style.display = visible ? '' : 'none';
 }
 
 /* ===== FEEDBACK ===== */

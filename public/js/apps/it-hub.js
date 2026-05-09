@@ -35,10 +35,23 @@ function renderCards(grid) {
   const cards = [
     { id: 'it-server', title: 'Server Status', icon: '🖥️' },
     { id: 'it-health', title: 'System Health', icon: '⚡' },
+    { id: 'it-network',title: 'Network / Tailscale', icon: '🌐' },
     { id: 'it-deps',   title: 'Service Matrix', icon: '🔗' },
     { id: 'it-logs',   title: 'Logs & Debug', icon: '📋' },
+    { id: 'it-auth',   title: 'Auth & Session', icon: '🔐' },
   ];
-  grid.innerHTML = cards.map(c => `
+  grid.innerHTML = '\
+    <div class="it-hub-actions">\
+      <button class="it-hub-refresh" id="it-refresh-all" aria-label="Refresh all cards">\
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>\
+        Refresh All\
+      </button>\
+      <button class="it-hub-refresh" id="it-export-status" aria-label="Copy status report">\
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>\
+        Copy Status Report\
+      </button>\
+    </div>' +
+  cards.map(c => `
     <div class="it-card" id="${c.id}">
       <div class="it-card-header">
         <span class="it-status-dot gray" id="${c.id}-dot"></span>
@@ -54,7 +67,16 @@ function renderCards(grid) {
     </div>
   `).join('');
 
-  grid.querySelectorAll('.it-hub-refresh').forEach(btn => {
+  document.getElementById('it-refresh-all')?.addEventListener('click', () => {
+    refreshAll();
+    if (typeof toast !== 'undefined') toast('IT Hub refreshed');
+  });
+
+  document.getElementById('it-export-status')?.addEventListener('click', () => {
+    copyStatusReport();
+  });
+
+  grid.querySelectorAll('.it-hub-refresh[data-card]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.card;
       refreshCard(id);
@@ -63,7 +85,66 @@ function renderCards(grid) {
 }
 
 function refreshAll() {
-  ['it-server', 'it-health', 'it-deps', 'it-logs'].forEach(refreshCard);
+  ['it-server', 'it-health', 'it-network', 'it-deps', 'it-logs', 'it-auth'].forEach(refreshCard);
+}
+
+/* ── Network / Tailscale ───────────────────— */
+async function loadNetwork(dot, rows) {
+  const data = await fetchJson('/api/system/network');
+  const ok = data.tailscale_status === 'up';
+  dot.className = ok ? 'it-status-dot green' : data.tailscale_status === 'down' ? 'it-status-dot amber' : 'it-status-dot red';
+
+  if (data.error && data.tailscale_status === 'not_installed') {
+    rows.innerHTML = `
+      <div class="it-row"><span class="it-label">Tailscale</span><span class="it-value">Not installed</span></div>
+      <div class="it-row"><span class="it-label">Peers</span><span class="it-value">—</span></div>
+    `;
+    return;
+  }
+
+  rows.innerHTML = `
+    <div class="it-row"><span class="it-label">Tailscale IP</span><span class="it-value">${esc(data.tailscale_ip || '—')}</span></div>
+    <div class="it-row"><span class="it-label">Status</span><span class="it-value">${esc(data.tailscale_status)}</span></div>
+    <div class="it-row"><span class="it-label">Peers</span><span class="it-value">${data.peers_count}</span></div>
+    <div class="it-row"><span class="it-label">MagicDNS</span><span class="it-value">${data.magic_dns ? 'On' : 'Off'}</span></div>
+  `;
+}
+async function loadAuth(dot, rows) {
+  const settings = loadSettings();
+  const auth = settings.auth || {};
+  const isLoggedIn = !!auth.token && !!auth.username;
+  dot.className = isLoggedIn ? 'it-status-dot green' : 'it-status-dot gray';
+
+  if (!isLoggedIn) {
+    rows.innerHTML = `
+      <div class="it-row"><span class="it-label">Status</span><span class="it-value">Not implemented</span></div>
+      <div class="it-row"><span class="it-label">Mode</span><span class="it-value">Guest / Public</span></div>
+    `;
+    return;
+  }
+
+  const expiry = auth.expiresAt ? new Date(auth.expiresAt) : null;
+  const now = Date.now();
+  const remaining = expiry ? Math.max(0, expiry - now) : 0;
+  const hoursLeft = Math.floor(remaining / 3600000);
+
+  rows.innerHTML = `
+    <div class="it-row"><span class="it-label">Status</span><span class="it-value">Logged in</span></div>
+    <div class="it-row"><span class="it-label">Username</span><span class="it-value">${esc(auth.username || '—')}</span></div>
+    <div class="it-row"><span class="it-label">Role</span><span class="it-value">${esc(auth.role || 'user')}</span></div>
+    <div class="it-row"><span class="it-label">Session</span><span class="it-value">${hoursLeft}h ${Math.floor((remaining % 3600000)/60000)}m</span></div>
+    <div class="it-row"><span class="it-label">Actions</span><button id="btn-it-logout" class="it-hub-refresh" style="margin-top:0">Logout</button></div>
+  `;
+
+  const logoutBtn = document.getElementById('btn-it-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      saveSettings({ auth: undefined });
+      localStorage.removeItem('ncc-auth');
+      toast('Logged out');
+      refreshCard('it-auth');
+    });
+  }
 }
 
 async function refreshCard(id) {
@@ -79,6 +160,8 @@ async function refreshCard(id) {
     else if (id === 'it-health') await loadHealth(dot, rows);
     else if (id === 'it-deps') await loadDeps(dot, rows);
     else if (id === 'it-logs') await loadLogs(dot, rows);
+    else if (id === 'it-auth') await loadAuth(dot, rows);
+    else if (id === 'it-network') await loadNetwork(dot, rows);
   } catch (e) {
     dot.className = 'it-status-dot red';
     rows.innerHTML = `<div class="it-card-placeholder">Error: ${esc(e.message)}</div>`;
@@ -160,4 +243,35 @@ function fmtDuration(sec) {
 
 function esc(s) {
   return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function copyStatusReport() {
+  const cards = ['it-server','it-health','it-network','it-deps','it-logs','it-auth'];
+  let markdown = '| Card | Key | Value |\n|------|-----|-------|\n';
+  cards.forEach(id => {
+    const dot = document.getElementById(`${id}-dot`);
+    const rows = document.getElementById(`${id}-rows`);
+    if (!dot || !rows) return;
+    const cardLabel = document.querySelector(`#${id} h4`)?.textContent?.trim() || id;
+    const status = dot.classList.contains('green') ? 'ok' : dot.classList.contains('red') ? 'error' : 'warn';
+    rows.querySelectorAll('.it-row').forEach(row => {
+      const label = row.querySelector('.it-label')?.textContent?.trim() || '';
+      const value = row.querySelector('.it-value')?.textContent?.trim() || '';
+      if (label) markdown += `| ${cardLabel} | ${label} | ${value} |\n`;
+    });
+    if (!rows.querySelectorAll('.it-row').length) {
+      markdown += `| ${cardLabel} | status | ${status} |\n`;
+    }
+  });
+  navigator.clipboard.writeText(markdown).then(() => {
+    if (typeof toast !== 'undefined') toast('Status report copied');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = markdown;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (typeof toast !== 'undefined') toast('Status report copied');
+  });
 }

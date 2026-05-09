@@ -136,3 +136,20 @@
 .it-dep-cell.ok   .it-dep-icon { color: #22c55e; }
 .it-dep-cell.warn .it-dep-icon { color: #f59e0b; }
 .it-dep-cell.err  .it-dep-icon { color: #ef4444; }
+
+/* ── Action bar inside grid ── */
+.it-hub-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  margin-bottom: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .it-hub-actions { grid-column: span 2; }
+}
+
+@media (min-width: 1200px) {
+  .it-hub-actions { grid-column: span 3; }
+}
