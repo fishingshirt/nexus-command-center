@@ -1,3 +1,5 @@
+import { initCalendar } from './apps/calendar.js';
+
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
   { id: 'notes', name: 'Notes', icon: '📝', path: 'notes' },
@@ -12,6 +14,7 @@ export function initApp() {
   initSettings();
   initWelcome();
   initChat();
+  initCalendar();
   updateDashboardDate();
   registerServiceWorker();
 }
@@ -400,9 +403,7 @@ export function toast(message, type = 'success') {
   div.className = `toast ${type}`;
   div.textContent = message;
   container.appendChild(div);
-  div.addEventListener('animationend', e => {
-    if (e.animationName === 'toastOut') div.remove();
-  });
+  setTimeout(() => div.remove(), 3000);
 }
 
 function updateDashboardDate() {

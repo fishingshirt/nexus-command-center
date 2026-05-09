@@ -36,6 +36,14 @@ The first time you open it, you're greeted with a cinematic welcome: ambient mus
 - Color-coded categories (work, personal, health, etc.)
 - Recurring events (daily, weekly, monthly)
 - Notifications / reminders (browser notification API)
+- **Google Calendar integration**
+  - Settings panel with Google OAuth2 / API key input for auth
+  - Manual sync button (pull events from Google Calendar)
+  - Auto-sync on interval (configurable, default 15 minutes)
+  - Sync status indicator: `unlinked` → `linking` → `linked` / `synced` / `error`
+  - Two-way sync: push Nexus events to Google, pull Google events to Nexus
+  - Conflict resolution: last-write-wins with visual diff option
+  - Falls back to localStorage when offline or unauthenticated
 - Persist to `localStorage` (v1), migrate to server DB (v2)
 
 ### 2. Notes
@@ -113,17 +121,47 @@ Stored in `localStorage` under key `ncc-settings`.
   "chatPosition": "bottom-right",
   "pinnedApps": ["calendar", "notes", "todo"],
   "notificationsEnabled": true,
-  "language": "en"
+  "language": "en",
+  "integrations": {
+    "googleCalendar": {
+      "enabled": false,
+      "clientId": "",
+      "apiKey": "",
+      "accessToken": "",
+      "refreshToken": "",
+      "syncIntervalMinutes": 15,
+      "lastSyncAt": null,
+      "syncStatus": "unlinked"
+    }
+  }
 }
 ```
 
 ### Settings UI
 - Slide-out panel from right edge
-- Sections: Appearance, Apps, Notifications, Data, About
-- **Reset Welcome Screen** toggle — when ON, the intro plays on every page load (for testing/demo)
-- **Export Data** — download all `localStorage` as JSON
-- **Import Data** — restore from JSON file
-- **Clear All Data** — destructive, with confirmation modal
+- Sections: **Appearance**, **Apps**, **Integrations**, **Notifications**, **Data**, **About**
+- **Appearance**
+  - Theme picker (dropdown)
+  - Reduce animations toggle
+- **Apps**
+  - Pin/favorite apps reordering
+  - Per-app notification toggles
+- **Integrations** *(new — T-009-e)*
+  - **Google Calendar**
+    - Status badge: `🔗 Linked` / `⛓️ Unlinked` / `⏳ Syncing…` / `❌ Auth Error`
+    - Connect / Disconnect button
+    - Manual sync button
+    - Auto-sync interval picker (5 / 15 / 30 / 60 minutes)
+    - Last sync timestamp
+    - Raw Google Calendar API token input (advanced — for users who prefer manual token paste)
+    - OAuth2 flow button (preferred — opens Google auth popup)
+- **Data**
+  - Reset Welcome Screen toggle
+  - Export Data (JSON download)
+  - Import Data (JSON file picker)
+  - Clear All Data (confirmation modal)
+- **About**
+  - Version, build info
 
 ---
 

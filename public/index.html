@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/themes/professional.css" id="theme-stylesheet">
+  <link rel="stylesheet" href="css/apps/calendar.css">
 </head>
 <body>
 
@@ -207,16 +208,26 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           </button>
           <h2>Calendar</h2>
-          <button class="view-action" aria-label="Add event">
+          <button class="view-action" id="calendar-add-btn" aria-label="Add event">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           </button>
         </div>
-        <div class="view-body">
-          <div class="empty-state">
-            <div class="empty-icon">📅</div>
-            <h3>No events yet</h3>
-            <p>Your calendar is ready. Events will appear here.</p>
+        <div class="view-body calendar-view-body">
+          <div class="calendar-toolbar">
+            <button class="calendar-nav-btn" id="cal-prev" aria-label="Previous month">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <h3 class="calendar-month-year" id="cal-month-year"></h3>
+            <button class="calendar-nav-btn" id="cal-next" aria-label="Next month">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+            <button class="calendar-today-btn" id="cal-today">Today</button>
           </div>
+          <div class="calendar-weekdays">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="cal-grid"></div>
+          <div class="calendar-legend" id="cal-legend"></div>
         </div>
       </div>
 
@@ -305,6 +316,61 @@
 
   <!-- Toast Container -->
   <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Event Modal -->
+  <div id="event-modal" class="event-modal" aria-hidden="true" role="dialog" aria-label="Event editor">
+    <div class="event-modal-backdrop" id="event-modal-backdrop"></div>
+    <div class="event-modal-panel">
+      <div class="event-modal-header">
+        <h3 id="event-modal-title">New Event</h3>
+        <button class="event-modal-close" id="event-modal-close" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form class="event-modal-body" id="event-form">
+        <input type="hidden" id="event-id">
+        <label class="event-field">
+          <span>Title *</span>
+          <input type="text" id="event-title" required placeholder="Meeting, workout...">
+        </label>
+        <label class="event-field">
+          <span>Date *</span>
+          <input type="date" id="event-date" required>
+        </label>
+        <div class="event-field-row">
+          <label class="event-field">
+            <span>Start</span>
+            <input type="time" id="event-start">
+          </label>
+          <label class="event-field">
+            <span>End</span>
+            <input type="time" id="event-end">
+          </label>
+        </div>
+        <label class="event-field">
+          <span>Category</span>
+          <select id="event-category">
+            <option value="personal">Personal</option>
+            <option value="work">Work</option>
+            <option value="health">Health</option>
+            <option value="social">Social</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label class="event-field">
+          <span>Description</span>
+          <textarea id="event-desc" rows="3" placeholder="Details..."></textarea>
+        </label>
+        <div class="event-modal-actions">
+          <button type="button" class="btn-danger" id="event-delete">Delete</button>
+          <div class="event-modal-actions-right">
+            <button type="button" class="btn-secondary" id="event-cancel">Cancel</button>
+            <button type="submit" class="btn-primary" id="event-save">Save</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script type="module">

@@ -37,7 +37,13 @@
 ### 🟡 HIGH (Next Sprint)
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| `T-009` | Calendar app — full CRUD, month/week/day views, localStorage persistence | `PENDING` | Use a lightweight JS calendar lib or build custom. |
+| `T-009` | Calendar app — full CRUD, month/week/day views, localStorage persistence | `IN_PROGRESS` | Broken into sub-tasks below. |
+| `T-009-a` | Calendar month grid renderer + navigation | `IN_PROGRESS` | Month view with prev/next/today buttons. |
+| `T-009-b` | Calendar event CRUD modal | `IN_PROGRESS` | Add/edit/delete events with title/time/description. |
+| `T-009-c` | Calendar localStorage persistence | `IN_PROGRESS` | Events load/save to `ncc-calendar-events`. |
+| `T-009-d` | Calendar week/day views | `PENDING` | Switchable view modes. |
+| `T-009-e` | **Google Calendar sync** — OAuth2 + API integration, settings panel auth, auto/manual sync, status indicator | `PENDING` | **User directive.** Settings panel needs Google Calendar token/API field. Manual + auto sync checks. Shows 'linked' / 'synced' / 'error' status. Falls back to localStorage if no auth. |
+| `T-009-f` | Calendar recurring events engine | `PENDING` | Weekly/monthly/yearly recurrence rules. |
 | `T-010` | Notes app — rich text or markdown editor, folders/tags, search | `PENDING` | `localStorage` for now. Consider IndexedDB later. |
 | `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `PENDING` | Must sync visually with Calendar. |
 | `T-012` | Hermes API bridge — real chat backend integration | `PENDING` | Research how to pipe messages to/from Hermes. |
