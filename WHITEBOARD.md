@@ -42,14 +42,14 @@
 | `T-009-b` | Calendar event CRUD modal | `DONE` | Add/edit/delete events with title/time/description/category. |
 | `T-009-c` | Calendar localStorage persistence | `DONE` | Events load/save to `ncc-calendar-events`. |
 | `T-009-d` | Calendar week/day views | `DONE` | Month/week/day switchable. Responsive. Events clickable. |
-| `T-009-e` | **Google Calendar sync** — OAuth2 + API integration, settings panel auth, auto/manual sync, status indicator | `IN_PROGRESS` | Broken into sub-tasks below. |
+| `T-009-e` | **Google Calendar sync** — OAuth2 + API integration, settings panel auth, auto/manual sync, status indicator | `DONE` | T-009-e-a/b/c/d all complete. Engine fetches primary calendar via API key, merges with local events (gcalId tracking), updates dirty fields only. Auto-sync loop with configurable interval. Toolbar dot shows none/linked/syncing/synced/error. |
 | `T-009-e-a` | Google Calendar sync — Settings panel UI for auth, toggle, manual sync button, status display | `DONE` | Settings section with API key / OAuth fields, auto-sync toggle, manual sync trigger, status indicator (linked/synced/error). Stores config in ncc-settings.calendarSync. Toolbar dot reflects status. |
 | `T-009-e-b` | Google Calendar sync — OAuth2 + API client wiring | `DONE` | API key + OAuth fields in Settings. Triggers `calendarSyncChanged` custom event. Sync engine moved to gcal-sync.js. |
-| `T-009-e-c` | Google Calendar sync — Sync engine (read events, merge with localStorage) | `PENDING` | Fetch events list, merge into ncc-calendar-events with gcalId field, handle conflicts. |
-| `T-009-e-d` | Google Calendar sync — Auto-sync background loop + Calendar header status dot | `PENDING` | Poll every N minutes when enabled. Show green/amber/red dot in calendar toolbar. |
-|| `T-009-f` | Calendar recurring events engine | `DONE` | Daily/weekly/monthly/yearly recurrence. Events rendered with ↻ badge. Occurrences generated on-the-fly for month/week/day views. No hard end-date or count-limit yet. |
-|| `T-010` | Notes app — rich text or markdown editor, folders/tags, search | `DONE` | Plain-text editor with CRUD, auto-save, search, and sidebar list. localStorage persistence. Markdown rendering + folders/tags deferred. |
-|| `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `DONE` | CRUD, priorities, due dates, filters (all/active/completed), clear completed, localStorage persistence, reactive badge count. Recurring + drag-and-drop deferred. |
+| `T-009-e-c` | Google Calendar sync — Sync engine (read events, merge with localStorage) | `DONE` | Fetch events list, merge into ncc-calendar-events with gcalId field, handle conflicts. Syncing badge added. |
+| `T-009-e-d` | Google Calendar sync — Auto-sync background loop + Calendar header status dot | `DONE` | Poll every N minutes when enabled. Show green/amber/red dot in calendar toolbar. Interval change reboots timer. |
+| `T-009-f` | Calendar recurring events engine | `DONE` | Daily/weekly/monthly/yearly recurrence. Events rendered with ↻ badge. Occurrences generated on-the-fly for month/week/day views. No hard end-date or count-limit yet. |
+| `T-010` | Notes app — rich text or markdown editor, folders/tags, search | `DONE` | Plain-text editor with CRUD, auto-save, search, and sidebar list. localStorage persistence. Markdown rendering + folders/tags deferred. |
+| `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `DONE` | CRUD, priorities, due dates, filters (all/active/completed), clear completed, localStorage persistence, reactive badge count. Recurring + drag-and-drop deferred. |
 | `T-012` | Hermes API bridge — real chat backend integration | `PENDING` | Research how to pipe messages to/from Hermes. |
 | `T-013` | Data persistence layer — migrate from `localStorage` to a real DB (SQLite/JSON file on server) | `PENDING` | Required before multi-device sync. |
 | `T-014` | Auth / user sessions — basic login so data isn't world-readable | `PENDING` | Simple JWT or even just a password hash. |
