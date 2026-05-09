@@ -698,6 +698,111 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         self.extensions_map['.css'] = 'text/css'
         self.extensions_map['.svg'] = 'image/svg+xml'
         self.extensions_map['.json'] = 'application/json'
+        # ── TEMP PIN GATE ──
+        if self.path == '/pin-auth':
+            import cgi
+            ctype, pdict = cgi.parse_header(self.headers.get('Content-Type', ''))
+            length = int(self.headers.get('Content-Length', 0))
+            if length:
+                body = self.rfile.read(length).decode('utf-8')
+                pin = body.strip()
+                if pin == TEMP_PIN:
+                    self.send_response(200)
+                    self.send_header('Set-Cookie', 'nexus_pin=fullroot88; Path=/; SameSite=Strict')
+                    _cors(self)
+                    self.end_headers()
+                    self.wfile.write(b'{"ok":true}')
+                else:
+                    self.send_response(401)
+                    _cors(self)
+                    self.end_headers()
+                    self.wfile.write(b'{"ok":false}')
+            else:
+                self.send_response(400)
+                _cors(self)
+                self.end_headers()
+            return
+        # Skip PIN check for static assets the gate page needs
+        if not self.path.startswith('/api/') and not (self.path.endswith('.css') or self.path.endswith('.js') or self.path.endswith('.ico')):
+            cookies = self.headers.get('Cookie', '')
+            if 'nexus_pin=fullroot88' not in cookies:
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html')
+                _cors(self)
+                self.end_headers()
+                self.wfile.write(f'''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus Command Center</title>
+<style>
+  * {{ margin:0; padding:0; box-sizing:border-box; }}
+  body {{ background:#0a0a0f; display:flex; justify-content:center; align-items:center; height:100vh; font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; }}
+  .gate {{ text-align:center; z-index:10; }}
+  .gate h1 {{ color:#39d0f2; font-size:2rem; margin-bottom:0.5rem; text-shadow:0 0 20px rgba(57,208,242,.5); letter-spacing:2px; }}
+  .gate p {{ color:#888; margin-bottom:2rem; font-size:.95rem; }}
+  .pin-wrap {{ display:flex; gap:.6rem; justify-content:center; }}
+  .pin-wrap input {{ width:3rem; height:4rem; font-size:1.8rem; text-align:center; background:#11111a; border:2px solid #1f1f2e; border-radius:8px; color:#fff; outline:none; transition:border-color .2s,box-shadow .2s; caret-color:#39d0f2; }}
+  .pin-wrap input:focus {{ border-color:#39d0f2; box-shadow:0 0 10px rgba(57,208,242,.3); }}
+  .shield {{ position:absolute; inset:0; background:radial-gradient(circle at center,#0a1925 0%,#000 100%); opacity:.9; }}
+  .scanline {{ position:absolute; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,200,.02) 2px,rgba(0,255,200,.02) 4px); pointer-events:none; }}
+  .pulse {{ animation: gatePulse 3s ease-in-out infinite; }}
+  @keyframes gatePulse {{ 0%,100% {{ opacity:.6; }} 50% {{ opacity:1; }} }}
+</style>
+</head>
+<body>
+<div class="shield"></div>
+<div class="scanline"></div>
+<div class="gate">
+  <h1 class="pulse">NEXUS COMMAND CENTER</h1>
+  <p>Please enter your access code to continue</p>
+  <div class="pin-wrap" id="pinWrap">
+    <input type="text" maxlength="1" inputmode="numeric" autocomplete="off" pattern="[0-9]*">
+    <input type="text" maxlength="1" inputmode="numeric" autocomplete="off" pattern="[0-9]*">
+    <input type="text" maxlength="1" inputmode="numeric" autocomplete="off" pattern="[0-9]*">
+    <input type="text" maxlength="1" inputmode="numeric" autocomplete="off" pattern="[0-9]*">
+    <input type="text" maxlength="1" inputmode="numeric" autocomplete="off" pattern="[0-9]*">
+    <input type="text" maxlength="1" inputmode="numeric" autocomplete="off" pattern="[0-9]*">
+    <input type="text" maxlength="1" inputmode="numeric" autocomplete="off" pattern="[0-9]*">
+    <input type="text" maxlength="1" inputmode="numeric" autocomplete="off" pattern="[0-9]*">
+  </div>
+  <p id="msg" style="margin-top:1.5rem;color:#c44;font-size:.9rem;min-height:1.2rem;"></p>
+</div>
+<script>
+  const wrap=document.getElementById('pinWrap');
+  const msg=document.getElementById('msg');
+  const inputs=wrap.querySelectorAll('input');
+  const CORRECT='fullroot88';
+  const code=[];
+  inputs.forEach((inp,i)=>{{
+    inp.addEventListener('input',e=>{{
+      if(e.data&&i<7){{code[i]=e.data;inp.value='●';inputs[i+1].focus();}}
+      else if(e.data&&i===7){{code[i]=e.data;inp.value='●';verify();}}
+    }});
+    inp.addEventListener('keydown',e=>{{
+      if(e.key==='Backspace'&&i>0&&inp.value===''){{inputs[i-1].focus();}}
+    }});
+    inp.addEventListener('focus',()=>inp.select());
+  }});
+  function verify(){{
+    msg.textContent='Verifying...';
+    msg.style.color='#39d0f2';
+    const pin=code.join('');
+    fetch('/pin-auth',{{method:'POST',headers:{{'Content-Type':'text/plain'}},body:pin}})
+    .then(r=>r.json())
+    .then(j=>{{
+      if(j.ok){{location.reload();}}
+      else{{msg.textContent='ACCESS DENIED';msg.style.color='#c44';inputs.forEach(i=>{{i.value='';i.style.borderColor='#c44';}});setTimeout(()=>{{inputs.forEach(i=>{{i.style.borderColor='#1f1f2e';}});inputs[0].focus();}},800);}}
+    }});
+  }}
+</script>
+</body>
+</html>
+'''.encode('utf-8'))
+                return
+        # ── NORMAL SPA LOGIC ──
         if self.path.startswith('/api/'):
             if self._api_handler():
                 return
