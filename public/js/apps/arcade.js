@@ -1,7 +1,7 @@
 /* ===== ARCADE APP SHELL ===== */
 const GAMES = [
   { id: 'snake', name: 'Snake', desc: 'Classic snake. Eat, grow, don\'t crash.', icon: '🐍', comingSoon: false },
-  { id: 'pong', name: 'Pong', desc: 'VS CPU paddle battle.', icon: '🏓', comingSoon: true },
+  { id: 'pong', name: 'Pong', desc: 'VS CPU paddle battle.', icon: '🏓', comingSoon: false },
   { id: 'tetromino', name: 'Tetromino', desc: 'Block stacking with hold + preview.', icon: '🧱', comingSoon: true },
   { id: 'minesweeper', name: 'Minesweeper', desc: 'Find all mines. Flag carefully.', icon: '💣', comingSoon: true },
   { id: 'two048', name: '2048', desc: 'Merge tiles to reach 2048.', icon: '🔢', comingSoon: true },
@@ -106,6 +106,8 @@ function launchGame(gameId) {
 
   if (gameId === 'snake') {
     startSnake(canvas);
+  } else if (gameId === 'pong') {
+    startPong(canvas);
   } else {
     drawPlaceholder(canvas, game);
   }
@@ -114,6 +116,7 @@ function launchGame(gameId) {
   const backBtn = document.getElementById('arcade-game-back');
   backBtn.onclick = () => {
     stopSnake();
+    stopPong();
     panel.classList.remove('active');
   };
 }
@@ -464,6 +467,291 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
+}
+
+/* ===== PONG GAME ===== */
+let pongRaf = 0;
+let pongInterval = 0;
+let pongState = null;
+
+function startPong(canvas) {
+  stopPong();
+  const status = document.getElementById('arcade-game-status');
+  const scoreEl = document.getElementById('arcade-game-score');
+
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = Math.floor(canvas.width / dpr);
+  const H = Math.floor(canvas.height / dpr);
+
+  const PADDLE_W = 12;
+  const PADDLE_H = Math.max(60, Math.floor(H * 0.18));
+  const BALL_R = 6;
+  const WIN_SCORE = 7;
+
+  let playerY = H / 2 - PADDLE_H / 2;
+  let cpuY = H / 2 - PADDLE_H / 2;
+  let ball = { x: W / 2, y: H / 2, vx: 0, vy: 0 };
+  let playerScore = 0;
+  let cpuScore = 0;
+  let started = false;
+  let ended = false;
+  let difficulty = 0.75; // CPU speed multiplier (0.5 easy, 0.75 normal, 0.95 hard)
+  let particles = [];
+
+  function resetBall(winner) {
+    ball.x = W / 2;
+    ball.y = H / 2;
+    const dir = winner === 'player' ? 1 : -1;
+    const speed = 4 + Math.min(4, (playerScore + cpuScore) * 0.4);
+    const angle = (Math.random() * Math.PI / 3) - Math.PI / 6;
+    ball.vx = Math.cos(angle) * speed * dir;
+    ball.vy = Math.sin(angle) * speed;
+  }
+
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, W, H);
+
+    // Center dashed line
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.setLineDash([8, 10]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(W / 2, 0);
+    ctx.lineTo(W / 2, H);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Scores
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = `bold ${Math.floor(Math.min(W, H) * 0.12)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(String(cpuScore), W / 4, H * 0.08);
+    ctx.fillText(String(playerScore), W * 0.75, H * 0.08);
+
+    // Paddles
+    ctx.fillStyle = 'var(--accent, #22d3ee)';
+    roundRect(ctx, 18, cpuY, PADDLE_W, PADDLE_H, 4);
+    ctx.fill();
+    roundRect(ctx, W - 18 - PADDLE_W, playerY, PADDLE_W, PADDLE_H, 4);
+    ctx.fill();
+
+    // Ball
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= 0.05;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      p.x += p.vx;
+      p.y += p.vy;
+    }
+
+    if (!started) {
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.floor(Math.min(W, H) * 0.05)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('PONG', W / 2, H / 2 - 18);
+      ctx.font = `${Math.floor(Math.min(W, H) * 0.025)}px sans-serif`;
+      ctx.fillStyle = 'var(--text-secondary, #94a3b8)';
+      ctx.fillText('SPACE or TAP to start', W / 2, H / 2 + 18);
+    }
+
+    if (ended) {
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.floor(Math.min(W, H) * 0.06)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const msg = playerScore >= WIN_SCORE ? 'YOU WIN!' : 'CPU WINS';
+      ctx.fillText(msg, W / 2, H / 2 - 16);
+      ctx.font = `${Math.floor(Math.min(W, H) * 0.025)}px sans-serif`;
+      ctx.fillStyle = 'var(--text-secondary, #94a3b8)';
+      ctx.fillText('SPACE to rematch', W / 2, H / 2 + 20);
+    }
+
+    pongRaf = requestAnimationFrame(draw);
+  }
+
+  function tick() {
+    if (!started || ended) return;
+
+    // Move ball
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    // Wall bounce (top/bottom)
+    if (ball.y - BALL_R < 0) { ball.y = BALL_R; ball.vy *= -1; }
+    if (ball.y + BALL_R > H) { ball.y = H - BALL_R; ball.vy *= -1; }
+
+    // Paddle collisions
+    // Player paddle (right)
+    if (ball.x + BALL_R >= W - 18 - PADDLE_W && ball.x + BALL_R <= W - 18 &&
+        ball.y >= playerY && ball.y <= playerY + PADDLE_H) {
+      ball.x = W - 18 - PADDLE_W - BALL_R;
+      const rel = (ball.y - (playerY + PADDLE_H / 2)) / (PADDLE_H / 2);
+      ball.vx = -Math.abs(ball.vx) * 1.04;
+      ball.vy += rel * 1.5;
+      speedCap();
+      spawnParticles(ball.x, ball.y, 'var(--accent, #22d3ee)');
+    }
+    // CPU paddle (left)
+    if (ball.x - BALL_R <= 18 + PADDLE_W && ball.x - BALL_R >= 18 &&
+        ball.y >= cpuY && ball.y <= cpuY + PADDLE_H) {
+      ball.x = 18 + PADDLE_W + BALL_R;
+      const rel = (ball.y - (cpuY + PADDLE_H / 2)) / (PADDLE_H / 2);
+      ball.vx = Math.abs(ball.vx) * 1.04;
+      ball.vy += rel * 1.5;
+      speedCap();
+      spawnParticles(ball.x, ball.y, 'var(--accent, #22d3ee)');
+    }
+
+    // Scoring
+    if (ball.x < -BALL_R) {
+      playerScore++;
+      scoreEl.textContent = `${playerScore} – ${cpuScore}`;
+      if (playerScore >= WIN_SCORE) { ended = true; if (status) status.textContent = 'You Win!'; }
+      else { resetBall('player'); }
+      return;
+    }
+    if (ball.x > W + BALL_R) {
+      cpuScore++;
+      scoreEl.textContent = `${playerScore} – ${cpuScore}`;
+      if (cpuScore >= WIN_SCORE) { ended = true; if (status) status.textContent = 'CPU Wins'; }
+      else { resetBall('cpu'); }
+      return;
+    }
+
+    // CPU AI — move toward ball, clamped to difficulty
+    const targetY = ball.y - PADDLE_H / 2;
+    const maxSpeed = 4.2 * difficulty + (playerScore + cpuScore) * 0.12;
+    const dy = targetY - cpuY;
+    if (dy > maxSpeed) cpuY += maxSpeed;
+    else if (dy < -maxSpeed) cpuY -= maxSpeed;
+    else cpuY = targetY;
+    if (cpuY < 0) cpuY = 0;
+    if (cpuY + PADDLE_H > H) cpuY = H - PADDLE_H;
+  }
+
+  function speedCap() {
+    const max = 9;
+    if (Math.abs(ball.vx) > max) ball.vx = Math.sign(ball.vx) * max;
+    if (Math.abs(ball.vy) > max) ball.vy = Math.sign(ball.vy) * max;
+  }
+
+  function spawnParticles(x, y, color) {
+    for (let i = 0; i < 10; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * (Math.random() * 3 + 1),
+        vy: Math.sin(angle) * (Math.random() * 3 + 1),
+        life: 1, r: Math.random() * 2.5 + 1,
+        color
+      });
+    }
+  }
+
+  function startGame() {
+    started = true;
+    ended = false;
+    playerScore = 0;
+    cpuScore = 0;
+    playerY = H / 2 - PADDLE_H / 2;
+    cpuY = H / 2 - PADDLE_H / 2;
+    scoreEl.textContent = '0 – 0';
+    if (status) status.textContent = 'First to 7 wins';
+    resetBall(Math.random() < 0.5 ? 'player' : 'cpu');
+    clearInterval(pongInterval);
+    pongInterval = setInterval(tick, 1000 / 60);
+  }
+
+  function onKey(e) {
+    if (e.code === 'Space') {
+      if (!started) { e.preventDefault(); startGame(); return; }
+      if (ended) { e.preventDefault(); startGame(); return; }
+    }
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      stopPong();
+      document.getElementById('arcade-game-panel').classList.remove('active');
+      return;
+    }
+    if (!started || ended) return;
+    const step = 18;
+    if (['ArrowUp', 'KeyW'].includes(e.code)) { playerY -= step; e.preventDefault(); }
+    if (['ArrowDown', 'KeyS'].includes(e.code)) { playerY += step; e.preventDefault(); }
+    if (playerY < 0) playerY = 0;
+    if (playerY + PADDLE_H > H) playerY = H - PADDLE_H;
+  }
+
+  // Touch drag controls
+  let touchDragging = false;
+  function onTouchStart(e) {
+    if (e.touches.length === 1) {
+      touchDragging = true;
+      onTouchMove(e);
+    }
+  }
+  function onTouchMove(e) {
+    if (!touchDragging || !started || ended) return;
+    const rect = canvas.getBoundingClientRect();
+    const touchY = e.touches[0].clientY - rect.top;
+    playerY = touchY - PADDLE_H / 2;
+    if (playerY < 0) playerY = 0;
+    if (playerY + PADDLE_H > H) playerY = H - PADDLE_H;
+  }
+  function onTouchEnd() { touchDragging = false; }
+
+  // Click to start/rematch
+  function onClick() {
+    if (!started) { startGame(); }
+    else if (ended) { startGame(); }
+  }
+
+  document.addEventListener('keydown', onKey);
+  canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+  canvas.addEventListener('touchmove', onTouchMove, { passive: true });
+  canvas.addEventListener('touchend', onTouchEnd, { passive: true });
+  canvas.addEventListener('click', onClick);
+
+  pongState = {
+    cleanup() {
+      document.removeEventListener('keydown', onKey);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('click', onClick);
+    }
+  };
+
+  if (status) status.textContent = 'Press SPACE to start';
+  scoreEl.textContent = '0 – 0';
+  pongRaf = requestAnimationFrame(draw);
+}
+
+function stopPong() {
+  cancelAnimationFrame(pongRaf);
+  clearInterval(pongInterval);
+  if (pongState && pongState.cleanup) pongState.cleanup();
+  pongState = null;
 }
 
 /* Public API for game modules */
