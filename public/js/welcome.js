@@ -8,8 +8,8 @@ const COPY_LINES = [
   { time: 2.0,   text: "I DON'T SLEEP." },
   { time: 4.5,   text: "I DON'T EAT." },
   { time: 7.0,   text: "I WORK 24/7 FOR YOU." },
-  { time: 10.0,  text: "Sick? I'll put in a good word for you." },
-  { time: 14.0,  text: "Not sick and just wanna call off? No problem." },
+  { time: 10.0,  text: "Sick? I've got your back." },
+  { time: 14.0,  text: "Need a day off? Done." },
   { time: 18.0,  text: "Welcome to the future." },
   { time: 21.0,  text: "Are you ready?" },
 ];
