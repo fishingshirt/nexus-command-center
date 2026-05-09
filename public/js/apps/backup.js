@@ -168,6 +168,7 @@ function initBackupView() {
   loadBackupConfig();
   loadBackupHistory();
   refreshUsbList();
+  refreshStatusPanel();
 }
 
 /* ── Backup Logic ──────────────────────────── */
@@ -290,24 +291,126 @@ function refreshStatusPanel() {
 /* ── History ───────────────────────────────── */
 function loadBackupHistory() {
   const list = document.getElementById('backup-history');
-  const log = getBackupLog();
   if (!list) return;
-  if (!log.length) { list.innerHTML = '<li class="backup-empty">No backups yet. Be safe — make one now.</li>'; return; }
-  list.innerHTML = log.slice().reverse().map(entry => `
-    <li class="backup-log-entry ${entry.status}">
-      <span class="backup-log-type">${entry.type === 'full' ? '📦 Full' : entry.type === 'local' ? '💾 USB' : '☁️ Cloud'}</span>
-      <span class="backup-log-target">${esc(entry.target)}</span>
-      <span class="backup-log-size">${entry.size || '—'}</span>
-      <span class="backup-log-time">${fmtTime(entry.time)}</span>
-    </li>
-  `).join('');
 
-  const badge = document.getElementById('backup-badge');
-  if (badge) {
-    const ok = log.filter(e => e.status === 'ok').length;
-    badge.textContent = ok;
-    badge.style.display = ok ? 'flex' : 'none';
+  // Always show server-side history as primary source
+  fetchServerHistory().then(serverBackups => {
+    const localLog = getBackupLog();
+    // Merge: server entries are authoritative; supplement with local log entries that lack server files
+    const merged = mergeHistory(serverBackups, localLog);
+    renderHistory(list, merged);
+  }).catch(() => {
+    // Fallback to localStorage-only if server unreachable
+    const localLog = getBackupLog();
+    renderHistory(list, localLog.map(e => ({
+      filename: null,
+      size: e.size,
+      created: e.time,
+      encrypted: false,
+      status: e.status,
+      type: e.type,
+      target: e.target,
+      source: 'local'
+    })));
+  });
+}
+
+async function fetchServerHistory() {
+  const resp = await fetch('/api/backup/history');
+  const data = await resp.json();
+  return (data.backups || []).map(b => ({ ...b, source: 'server' }));
+}
+
+function mergeHistory(server, local) {
+  // Build map by approximate timestamp (trim to minute)
+  const map = new Map();
+  server.forEach(b => {
+    const key = b.created ? b.created.slice(0, 16) : b.filename;
+    map.set(key, b);
+  });
+  local.forEach(e => {
+    const key = e.time ? e.time.slice(0, 16) : e.target;
+    if (!map.has(key)) {
+      map.set(key, {
+        filename: null,
+        size: e.size,
+        created: e.time,
+        encrypted: false,
+        status: e.status,
+        type: e.type,
+        target: e.target,
+        source: 'local'
+      });
+    }
+  });
+  return Array.from(map.values()).sort((a, b) => {
+    const ta = a.created ? new Date(a.created) : 0;
+    const tb = b.created ? new Date(b.created) : 0;
+    return tb - ta;
+  });
+}
+
+function renderHistory(list, items) {
+  const cfg = loadBackupConfig();
+  if (!items.length) {
+    list.innerHTML = '<li class="backup-empty">No backups yet. Be safe — make one now.</li>';
+    updateBadge(0);
+    return;
   }
+  list.innerHTML = items.map(item => {
+    const isServer = item.source === 'server';
+    const statusClass = item.status === 'error' ? 'error' : 'ok';
+    const typeLabel = item.type
+      ? (item.type === 'full' ? '📦 Full' : item.type === 'local' ? '💾 USB' : '☁️ Cloud')
+      : (isServer ? '📦 Server' : '📦 Backup');
+    const timeStr = fmtTime(item.created);
+    const encIcon = item.encrypted ? '🔒 ' : '';
+    const actions = isServer && item.filename
+      ? `<button class="backup-history-action" data-file="${esc(item.filename)}" aria-label="Download backup">⬇️</button>`
+      : '';
+    return `
+      <li class="backup-log-entry ${statusClass}">
+        <span class="backup-log-type">${encIcon}${typeLabel}</span>
+        <span class="backup-log-target">${esc(item.target || item.filename || 'server')}</span>
+        <span class="backup-log-size">${item.size || '—'}</span>
+        <span class="backup-log-time">${timeStr}</span>
+        ${actions}
+      </li>`;
+  }).join('');
+
+  // Wire download buttons
+  list.querySelectorAll('.backup-history-action').forEach(btn => {
+    btn.addEventListener('click', () => downloadBackup(btn.dataset.file));
+  });
+
+  // Update "Last Backup" display
+  const latest = items[0];
+  const lastTime = document.getElementById('backup-last-time');
+  const lastSize = document.getElementById('backup-last-size');
+  if (lastTime) lastTime.textContent = latest.created ? fmtTime(latest.created) : 'Unknown';
+  if (lastSize) lastSize.textContent = latest.size || '—';
+
+  // Update dashboard badge
+  const okCount = items.filter(i => i.status !== 'error').length;
+  updateBadge(okCount);
+}
+
+function updateBadge(count) {
+  const badge = document.getElementById('backup-badge');
+  if (!badge) return;
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+function downloadBackup(filename) {
+  if (!filename) return;
+  const a = document.createElement('a');
+  a.href = `/api/backup/download?file=${encodeURIComponent(filename)}`;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  _toast(`Downloading ${filename}`);
 }
 
 function getBackupLog() {

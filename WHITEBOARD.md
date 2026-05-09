@@ -14,7 +14,7 @@
 | **Active Tasks** | 8 (T-021-c, T-022, T-024 through T-028, T-030, T-031) |
 | **Completed Tasks** | 35 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-029 + subtasks, T-030, T-030-c) |
 
-|**Current Focus:** T-030-c DONE. Backup endpoints (USB + run) are live. Next: complete T-030-d (backup history endpoint) and T-030-e (restore endpoint) so the Backup UI fully works end-to-end. T-031 cloud vault follows after restore is stable.
+|**Current Focus:** T-030-d DONE. Backup history endpoint live + download support. Next: T-030-e (restore endpoint) so the Backup UI has full end-to-end protection — create, download, restore.
 
 ---
 
@@ -134,6 +134,18 @@
 - `GET /api/system/deps` → `{services: [{name, status, message}]}`
 
 **Notes:** All endpoints must return CORS headers for dashboard fetch. Use `json.dumps()` with `default=str` for datetime objects. Cache heavy checks (psutil, tailscale) for 5-10 seconds.
+
+### 🔒 BACKUP & RECOVERY (T-030)
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| `T-030` | **Backup & Recovery** — server-side backup engine, dashboard UI, USB detection, encrypted archives, cloud vault config | `IN_PROGRESS` | Broken into sub-tasks below |
+| `T-030-a` | Backup endpoints wired into `nexus-server.py` — `/api/backup/usb` + `/api/backup/run` | `DONE` | USB scanning via `lsblk` fallback to `/media`/`/mnt`. Run endpoint accepts JSON payload, writes to `~/.hermes/backups`, optionally GPG-encrypts with passphrase, copies to USB target. |
+| `T-030-b` | Backup dashboard UI — `backup.js` card, view, status panel, USB list, cloud config form, history | `DONE` | Self-contained module. Renders card, view, polling. localStorage history + server-side file history. |
+| `T-030-c` | Fix critical `nexus-server.py` structural bug — `_api_backup` was inside class scope causing 501/404 on all backup endpoints | `DONE` | Extracted `_api_backup` to top-level function before `SPAHandler`. Verified `/api/backup/usb` and `/api/backup/run` respond correctly. |
+| `T-030-d` | Backup history endpoint — `GET /api/backup/history` returns list of archived backup files from server disk with metadata (filename, size, created, encrypted) | `DONE` | Lists `nexus-backup-*` files from `~/.hermes/backups`, sorted newest first. Includes download button in UI. |
+| `T-030-e` | Restore endpoint — `POST /api/backup/restore` accepts a backup filename, decrypts if needed, merges data back into browser via download prompt or direct localStorage injection | `PENDING` | User picks backup from history, confirms destructive merge, gets success toast. |
+| `T-030-f` | Backup health auto-check — dashboard badge turns amber if no backup in 7 days, red if > 30 days | `PENDING` | Reads `lastSyncTime` equivalent from backup log. |
+| `T-031` | **Cloud Vault** — encrypted cloud sync via rclone/rsync/S3 | `PENDING` | **User directive.** After T-030 is stable. UI config already present. Actual upload/download deferred. |
 
 ---
 

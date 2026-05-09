@@ -375,6 +375,47 @@ def _api_backup(handler, path, repo):
         })
         return True
 
+    if path == '/api/backup/history':
+        entries = []
+        try:
+            for fn in sorted(os.listdir(BACKUP_DIR), reverse=True):
+                if not fn.startswith('nexus-backup-'):
+                    continue
+                fp = os.path.join(BACKUP_DIR, fn)
+                st = os.stat(fp)
+                entries.append({
+                    'filename': fn,
+                    'size': f"{st.st_size:,} bytes",
+                    'created': datetime.datetime.fromtimestamp(st.st_mtime).isoformat(),
+                    'encrypted': fn.endswith('.gpg')
+                })
+        except Exception:
+            pass
+        _json(handler, 200, {'ok': True, 'backups': entries})
+        return True
+
+    if path == '/api/backup/download':
+        import urllib.parse
+        qs = handler.path.split('?', 1)[1] if '?' in handler.path else ''
+        params = urllib.parse.parse_qs(qs)
+        filename = (params.get('file', [''])[0] or '').replace('/', '').replace('\\', '')
+        if not filename or not filename.startswith('nexus-backup-'):
+            _json(handler, 400, {'ok': False, 'error': 'Invalid filename'})
+            return True
+        fp = os.path.join(BACKUP_DIR, filename)
+        if not os.path.isfile(fp) or not os.path.realpath(fp).startswith(os.path.realpath(BACKUP_DIR)):
+            _json(handler, 404, {'ok': False, 'error': 'Not found'})
+            return True
+        handler.send_response(200)
+        handler.send_header('Content-Type', 'application/octet-stream')
+        handler.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+        handler.send_header('Content-Length', str(os.path.getsize(fp)))
+        _cors(handler)
+        handler.end_headers()
+        with open(fp, 'rb') as f:
+            handler.wfile.write(f.read())
+        return True
+
     _json(handler, 404, {'ok': False, 'error': 'Unknown backup endpoint'})
     return True
 
