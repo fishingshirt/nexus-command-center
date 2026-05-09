@@ -1357,6 +1357,99 @@ body {
   gap: var(--space-3);
 }
 
+/* ===== FEEDBACK QUESTION ENGINE (T-021-b) ===== */
+.feedback-questions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+.feedback-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.feedback-question-step {
+  font-weight: 600;
+}
+
+.feedback-skip {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.feedback-question-text {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+  margin-top: var(--space-2);
+}
+
+.feedback-answer-field textarea {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  margin-top: var(--space-2);
+}
+
+.feedback-answer-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-10);
+}
+
+.feedback-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.feedback-preview h4 {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--text);
+}
+
+.feedback-preview-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.feedback-preview-card b {
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-questions,
+  .feedback-preview {
+    transition: none;
+  }
+}
+
 .stat-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

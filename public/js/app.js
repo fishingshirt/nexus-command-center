@@ -520,11 +520,97 @@ function updateDashboardDate() {
 function initFeedback() {
   const form = document.getElementById('feedback-form');
   const list = document.getElementById('feedback-list');
+  const questionsBox = document.getElementById('feedback-questions');
+  const qText = document.getElementById('feedback-q-text');
+  const qNum = document.getElementById('feedback-q-num');
+  const qTotal = document.getElementById('feedback-q-total');
+  const qAnswer = document.getElementById('feedback-q-answer');
+  const qNext = document.getElementById('feedback-q-next');
+  const qPrev = document.getElementById('feedback-q-prev');
+  const qSkip = document.getElementById('feedback-skip-q');
+  const previewBox = document.getElementById('feedback-preview');
+  const previewCard = document.getElementById('feedback-preview-card');
+  const finalSubmit = document.getElementById('feedback-final-submit');
+  const editBtn = document.getElementById('feedback-edit-btn');
   if (!form) return;
+
+  // State
+  let draft = null;
+  let currentQIndex = 0;
+  let answers = [];
 
   // Load existing
   renderFeedbackList();
   updateFeedbackBadge();
+
+  const questionSets = {
+    feature: [
+      {
+        text: 'What problem does this feature solve for you?',
+        placeholder: 'e.g., "I lose track of bill due dates and get late fees"'
+      },
+      {
+        text: 'Who is this feature for — just you, your family, or a team?',
+        placeholder: 'e.g., "My spouse and I both need to see it"'
+      },
+      {
+        text: 'Can you name an existing app that does this well?',
+        placeholder: 'e.g., "Notion does it, but it\'s too slow"'
+      }
+    ],
+    improvement: [
+      {
+        text: 'What frustrates you most about the current behavior?',
+        placeholder: 'e.g., "It takes 4 taps to open a note"'
+      },
+      {
+        text: 'How would the ideal version of this look or feel?',
+        placeholder: 'e.g., "A single button press, like in Apple Notes"'
+      },
+      {
+        text: 'How often does this issue come up?',
+        placeholder: 'e.g., "Every single day, five to ten times"'
+      }
+    ],
+    bug: [
+      {
+        text: 'What exactly were you doing when the bug happened?',
+        placeholder: 'e.g., "I switched themes while the calendar was open"'
+      },
+      {
+        text: 'What did you expect to happen versus what actually happened?',
+        placeholder: 'e.g., "Expected dark mode, got a blank screen"'
+      },
+      {
+        text: 'Can you reproduce it reliably? If so, how?',
+        placeholder: 'e.g., "Yes — every time I reload the page on mobile"'
+      }
+    ],
+    theme: [
+      {
+        text: 'What mood or vibe should this theme evoke?',
+        placeholder: 'e.g., "A calm forest at dawn"'
+      },
+      {
+        text: 'Any specific colors, fonts, or references (movies, games, brands)?',
+        placeholder: 'e.g., "Blade Runner 2049 orange and deep blue"'
+      },
+      {
+        text: 'Should this be dark or light mode primarily?',
+        placeholder: 'e.g., "Dark, but not harsh black — more of a deep navy"'
+      }
+    ],
+    other: [
+      {
+        text: 'What\'s the main thing you want us to know?',
+        placeholder: 'Say it however you like — no wrong answers.'
+      },
+      {
+        text: 'Is there anything else that would help us understand?',
+        placeholder: 'Screenshots, links, context — whatever helps.'
+      }
+    ]
+  };
 
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -533,24 +619,104 @@ function initFeedback() {
     const desc = document.getElementById('feedback-desc').value.trim();
     const priority = document.querySelector('input[name="feedback-priority"]:checked')?.value || 'nice';
 
+    draft = { type, title, desc, priority };
+    const qs = questionSets[type] || questionSets.other;
+    currentQIndex = 0;
+    answers = new Array(qs.length).fill('');
+
+    // Show question engine
+    form.style.display = 'none';
+    questionsBox.style.display = 'flex';
+    previewBox.style.display = 'none';
+    qTotal.textContent = qs.length;
+    renderQuestion();
+  });
+
+  function renderQuestion() {
+    const qs = questionSets[draft.type] || questionSets.other;
+    const q = qs[currentQIndex];
+    qNum.textContent = currentQIndex + 1;
+    qText.textContent = q.text;
+    qAnswer.value = answers[currentQIndex];
+    qAnswer.placeholder = q.placeholder;
+
+    qPrev.disabled = currentQIndex === 0;
+    qNext.textContent = currentQIndex === qs.length - 1 ? 'Review' : 'Next';
+  }
+
+  qNext.addEventListener('click', () => {
+    answers[currentQIndex] = qAnswer.value.trim();
+    const qs = questionSets[draft.type] || questionSets.other;
+    if (currentQIndex < qs.length - 1) {
+      currentQIndex++;
+      renderQuestion();
+    } else {
+      showPreview();
+    }
+  });
+
+  qPrev.addEventListener('click', () => {
+    answers[currentQIndex] = qAnswer.value.trim();
+    if (currentQIndex > 0) {
+      currentQIndex--;
+      renderQuestion();
+    }
+  });
+
+  qSkip.addEventListener('click', () => {
+    answers = answers.map(() => '(skipped)');
+    showPreview();
+  });
+
+  function showPreview() {
+    questionsBox.style.display = 'none';
+    previewBox.style.display = 'flex';
+    const qs = questionSets[draft.type] || questionSets.other;
+    let html = `<b>Type:</b> ${escapeHtml(draft.type)}<br>`;
+    html += `<b>Title:</b> ${escapeHtml(draft.title)}<br>`;
+    html += `<b>Description:</b> ${escapeHtml(draft.desc)}<br>`;
+    html += `<b>Priority:</b> ${escapeHtml(draft.priority)}<br><br>`;
+    html += '<b>Answers:</b><br>';
+    qs.forEach((q, i) => {
+      html += `<div style="margin-top:4px;"><u>Q${i + 1}</u> ${escapeHtml(q.text)}<br>`;
+      html += `<span style="color:var(--text-muted)">${escapeHtml(answers[i] || '(no answer)')}</span></div>`;
+    });
+    previewCard.innerHTML = html;
+  }
+
+  finalSubmit.addEventListener('click', () => {
+    const qs = questionSets[draft.type] || questionSets.other;
     const entry = {
       id: 'fb-' + Date.now(),
-      type,
-      title,
-      desc,
-      priority,
+      type: draft.type,
+      title: draft.title,
+      desc: draft.desc,
+      priority: draft.priority,
+      answers: qs.map((q, i) => ({ question: q.text, answer: answers[i] || '' })),
       status: 'submitted',
       createdAt: new Date().toISOString()
     };
-
     const stored = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
     stored.unshift(entry);
     localStorage.setItem('ncc-feedback', JSON.stringify(stored));
 
+    // Reset UI
     form.reset();
+    form.style.display = 'block';
+    questionsBox.style.display = 'none';
+    previewBox.style.display = 'none';
+    draft = null;
+
     renderFeedbackList();
     updateFeedbackBadge();
     toast('Feedback submitted to agent board');
+  });
+
+  editBtn.addEventListener('click', () => {
+    previewBox.style.display = 'none';
+    questionsBox.style.display = 'flex';
+    currentQIndex = 0;
+    renderQuestion();
   });
 
   function renderFeedbackList() {
@@ -561,7 +727,7 @@ function initFeedback() {
       return;
     }
     list.innerHTML = items.map(item => `
-      <div class="feedback-item">
+      <div class="feedback-item" data-id="${escapeHtml(item.id)}">
         <div class="feedback-item-header">
           <span class="feedback-item-title">${escapeHtml(item.title)}</span>
           <span class="feedback-item-type ${item.type}">${item.type}</span>

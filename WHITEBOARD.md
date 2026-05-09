@@ -10,9 +10,9 @@
 | Metric | Value |
 |--------|-------|
 | **Project Phase** | `APP_EXPANSION` |
-| **Last Agent Run** | 2026-05-09 (T-009-f Calendar recurring events engine done) |
-| **Active Tasks** | 6 (T-009, T-021, T-022 in progress/done + T-024/25/26/27/28 pending) |
-| **Completed Tasks** | 18 (T-001 through T-008, T-009-a/b/c/d/e-a/f, T-021-a, T-023, T-010, T-011) |
+| **Last Agent Run** | 2026-05-09 (T-021-b Smart question engine done) |
+| **Active Tasks** | 6 (T-009, T-021 in progress/done + T-024/25/26/27/28 pending) |
+| **Completed Tasks** | 19 (T-001 through T-008, T-009-a/b/c/d/e-a/f, T-021-a/b, T-023, T-010, T-011) |
 | **Bugs Found** | 0 |
 | **Next Wake** | *(set by cron)* |
 
@@ -68,9 +68,9 @@
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | `T-021` | **Feedback AI** — in-app feedback form that generates structured whiteboard tasks, asks clarifying questions, and stores submissions | `IN_PROGRESS` | **User directive.** Feedback form with type selector, priority picker, title, description, and question prompts for missing details. Stores in localStorage and generates agent-readable task cards. |
-| `T-021-a` | Feedback form UI + localStorage + history list | `DONE` | Form with type, title, desc, priority. Renders user's past submissions. |
-| `T-021-b` | Smart question engine — AI asks clarifying questions before accepting submission | `PENDING` | Based on type & description, auto-prompt: "What problem does it solve?", "Who is it for?", etc. Only finalizes once answered. |
-| `T-021-c` | Whiteboard task generator — convert feedback entries into WHITEBOARD.md format for agent ingestion | `PENDING` | Export `ncc-feedback` entries as formatted tasks with IDs and priority. |
+|| `T-021-a` | Feedback form UI + localStorage + history list | `DONE` | Form with type, title, desc, priority. Renders user's past submissions. |
+|| `T-021-b` | Smart question engine — AI asks clarifying questions before accepting submission | `DONE` | Type-based question sets (feature/bug/improvement/theme/other). 2–3 questions each with contextual placeholders. Multi-step UI with Back/Next/Skip/Review. Answers stored per feedback entry. |
+|| `T-021-c` | Whiteboard task generator — convert feedback entries into WHITEBOARD.md format for agent ingestion | `PENDING` | Export `ncc-feedback` entries as formatted tasks with IDs and priority. |
 | `T-022` | **Agent Stats Panel** — in Settings: live agent metrics (tasks done, bugs fixed, commits, wake cycles, upcoming tasks, last/next run) | `IN_PROGRESS` | **User directive.** Reads from `ncc-settings.agentStats`. Offers "Refresh Whiteboard" button that fetches `WHITEBOARD.md` and parses task board. |
 | `T-023` | **Jarvis Theme** — Iron Man HUD aesthetic, electric arc-blue, holographic glow, HUD grid lines | `DONE` | **User directive.** Theme file `jarvis.css` added to `public/css/themes/`. Electric arc-blue `#39d0f2`, scanline overlay, glowing accents, HUD grid background. |
 | `T-024` | **Phone Bridge App** — ADB Android integration: send/read SMS, connection status, battery/signal telemetry | `PENDING` | **User directive.** Agent controls connected Android phone via ADB. Dashboard shows phone status. Supports one-way message log + two-way compose. |

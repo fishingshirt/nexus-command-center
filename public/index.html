@@ -351,6 +351,28 @@
             </div>
           </form>
 
+          <!-- Smart Question Engine (T-021-b) -->
+          <div class="feedback-questions" id="feedback-questions" style="display:none;">
+            <div class="feedback-question-header">
+              <span class="feedback-question-step">Question <span id="feedback-q-num">1</span> of <span id="feedback-q-total">3</span></span>
+              <button type="button" class="feedback-skip" id="feedback-skip-q" aria-label="Skip questions">Skip</button>
+            </div>
+            <div class="feedback-question-text" id="feedback-q-text">...</div>
+            <div class="feedback-answer-field">
+              <textarea id="feedback-q-answer" rows="3" placeholder="Type your answer..."></textarea>
+            </div>
+            <div class="feedback-actions">
+              <button type="button" class="btn-secondary" id="feedback-q-prev">Back</button>
+              <button type="button" class="btn-primary" id="feedback-q-next">Next</button>
+            </div>
+            <div class="feedback-preview" id="feedback-preview" style="display:none;">
+              <h4>Ready to Submit</h4>
+              <div class="feedback-preview-card" id="feedback-preview-card"></div>
+              <button type="button" class="btn-primary" id="feedback-final-submit">Confirm & Submit</button>
+              <button type="button" class="btn-secondary" id="feedback-edit-btn">Edit Answers</button>
+            </div>
+          </div>
+
           <div class="feedback-history" id="feedback-history">
             <h4>Your Submissions</h4>
             <div class="feedback-list" id="feedback-list">
