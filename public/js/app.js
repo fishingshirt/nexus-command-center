@@ -4,6 +4,7 @@ import { initTodo } from './apps/todo.js';
 import { initGoogleSync } from './apps/gcal-sync.js';
 import { initBackup } from './apps/backup.js';
 import { initWeather } from './apps/weather.js';
+import { initITHub } from './apps/it-hub.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -25,6 +26,7 @@ export function initApp() {
   initFeedback();
   initAgentStats();
   initBackup();
+  initITHub();
   initWeather();
   initCalendar();
   initNotes();
