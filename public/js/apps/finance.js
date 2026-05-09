@@ -259,7 +259,7 @@ function renderWatchlist(d) {
           <span class="finance-row-symbol">${sym}</span>
           <span class="finance-row-price">${price ? fmtMoney(price) : '—'}</span>
         </div>
-        <span class="finance-row-change ${up ? 'up' : 'down'}">${up ? '+' : ''}${typeof change === 'number' ? change.toFixed(2) : '0.00'}%</span>
+        <span class="finance-row-change ${up ? 'up' : 'down'}" aria-label="Change ${up ? 'up' : 'down'} ${typeof change === 'number' && !Number.isNaN(change) ? change.toFixed(2) : '0.00'}%">${up ? '+' : ''}${typeof change === 'number' && !Number.isNaN(change) ? change.toFixed(2) : '0.00'}%</span>
         <div class="finance-row-actions">
           <button class="finance-btn-buy" onclick="window._openFinanceOrder('${sym}','buy',${price || 0})" aria-label="Buy ${sym}">Buy</button>
           <button class="finance-btn-sell" onclick="window._openFinanceOrder('${sym}','sell',${price || 0})" aria-label="Sell ${sym}">Sell</button>

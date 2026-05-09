@@ -17,7 +17,11 @@ export async function ensureAuthEnabled(appId) {
   const verified = sessionStorage.getItem(`${PIN_SESSION}-${appId}`) === '1';
   if (verified) return true;
 
-  const status = await fetch('/api/auth/status').then(r => r.json()).catch(() => ({ pinEnabled: false }));
+  const status = await fetch('/api/auth/status').then(r => r.json()).catch(() => ({ pinEnabled: false, offline: true }));
+  if (status.offline) {
+    // Server unreachable — fail-open (don't block user when server is down)
+    return true;
+  }
   if (!status.pinEnabled) {
     // Server says no PIN, so nothing to block
     return true;
@@ -156,13 +160,16 @@ function showPinOverlay(appId, onComplete) {
   const overlay = document.createElement('div');
   overlay.id = 'nexus-pin-overlay';
   overlay.className = 'nexus-pin-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'nexus-pin-title');
   overlay.innerHTML = `
     <div class="nexus-pin-panel">
       <div class="nexus-pin-icon">🔐</div>
-      <h3>${esc(appName(appId))} Locked</h3>
+      <h3 id="nexus-pin-title">${esc(appName(appId))} Locked</h3>
       <p>Enter your PIN to unlock</p>
       <input inputmode="numeric" maxlength="6" pattern="[0-9]*" autocomplete="off" placeholder="••••" aria-label="PIN" id="nexus-pin-input" type="password">
-      <div class="nexus-pin-error" id="nexus-pin-error"></div>
+      <div class="nexus-pin-error" id="nexus-pin-error" role="alert" aria-live="polite"></div>
       <button class="btn-primary" id="nexus-pin-submit">Unlock</button>
       <button class="btn-secondary" id="nexus-pin-cancel" style="margin-top:0.5rem">Cancel</button>
     </div>
@@ -174,9 +181,23 @@ function showPinOverlay(appId, onComplete) {
   const cancel = document.getElementById('nexus-pin-cancel');
   const error = document.getElementById('nexus-pin-error');
 
+  // Focus trap
+  function trapFocus(e) {
+    if (e.key !== 'Tab') return;
+    const focusable = overlay.querySelectorAll('input, button');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { last.focus(); e.preventDefault(); }
+    } else {
+      if (document.activeElement === last) { first.focus(); e.preventDefault(); }
+    }
+  }
+  overlay.addEventListener('keydown', trapFocus);
+
   setTimeout(() => input.focus(), 50);
 
-  submit.addEventListener('click', async () => {
+  async function verifyPin() {
     const pin = input.value.trim();
     if (!/^\d{4,6}$/.test(pin)) { error.textContent = 'PIN must be 4–6 digits'; return; }
     try {
@@ -184,6 +205,7 @@ function showPinOverlay(appId, onComplete) {
       const data = await resp.json().catch(() => ({}));
       if (data.ok) {
         sessionStorage.setItem(`${PIN_SESSION}-${appId}`, '1');
+        overlay.removeEventListener('keydown', trapFocus);
         overlay.remove();
         onComplete(true);
       } else {
@@ -192,11 +214,13 @@ function showPinOverlay(appId, onComplete) {
         input.focus();
       }
     } catch { error.textContent = 'Server error'; }
-  });
+  }
 
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit.click(); });
+  submit.addEventListener('click', verifyPin);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') verifyPin(); });
 
   cancel.addEventListener('click', () => {
+    overlay.removeEventListener('keydown', trapFocus);
     overlay.remove();
     onComplete(false);
     location.hash = 'dashboard';

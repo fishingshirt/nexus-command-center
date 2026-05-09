@@ -15,9 +15,10 @@ function lsSave(patch) {
 export function initPhoneBridge() {
   const view = document.getElementById('view-phone');
   if (!view) return;
-
+  // Only set up polling once; the view uses polling regardless of visibility
+  if (window.__phonePollTimer) clearInterval(window.__phonePollTimer);
   refresh();
-  const timer = setInterval(refresh, POLL_INTERVAL);
+  window.__phonePollTimer = setInterval(refresh, POLL_INTERVAL);
 
   // Compose
   const sendBtn = document.getElementById('phone-send-btn');
@@ -56,7 +57,9 @@ export function initPhoneBridge() {
     }
   });
 
-  window.addEventListener('beforeunload', () => clearInterval(timer));
+  window.addEventListener('beforeunload', () => {
+    if (window.__phonePollTimer) clearInterval(window.__phonePollTimer);
+  });
 }
 
 async function refresh() {
@@ -232,7 +235,7 @@ function openThread(num) {
   msgs.sort((a, b) => (a.date || 0) - (b.date || 0));
 
   list.innerHTML = msgs.map(m => {
-    const isOut = m.type === 'sent' || m.to;
+    const isOut = m.type === 'sent';
     const time = fmtTime(m.date);
     return `
       <div class="phone-bubble-wrap ${isOut ? 'out' : 'in'}">

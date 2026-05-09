@@ -122,7 +122,7 @@ export function initGoogleSync() {
         if (dirty) updated++;
       } else {
         stored.push({
-          id: 'evt_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
+          id: 'evt_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9),
           gcalId,
           title,
           date: dateStr,

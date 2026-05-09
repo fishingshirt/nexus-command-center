@@ -82,12 +82,13 @@ function getOccurrences(ev, rangeStart, rangeEnd) {
     } else if (rule === 'weekly') {
       cursor.setDate(cursor.getDate() + 7);
     } else if (rule === 'monthly') {
-      cursor.setMonth(cursor.getMonth() + 1);
-      // If the day doesn't exist in the next month (e.g. 31st), skip to next valid
-      if (cursor.getDate() !== masterDate.getDate()) {
-        // Move to end of that month, next loop will advance again — simple skip
-        cursor.setDate(0);
-      }
+      const day = masterDate.getDate();
+      const nextMonth = cursor.getMonth() + 1;
+      const year = cursor.getFullYear() + Math.floor(nextMonth / 12);
+      const month = ((nextMonth % 12) + 12) % 12;
+      cursor.setFullYear(year, month, 1);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      cursor.setDate(Math.min(day, daysInMonth));
     } else if (rule === 'yearly') {
       cursor.setFullYear(cursor.getFullYear() + 1);
     } else {
@@ -104,7 +105,8 @@ function saveEvents(events) {
 }
 
 function generateId() {
-  return 'evt_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  // Include a random suffix to reduce collision probability across fast successive calls
+  return 'evt_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
 }
 
 // ---- Badge ----

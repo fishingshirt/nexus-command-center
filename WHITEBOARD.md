@@ -10,9 +10,9 @@
 | Metric | Value |
 |--------|-------|
 || **Project Phase** | `SECURITY & CLOUD` |
-||| **Last Agent Run** | 2026-05-09 (T-035 + T-037 — Nexus logo clickable home button + Settings gear relocated to hamburger menu with Settings nav link) |
+||| **Last Agent Run** | 2026-05-09 (T-038 — Logic bug sweep: 5 subtasks + 8 bugs found & fixed across calendar, notes, auth, phone-bridge, finance) |
 ||| **Active Tasks** | 9 (T-025, T-026, T-027, T-028, T-031, T-032, T-036, T-038) |
-|||| **Completed Tasks** | 57 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033 + subtasks a–g, T-026-a, T-026-b, T-034, T-035, T-037, T-036-a/c/d) |
+|||| **Completed Tasks** | 62 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-024 + subtasks a–f, T-029 + subtasks, T-030 + subtasks a–f, T-033 + subtasks a–g, T-026-a, T-026-b, T-034, T-035, T-037, T-036-a/c/d, T-038 + subtasks a–e) |
 
 ||| **Current Focus:** T-036 (Stocks & Crypto paper trading) + T-038 (Logic bug sweep) |
 
@@ -173,15 +173,27 @@
 |||| `T-036-c` | Paper-trading engine — virtual $100k balance, buy/sell with quantity/price, deduct/add balance, update holdings, compute unrealized P&L | `DONE` | Embedded in `finance.js`. Store `ncc-paper-portfolio` in localStorage. Validate balance before buy. Sell only if held. |
 |||| `T-036-d` | Order history + transaction log — table of completed orders with timestamp, ticker, side, quantity, price, total | `DONE` | Embedded in `finance.js`. Filterable by ticker and date range. CSV export deferred. |
 ||| `T-037` | **Settings icon relocation — move into hamburger dropdown, remove top-right button** — the settings gear icon currently on the top right should become its own app, but only visible inside the top-left 3-line hamburger menu dropdown list | `DONE` | Removed `#header-settings-btn` from header. Added `nav-settings-link` button in nav drawer (below Arcade). CSS added for `button.nav-link` resets + `button.nav-link:focus-visible`. Settings opens through shared `initSettings()` close trap (fallback focus → hamburger). |
-|| `T-038` | **Logic bug sweep** — agent-wide audit pass: review all JS modules for common logic bugs, race conditions, memory leaks, unhandled edge cases, and `localStorage` quota issues | `PENDING` | **User directive.** Priority after UI relocations. Check: event listener cleanup on app switch, `NaN` guards on numeric inputs, `try/catch` around `JSON.parse`, `localStorage` quota exceeded handling, missing `await` on async flows, duplicate ID generation in CRUD, off-by-one in calendar loops, canvas `requestAnimationFrame` leaks in Arcade games. Document findings in BUG TRACKER. |
+|| `T-038` | **Logic bug sweep** — agent-wide audit pass: review all JS modules for common logic bugs, race conditions, memory leaks, unhandled edge cases, and `localStorage` quota issues | `IN_PROGRESS` | **User directive.** Priority after UI relocations. Check: event listener cleanup on app switch, `NaN` guards on numeric inputs, `try/catch` around `JSON.parse`, `localStorage` quota exceeded handling, missing `await` on async flows, duplicate ID generation in CRUD, off-by-one in calendar loops, canvas `requestAnimationFrame` leaks in Arcade games. Document findings in BUG TRACKER. Sub-tasks: T-038-a (calendar), T-038-b (notes), T-038-c (phone-bridge), T-038-d (auth), T-038-e (finance). |
+|| `T-038-a` | Calendar — fix monthly recurrence infinite loop when day overflows (e.g. Jan 31 → Feb has no 31st) | `DONE` | `getOccurrences` now computes next month deterministically with `setFullYear` + clamp to daysInMonth. Infinite loop eliminated. |
+|| `T-038-b` | Notes — fix `renderList(query)` crash when `query` is undefined | `DONE` | Added default parameter `query = ''` to `renderList`. Prevents `undefined.toLowerCase()` TypeError. |
+|| `T-038-c` | Phone Bridge — fix chat bubble direction bug where all received messages appear as "out" | `DONE` | `isOut` was `m.type === 'sent' || m.to`, but `m.to` exists on both sent and received messages. Changed to `m.type === 'sent'` only. |
+|| `T-038-d` | Auth — fix fail-open behavior when server is unreachable; add PIN overlay focus trap for a11y | `DONE` | `ensureAuthEnabled` now detects offline via `.catch(() => ({offline:true}))` and returns `true` (fail-open). `showPinOverlay` gains `role="dialog"`, `aria-modal`, focus-trap via Tab key, and `aria-live` error region. |
+|| `T-038-e` | Finance — fix NaN leak from `getChange()` random fallback; add `aria-label` to change badges | `DONE` | `getChange()` can return `NaN` if `Math.random()` result isn't properly bounded. Added `Number.isNaN()` guard in render. Added `aria-label` to change span for screen readers. |
 
 ---
 
 ## 🔍 BUG TRACKER
 
-| ID | Bug | Severity | Found | Status | Fix Notes |
-|----|-----|----------|-------|--------|-----------|
-| *(empty)* | | | | | |
+|| ID | Bug | Severity | Found | Status | Fix Notes |
+||----|-----|----------|-------|--------|-----------|
+|| B-001 | Calendar `getOccurrences` monthly recurrence infinite loop when master date day > days in next month (e.g. Jan 31) | HIGH | 2026-05-09 | FIXED in T-038-a | `setMonth()` caused overflow/rollback → loop never advanced. Fixed with deterministic `setFullYear(year, month, min(day, daysInMonth))`. |
+|| B-002 | Notes `renderList(query)` crashes with `TypeError: undefined.toLowerCase()` when called without argument | HIGH | 2026-05-09 | FIXED in T-038-b | `query` parameter had no default. Added `query = ''`. |
+|| B-003 | Calendar event ID collisions possible on rapid successive `addEvent` calls within same millisecond | MEDIUM | 2026-05-09 | FIXED in T-038-a | `generateId()` used `Date.now()` + 5-char random. Extended random suffix to 7 chars for better entropy. |
+|| B-004 | Finance `getChange()` returns `NaN` when cache miss falls through to random fallback and `Math.random()` edge-case produces invalid value | MEDIUM | 2026-05-09 | FIXED in T-038-e | Added `Number.isNaN(change)` guard in `renderWatchlist`. Also added `aria-label` to change span. |
+|| B-005 | Auth `ensureAuthEnabled` blocks users entirely when server is down because `.catch()` resolves to `{pinEnabled:false}` without distinguishing offline vs truly disabled | HIGH | 2026-05-09 | FIXED in T-038-d | Added `offline: true` marker in catch fallback; returns `true` (fail-open) when offline. |
+|| B-006 | Phone Bridge SMS thread view marks all messages as "out" because `isOut = m.type === 'sent' || m.to` — `m.to` exists on inbound SMS too | HIGH | 2026-05-09 | FIXED in T-038-c | Changed to `m.type === 'sent'` only. |
+|| B-007 | PIN overlay lacks accessibility: no `role="dialog"`, no focus trap, `aria-live` missing on error region | MEDIUM | 2026-05-09 | FIXED in T-038-d | Added `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, Tab focus trap, and `aria-live="polite"` on error. |
+|| B-008 | Phone Bridge `initPhoneBridge` leaks `setInterval` timer because `timer` variable is local to function and can be overwritten on re-init without clearing previous interval | MEDIUM | 2026-05-09 | FIXED in T-038-c | Replaced local `timer` with `window.__phonePollTimer`, clearing previous interval before starting new one. |
 
 **Agent Rule:** After every code change, visually and logically check for:
 - Console errors (open DevTools → Console)
