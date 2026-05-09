@@ -188,6 +188,24 @@ export function initGoogleSync() {
     }
   }
 
-  // Cleanup on unload
+  // Pause sync while offline
+  window.addEventListener('nexusOffline', () => {
+    stopAutoSync();
+    const c = loadSettings().calendarSync || {};
+    if (c.status !== 'none') {
+      c.status = 'paused-offline';
+      saveSettings({ calendarSync: c });
+      toast('Calendar sync paused — offline');
+    }
+  });
+
+  window.addEventListener('nexusOnline', () => {
+    const c = loadSettings().calendarSync || {};
+    if (c.autoSync && c.apiKey?.trim()) {
+      toast('Back online — resuming calendar sync');
+      startAutoSync();
+    }
+  });
+
   window.addEventListener('beforeunload', stopAutoSync);
 }

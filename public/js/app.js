@@ -2,6 +2,7 @@ import { initCalendar } from './apps/calendar.js';
 import { initNotes } from './apps/notes.js';
 import { initTodo } from './apps/todo.js';
 import { initGoogleSync } from './apps/gcal-sync.js';
+import { initBackup } from './apps/backup.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -21,6 +22,8 @@ export function initApp() {
   initChat();
   initFeedback();
   initAgentStats();
+  initBackup();
+  initCalendar();
   initCalendar();
   initNotes();
   initTodo();
@@ -851,6 +854,40 @@ function fmtDate(iso) {
     const d = new Date(iso);
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   } catch { return iso; }
+}
+
+/* ===== OFFLINE MODE ===== */
+function initOfflineMode() {
+  const indicator = document.getElementById('offline-indicator');
+  if (!indicator) return;
+
+  function setOnline(online) {
+    if (online) {
+      indicator.style.display = 'none';
+      indicator.textContent = '';
+      indicator.className = 'offline-indicator';
+    } else {
+      indicator.style.display = 'inline-flex';
+      indicator.textContent = 'Offline';
+      indicator.className = 'offline-indicator visible';
+    }
+  }
+
+  setOnline(navigator.onLine);
+
+  if ('onLine' in window) {
+    window.addEventListener('online', () => {
+      setOnline(true);
+      toast('You are back online');
+      // Notify other modules that sync may resume
+      document.dispatchEvent(new CustomEvent('nexusOnline'));
+    });
+    window.addEventListener('offline', () => {
+      setOnline(false);
+      toast('You are offline', 'error');
+      document.dispatchEvent(new CustomEvent('nexusOffline'));
+    });
+  }
 }
 
 function registerServiceWorker() {

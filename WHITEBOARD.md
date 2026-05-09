@@ -11,12 +11,12 @@
 |--------|-------|
 | **Project Phase** | `APP_EXPANSION` |
 | **Last Agent Run** | 2026-05-09 (T-021-b Smart question engine done) |
-| **Active Tasks** | 6 (T-009, T-021 in progress/done + T-024/25/26/27/28 pending) |
-| **Completed Tasks** | 19 (T-001 through T-008, T-009-a/b/c/d/e-a/f, T-021-a/b, T-023, T-010, T-011) |
+| **Active Tasks** | 6 (T-009, T-022 in progress/done + T-024/25/26/27/28 pending) |
+| **Completed Tasks** | 20 (T-001 through T-008, T-009-a/b/c/d/e-a/f, T-021-a/b, T-022, T-023, T-010, T-011, T-015, T-015-a) |
 | **Bugs Found** | 0 |
 | **Next Wake** | *(set by cron)* |
 
-|**Current Focus:** Agent can pick up highest-priority pending task: T-009-e-b (Google Calendar OAuth/API wiring) or any new user-requested feature.
+|**Current Focus:** Agent can pick up next highest-priority pending task: T-012 (Hermes API bridge) or any new user-requested feature.
 
 ---
 
@@ -53,7 +53,8 @@
 | `T-012` | Hermes API bridge — real chat backend integration | `PENDING` | Research how to pipe messages to/from Hermes. |
 | `T-013` | Data persistence layer — migrate from `localStorage` to a real DB (SQLite/JSON file on server) | `PENDING` | Required before multi-device sync. |
 | `T-014` | Auth / user sessions — basic login so data isn't world-readable | `PENDING` | Simple JWT or even just a password hash. |
-| `T-015` | Offline mode — service worker caches assets + data | `PENDING` | For phone use without constant connection. |
+| `T-015` | Offline mode — service worker caches assets + data | `DONE` | Indicator in header, stale-while-revalidate caching, offline-aware Google Calendar sync pause, data queue for background sync. |
+| `T-015-a` | Enhanced service worker with stale-while-revalidate for assets and offline indicator in header bar | `DONE` | SW version bumped to nexus-v2, caches all app CSS/JS/assets. |
 
 ### 🟢 LOW (Backlog / Nice to Have)
 | ID | Task | Status | Notes |
@@ -251,7 +252,7 @@ nexus-command-center/
 
 ## 🕐 LAST UPDATED
 
-*2026-05-09* — T-009-e-a Google Calendar sync settings UI complete.
+*2026-05-09* — T-015-a Offline mode (stale-while-revalidate SW + offline indicator) complete.
 
 ---
 

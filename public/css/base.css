@@ -113,6 +113,42 @@ body {
   gap: var(--space-3);
 }
 
+.offline-indicator {
+  display: none;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  background: #ef4444;
+}
+
+.offline-indicator.visible {
+  display: inline-flex;
+}
+
+.offline-indicator::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: offline-pulse 1.2s infinite;
+}
+
+@keyframes offline-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offline-indicator::before {
+    animation: none;
+  }
+}
+
 .header-menu-btn,
 .header-btn {
   width: 36px;
