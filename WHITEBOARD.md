@@ -12,7 +12,7 @@
 | **Project Phase** | `SECURITY & CLOUD` |
 | **Last Agent Run** | 2026-05-09 (T-029 IT Hub complete, T-030/031 added) |
 | **Active Tasks** | 8 (T-021-c, T-022, T-024 through T-028, T-030, T-031) |
-| **Completed Tasks** | 32 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-015, T-015-a, T-016, T-021-a/b, T-022, T-023, T-029 + subtasks) |
+| **Completed Tasks** | 33 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-015, T-015-a, T-016, T-021-a/b, T-022, T-023, T-029 + subtasks, T-030) |
 
 |**Current Focus:** Highest PENDING: T-030-c (wire backup endpoints to server) → enables T-030-b completion → unblocks T-030-d/e. T-031 cloud vault follows after backup system is stable.
 
