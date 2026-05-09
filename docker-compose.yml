@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  nexus:
+    build: .
+    container_name: nexus-command-center
+    ports:
+      - "8080:8080"
+    volumes:
+      - nexus-data:/usr/share/nginx/html/data
+    restart: unless-stopped
+
+volumes:
+  nexus-data:

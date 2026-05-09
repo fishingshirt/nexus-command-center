@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a" id="theme-color">
+  <title>Nexus Command Center</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes/professional.css" id="theme-stylesheet">
+</head>
+<body>
+
+  <!-- ===== WELCOME OVERLAY ===== -->
+  <div id="welcome-overlay" class="welcome-overlay" aria-hidden="true">
+    <div class="welcome-content">
+      <div class="welcome-brand">NEXUS</div>
+      <div class="welcome-tagline" id="welcome-tagline"></div>
+      <div class="welcome-subtitle">Your personal command center. An AI agent works in the background to make it better, every day.</div>
+      <button class="welcome-cta" id="welcome-cta" aria-label="Enter dashboard">
+        <span>Enter the Nexus</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </button>
+      <button class="welcome-skip" id="welcome-skip" aria-label="Skip intro">Skip Intro</button>
+    </div>
+    <div class="welcome-backdrop"></div>
+  </div>
+
+  <!-- ===== SETTINGS PANEL ===== -->
+  <aside id="settings-panel" class="settings-panel" aria-hidden="true" role="dialog" aria-label="Settings">
+    <div class="settings-header">
+      <h2>Settings</h2>
+      <button class="settings-close" id="settings-close" aria-label="Close settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <section class="settings-section">
+        <h3>Appearance</h3>
+        <div class="settings-row">
+          <label for="theme-select">Theme</label>
+          <select id="theme-select">
+            <option value="professional">Professional</option>
+            <option value="midnight-hacker">Midnight Hacker</option>
+            <option value="sakura-garden">Sakura Garden</option>
+            <option value="space-odyssey">Space Odyssey</option>
+            <option value="retro-arcade">Retro Arcade</option>
+            <option value="ocean-breeze">Ocean Breeze</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label for="reduced-motion">Reduce animations</label>
+          <input type="checkbox" id="reduced-motion" class="toggle">
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>Onboarding</h3>
+        <div class="settings-row">
+          <label for="show-welcome">Replay welcome screen on next visit</label>
+          <input type="checkbox" id="show-welcome" class="toggle">
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>Data</h3>
+        <button class="btn-secondary" id="btn-export">Export All Data</button>
+        <button class="btn-secondary" id="btn-import">Import Data</button>
+        <input type="file" id="import-file" accept=".json" hidden>
+        <button class="btn-danger" id="btn-clear">Clear All Data</button>
+      </section>
+
+      <section class="settings-section">
+        <h3>About</h3>
+        <p class="settings-about">Nexus Command Center v1.0</p>
+        <p class="settings-about">Built by AI, for you.</p>
+      </section>
+    </div>
+  </aside>
+  <div id="settings-backdrop" class="settings-backdrop" aria-hidden="true"></div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="app" class="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <button class="header-menu-btn" id="header-menu-btn" aria-label="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="header-brand">
+          <span class="header-brand-icon">◈</span>
+          <span class="header-brand-text">Nexus</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="header-btn" id="header-search-btn" aria-label="Search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <button class="header-btn" id="header-settings-btn" aria-label="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Drawer -->
+    <nav id="nav-drawer" class="nav-drawer" aria-hidden="true">
+      <div class="nav-drawer-header">
+        <span class="nav-drawer-brand">◈ Nexus</span>
+        <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close navigation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="nav-drawer-body">
+        <a href="#dashboard" class="nav-link active" data-app="dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Dashboard
+        </a>
+        <a href="#calendar" class="nav-link" data-app="calendar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Calendar
+        </a>
+        <a href="#notes" class="nav-link" data-app="notes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Notes
+        </a>
+        <a href="#todo" class="nav-link" data-app="todo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          To-Do
+        </a>
+        <div class="nav-divider"></div>
+        <a href="#chat" class="nav-link" data-app="chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          Hermes Chat
+        </a>
+      </div>
+    </nav>
+    <div id="nav-backdrop" class="nav-backdrop" aria-hidden="true"></div>
+
+    <!-- Main Content -->
+    <main class="app-main" id="app-main">
+      <!-- Dashboard Grid -->
+      <div id="view-dashboard" class="view active">
+        <div class="dashboard-header">
+          <h1>Welcome back</h1>
+          <p class="dashboard-date" id="dashboard-date"></p>
+        </div>
+        <div class="app-grid" id="app-grid">
+          <!-- Calendar Card -->
+          <div class="app-card" data-app="calendar" tabindex="0" role="button" aria-label="Open Calendar">
+            <div class="app-card-icon" style="--card-accent: #6366f1;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <div class="app-card-info">
+              <h3>Calendar</h3>
+              <p>Plan your days</p>
+            </div>
+            <div class="app-card-badge" id="calendar-badge">0</div>
+          </div>
+
+          <!-- Notes Card -->
+          <div class="app-card" data-app="notes" tabindex="0" role="button" aria-label="Open Notes">
+            <div class="app-card-icon" style="--card-accent: #10b981;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+            <div class="app-card-info">
+              <h3>Notes</h3>
+              <p>Capture ideas</p>
+            </div>
+            <div class="app-card-badge" id="notes-badge">0</div>
+          </div>
+
+          <!-- To-Do Card -->
+          <div class="app-card" data-app="todo" tabindex="0" role="button" aria-label="Open To-Do">
+            <div class="app-card-icon" style="--card-accent: #f59e0b;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div class="app-card-info">
+              <h3>To-Do</h3>
+              <p>Stay on track</p>
+            </div>
+            <div class="app-card-badge" id="todo-badge">0</div>
+          </div>
+
+          <!-- Chat Card -->
+          <div class="app-card" data-app="chat" tabindex="0" role="button" aria-label="Open Hermes Chat">
+            <div class="app-card-icon" style="--card-accent: #ec4899;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </div>
+            <div class="app-card-info">
+              <h3>Hermes</h3>
+              <p>Talk to your AI</p>
+            </div>
+            <div class="app-card-status" id="chat-status"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Views (shells) -->
+      <div id="view-calendar" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>Calendar</h2>
+          <button class="view-action" aria-label="Add event">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+        <div class="view-body">
+          <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            <h3>No events yet</h3>
+            <p>Your calendar is ready. Events will appear here.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-notes" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>Notes</h2>
+          <button class="view-action" aria-label="New note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+        <div class="view-body">
+          <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <h3>No notes yet</h3>
+            <p>Capture your thoughts. They'll be saved here.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-todo" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>To-Do</h2>
+          <button class="view-action" aria-label="New task">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+        <div class="view-body">
+          <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <h3>No tasks yet</h3>
+            <p>Add your first task and start getting things done.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-chat" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>Hermes Chat</h2>
+        </div>
+        <div class="view-body chat-view-body">
+          <div class="chat-history" id="chat-history"></div>
+          <div class="chat-input-area">
+            <input type="text" id="chat-input" class="chat-input" placeholder="Type /new for a fresh start..." autocomplete="off">
+            <button id="chat-send" class="chat-send" aria-label="Send message">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Chat Widget (Floating) -->
+    <div id="chat-widget" class="chat-widget">
+      <button class="chat-widget-toggle" id="chat-widget-toggle" aria-label="Toggle chat">
+        <span class="chat-widget-icon-open">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </span>
+        <span class="chat-widget-icon-close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </span>
+      </button>
+      <div class="chat-widget-window" id="chat-widget-window">
+        <div class="chat-widget-header">
+          <span class="chat-widget-title">Hermes</span>
+          <span class="chat-widget-status">Online</span>
+        </div>
+        <div class="chat-widget-messages" id="chat-widget-messages"></div>
+        <div class="chat-widget-input-wrap">
+          <input type="text" id="chat-widget-input" class="chat-widget-input" placeholder="Ask anything..." autocomplete="off">
+          <button id="chat-widget-send" class="chat-widget-send" aria-label="Send">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { initApp } from './js/app.js';
+    initApp();
+  </script>
+</body>
+</html>
