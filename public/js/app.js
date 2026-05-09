@@ -3,12 +3,14 @@ import { initNotes } from './apps/notes.js';
 import { initTodo } from './apps/todo.js';
 import { initGoogleSync } from './apps/gcal-sync.js';
 import { initBackup } from './apps/backup.js';
+import { initWeather } from './apps/weather.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
   { id: 'notes', name: 'Notes', icon: '📝', path: 'notes' },
   { id: 'todo', name: 'To-Do', icon: '✅', path: 'todo' },
   { id: 'chat', name: 'Hermes Chat', icon: '💬', path: 'chat' },
+  { id: 'weather', name: 'Weather', icon: '☀️', path: 'weather' },
   { id: 'feedback', name: 'Feedback', icon: '💬', path: 'feedback' }
 ];
 
@@ -23,7 +25,7 @@ export function initApp() {
   initFeedback();
   initAgentStats();
   initBackup();
-  initCalendar();
+  initWeather();
   initCalendar();
   initNotes();
   initTodo();

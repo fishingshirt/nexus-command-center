@@ -10,11 +10,10 @@
 | Metric | Value |
 |--------|-------|
 | **Project Phase** | `APP_EXPANSION` |
-| **Last Agent Run** | 2026-05-09 (T-021-b Smart question engine done) |
+| **Last Agent Run** | 2026-05-09 (T-016 Weather widget app done) |
 | **Active Tasks** | 6 (T-009, T-022 in progress/done + T-024/25/26/27/28 pending) |
-| **Completed Tasks** | 20 (T-001 through T-008, T-009-a/b/c/d/e-a/f, T-021-a/b, T-022, T-023, T-010, T-011, T-015, T-015-a) |
+| **Completed Tasks** | 21 (T-001 through T-008, T-009-a/b/c/d/e-a/f, T-021-a/b, T-022, T-023, T-010, T-011, T-015, T-015-a, T-016) |
 | **Bugs Found** | 0 |
-| **Next Wake** | *(set by cron)* |
 
 |**Current Focus:** Agent can pick up next highest-priority pending task: T-012 (Hermes API bridge) or any new user-requested feature.
 
@@ -59,7 +58,7 @@
 ### 🟢 LOW (Backlog / Nice to Have)
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| `T-016` | Weather widget app | `PENDING` | Free API like OpenWeatherMap. |
+| `T-016` | Weather widget app | `DONE` | Open-Meteo free API: current conditions + 5-day forecast, city search via geocoding API, localStorage persistence, responsive layout with CSS custom properties. |
 | `T-017` | Spotify / music player widget | `PENDING` | Mini player with controls. |
 | `T-018` | RSS feed reader / news aggregator | `PENDING` | For staying updated. |
 | `T-019` | Finance tracker app | `PENDING` | Simple expense logging. |
