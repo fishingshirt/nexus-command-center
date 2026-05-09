@@ -1,1 +1,171 @@
-.nexus-pin-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}.nexus-pin-panel{background:var(--surface, #fff);border-radius:12px;padding:1.5rem 1.25rem;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25)}.nexus-pin-icon{font-size:2rem;margin-bottom:.25rem}.nexus-pin-panel h3{margin:.25rem 0 .75rem}.nexus-pin-panel input{font-size:1.5rem;letter-spacing:.3em;text-align:center;padding:.6rem .4rem;border:2px solid var(--border, #d1d5db);border-radius:8px;background:var(--bg, #fff);color:var(--text, #111);width:100%}.nexus-pin-error{color:#ef4444;font-size:.85rem;height:1.2rem;margin-top:.25rem}.auth-status-badge{padding:.15rem .45rem;border-radius:6px;font-size:.78rem;font-weight:600}.auth-status-badge.disabled{background:var(--muted-bg,#e5e7eb);color:var(--muted-text,#6b7280)}.auth-status-badge.enabled{background:#dcfce7;color:#166534}.auth-app-locks{display:flex;flex-direction:column;gap:.35rem;margin-left:.25rem}.auth-status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem}
+/* ─── PIN Auth Overlay ─────────────────────────────────── */
+
+.nexus-pin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, .6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nexus-pin-panel {
+  background: var(--surface, #fff);
+  border-radius: 12px;
+  padding: clamp(1rem, 4vw, 1.5rem) clamp(0.75rem, 3vw, 1.25rem);
+  max-width: min(320px, 92vw);
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+  margin: auto;
+}
+
+.nexus-pin-icon {
+  font-size: 2rem;
+  margin-bottom: 0.25rem;
+}
+
+.nexus-pin-panel h3 {
+  margin: 0.25rem 0 0.75rem;
+  font-size: clamp(1rem, 4vw, 1.15rem);
+  word-break: break-word;
+}
+
+/* PIN input — clamped to prevent iOS zoom, viewport-aware sizing */
+.nexus-pin-panel input {
+  font-size: clamp(16px, 7vw, 1.5rem);
+  letter-spacing: clamp(0.08em, 0.4vw, 0.3em);
+  text-align: center;
+  padding: clamp(0.4rem, 2vw, 0.6rem) clamp(0.25rem, 1.5vw, 0.4rem);
+  border: 2px solid var(--border, #d1d5db);
+  border-radius: 8px;
+  background: var(--bg, #fff);
+  color: var(--text, #111);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+.nexus-pin-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  min-height: 1.2rem;
+  margin-top: 0.25rem;
+}
+
+.nexus-pin-panel .btn-primary,
+.nexus-pin-panel .btn-secondary {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+/* ─── Auth status badges (Settings page) ────────────────── */
+.auth-status-badge {
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.auth-status-badge.disabled {
+  background: var(--muted-bg, #e5e7eb);
+  color: var(--muted-text, #6b7280);
+}
+
+.auth-status-badge.enabled {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.auth-app-locks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-left: 0.25rem;
+}
+
+.auth-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+/* ─── Mobile tweaks ─────────────────────────────────────── */
+@media (max-width: 420px) {
+  .nexus-pin-overlay {
+    align-items: flex-start;
+    padding-top: 12vh;
+  }
+
+  .nexus-pin-panel {
+    max-width: min(300px, 96vw);
+    padding: 1.125rem 0.875rem;
+  }
+
+  .nexus-pin-panel h3 {
+    font-size: clamp(0.95rem, 4vw, 1.05rem);
+  }
+
+  .nexus-pin-panel input {
+    font-size: clamp(16px, 7vw, 1.35rem);
+    letter-spacing: clamp(0.06em, 0.35vw, 0.2em);
+    padding: 0.5rem 0.25rem;
+  }
+}
+
+/* Extra-small devices (iPhone SE, etc) */
+@media (max-width: 360px) {
+  .nexus-pin-overlay {
+    padding: 0.5rem;
+    padding-top: 8vh;
+  }
+
+  .nexus-pin-panel {
+    max-width: 98vw;
+    border-radius: 10px;
+    padding: 1rem 0.75rem;
+  }
+
+  .nexus-pin-panel input {
+    font-size: clamp(16px, 7.5vw, 1.3rem);
+  }
+}
+
+/* Landscape phone — center vertically, reduce padding */
+@media (max-height: 480px) and (orientation: landscape) {
+  .nexus-pin-overlay {
+    align-items: center;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .nexus-pin-panel {
+    max-width: min(280px, 90vw);
+    padding: 1rem;
+  }
+
+  .nexus-pin-icon {
+    font-size: 1.5rem;
+  }
+
+  .nexus-pin-panel h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .nexus-pin-panel input {
+    font-size: clamp(16px, 6vw, 1.25rem);
+    padding: 0.4rem 0.2rem;
+  }
+}

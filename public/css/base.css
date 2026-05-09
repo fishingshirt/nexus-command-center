@@ -710,7 +710,8 @@ body {
 }
 
 .settings-row select,
-.settings-row input[type="text"] {
+.settings-row input[type="text"],
+.settings-row input[type="password"] {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -720,12 +721,14 @@ body {
   cursor: pointer;
 }
 
-.settings-row input[type="text"] {
+.settings-row input[type="text"],
+.settings-row input[type="password"] {
   cursor: text;
-  min-width: 180px;
+  min-width: 0;
   flex: 1;
   margin-left: var(--space-4);
   max-width: 260px;
+  font-size: 16px; /* prevent iOS zoom on mobile */
 }
 
 .toggle {
