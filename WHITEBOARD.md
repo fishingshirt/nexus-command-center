@@ -50,7 +50,7 @@
 | `T-011` | To-Do app — lists, priorities, due dates, recurring tasks, drag-and-drop | `DONE` | CRUD, priorities, due dates, filters (all/active/completed), clear completed, localStorage persistence, reactive badge count. Recurring + drag-and-drop deferred. |
 | `T-012` | Hermes API bridge — real chat backend integration | `PENDING` | Research how to pipe messages to/from Hermes. |
 | `T-013` | Data persistence layer — migrate from `localStorage` to a real DB (SQLite/JSON file on server) | `PENDING` | Required before multi-device sync. |
-| `T-014` | Auth / user sessions — basic login so data isn't world-readable | `PENDING` | Simple JWT or even just a password hash. |
+| `T-014` | **Opt-in Auth System** — no login required by default. Optional per-app PIN lock (Calendar, Notes, To-Do). Configured in IT Hub. All data stays local. | `PENDING` | **User directive.** Default = no auth, site loads immediately on open. IT Hub shows "Auth: Off" with gray badge. User can enable a simple 4–6 digit PIN (bcrypt-hashed on server in `~/.hermes/nexus-auth.json`). When enabled, targeted apps show an unlock overlay before content. No JWT/session cookies — just a `pinVerified` flag in session-level `sessionStorage` per app. If PIN is forgotten, user resets via IT Hub after re-entering current PIN or deleting the hash file on server. |
 | `T-015` | Offline mode — service worker caches assets + data | `DONE` | Indicator in header, stale-while-revalidate caching, offline-aware Google Calendar sync pause, data queue for background sync. |
 | `T-015-a` | Enhanced service worker with stale-while-revalidate for assets and offline indicator in header bar | `DONE` | SW version bumped to nexus-v2, caches all app CSS/JS/assets. |
 
@@ -250,7 +250,7 @@ nexus-command-center/
 
 ## 🕐 LAST UPDATED
 
-*2026-05-09* — T-015-a Offline mode (stale-while-revalidate SW + offline indicator) complete.
+*2026-05-09* — T-021-c Whiteboard task generator complete. Feedback → agent-readable task cards with copy-to-clipboard. T-021 DONE.
 
 ---
 
