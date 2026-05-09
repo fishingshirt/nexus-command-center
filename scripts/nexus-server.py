@@ -681,24 +681,7 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         self.extensions_map['.css'] = 'text/css'
         self.extensions_map['.svg'] = 'image/svg+xml'
         self.extensions_map['.json'] = 'application/json'
-        if self.path.startswith('/api/'):
-            path = self.path.split('?')[0]
-            repo = os.path.dirname(os.path.abspath(self.args_dir))
-            if path.startswith('/api/backup/'):
-                if _api_backup(self, path, repo):
-                    return
-            if path.startswith('/api/auth/'):
-                if _api_auth(self, path):
-                    return
-        self.send_response(405)
-        self.end_headers()
-
-    def do_GET(self):
-        self.extensions_map['.js'] = 'application/javascript'
-        self.extensions_map['.css'] = 'text/css'
-        self.extensions_map['.svg'] = 'image/svg+xml'
-        self.extensions_map['.json'] = 'application/json'
-        # ── TEMP PIN GATE ──
+        # ── TEMP PIN AUTH ──
         if self.path == '/pin-auth':
             import cgi
             ctype, pdict = cgi.parse_header(self.headers.get('Content-Type', ''))
@@ -722,6 +705,24 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                 _cors(self)
                 self.end_headers()
             return
+        if self.path.startswith('/api/'):
+            path = self.path.split('?')[0]
+            repo = os.path.dirname(os.path.abspath(self.args_dir))
+            if path.startswith('/api/backup/'):
+                if _api_backup(self, path, repo):
+                    return
+            if path.startswith('/api/auth/'):
+                if _api_auth(self, path):
+                    return
+        self.send_response(405)
+        self.end_headers()
+
+    def do_GET(self):
+        self.extensions_map['.js'] = 'application/javascript'
+        self.extensions_map['.css'] = 'text/css'
+        self.extensions_map['.svg'] = 'image/svg+xml'
+        self.extensions_map['.json'] = 'application/json'
+        # ── TEMP PIN GATE ──
         # Skip PIN check for static assets the gate page needs
         if not self.path.startswith('/api/') and not (self.path.endswith('.css') or self.path.endswith('.js') or self.path.endswith('.ico')):
             cookies = self.headers.get('Cookie', '')
