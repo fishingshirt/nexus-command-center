@@ -203,7 +203,14 @@ def agent_status():
         pass
     if last_heartbeat:
         try:
-            age = int(time.time() - time.mktime(time.strptime(last_heartbeat, '%Y-%m-%dT%H:%M:%S')))
+            # Parse ISO 8601 with optional timezone offset
+            from datetime import datetime
+            # Strip timezone for Python 3.10 compatibility
+            ts = last_heartbeat.replace('Z', '+00:00')
+            if ts.endswith('+00:00'):
+                ts = ts[:-6]
+            hb_time = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S')
+            age = int((datetime.utcnow() - hb_time).total_seconds())
             if age > 1200:  # > 20 min old
                 running = False
         except Exception:
