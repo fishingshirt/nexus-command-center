@@ -38,149 +38,6 @@
     <div class="welcome-content"></div>
   </div>
 
-  <!-- ===== SETTINGS PANEL ===== -->
-  <aside id="settings-panel" class="settings-panel" aria-hidden="true" role="dialog" aria-label="Settings">
-    <div class="settings-header">
-      <h2>Settings</h2>
-      <button class="settings-close" id="settings-close" aria-label="Close settings">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
-    </div>
-    <div class="settings-body">
-      <section class="settings-section">
-        <h3>Appearance</h3>
-        <div class="settings-row">
-          <label for="theme-select">Theme</label>
-          <select id="theme-select">
-            <option value="professional">Professional</option>
-            <option value="midnight-hacker">Midnight Hacker</option>
-            <option value="sakura-garden">Sakura Garden</option>
-            <option value="space-odyssey">Space Odyssey</option>
-            <option value="retro-arcade">Retro Arcade</option>
-            <option value="ocean-breeze">Ocean Breeze</option>
-            <option value="jarvis">Jarvis</option>
-          </select>
-        </div>
-        <div class="settings-row">
-          <label for="reduced-motion">Reduce animations</label>
-          <input type="checkbox" id="reduced-motion" class="toggle">
-        </div>
-      </section>
-
-      <section class="settings-section">
-        <h3>Onboarding</h3>
-        <div class="settings-row">
-          <label for="show-welcome">Replay welcome screen on next visit</label>
-          <input type="checkbox" id="show-welcome" class="toggle">
-        </div>
-      </section>
-
-      <section class="settings-section">
-        <h3>Agent Activity</h3>
-        <div class="agent-stats-panel" id="agent-stats-panel">
-          <div class="stat-row">
-            <div class="stat-card">
-              <span class="stat-label">Tasks Done</span>
-              <span class="stat-value" id="agent-stat-tasks">0</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">Bugs Fixed</span>
-              <span class="stat-value" id="agent-stat-bugs">0</span>
-            </div>
-          </div>
-          <div class="stat-row">
-            <div class="stat-card">
-              <span class="stat-label">Commits</span>
-              <span class="stat-value" id="agent-stat-commits">0</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">Wake Cycles</span>
-              <span class="stat-value" id="agent-stat-wakes">0</span>
-            </div>
-          </div>
-          <div class="stat-full">
-            <span class="stat-label">Upcoming Tasks</span>
-            <ul class="agent-upcoming-list" id="agent-upcoming-list">
-              <li class="agent-upcoming-empty">Loading whiteboard...</li>
-            </ul>
-          </div>
-          <div class="stat-full">
-            <span class="stat-label">Last Agent Run</span>
-            <span class="stat-sub" id="agent-stat-last-run">Never</span>
-          </div>
-          <div class="stat-full">
-            <span class="stat-label">Next Scheduled Run</span>
-            <span class="stat-sub" id="agent-stat-next-run">—</span>
-          </div>
-        </div>
-        <button class="btn-secondary" id="btn-sync-whiteboard" style="margin-top:0.5rem;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-          Refresh Whiteboard
-        </button>
-      </section>
-
-      <section class="settings-section">
-        <h3>Google Calendar Sync</h3>
-        <div class="settings-row sync-status-row">
-          <span class="sync-status-label">Status</span>
-          <span class="sync-status-badge" id="sync-status-badge">Not linked</span>
-        </div>
-        <div class="settings-row">
-          <label for="sync-client-id">OAuth Client ID</label>
-          <input type="text" id="sync-client-id" placeholder="From Google Cloud Console" autocomplete="off">
-        </div>
-        <div class="settings-row">
-          <label for="sync-api-key">API Key (read-only)</label>
-          <input type="text" id="sync-api-key" placeholder="Optional — for read-only sync" autocomplete="off">
-        </div>
-        <div class="settings-row">
-          <label for="sync-auto">Auto-sync</label>
-          <input type="checkbox" id="sync-auto" class="toggle">
-        </div>
-        <div class="settings-row">
-          <label for="sync-interval">Sync interval</label>
-          <select id="sync-interval">
-            <option value="15">Every 15 minutes</option>
-            <option value="30">Every 30 minutes</option>
-            <option value="60" selected>Every hour</option>
-            <option value="360">Every 6 hours</option>
-          </select>
-        </div>
-        <div class="settings-row sync-actions">
-          <button class="btn-secondary" id="btn-sync-now">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-            Sync Now
-          </button>
-          <button class="btn-secondary" id="btn-sync-unlink" style="display:none;">Unlink</button>
-        </div>
-        <p class="settings-hint">Google Calendar sync is a one-way import for now. Events merge into your local calendar.</p>
-      </section>
-
-      <section class="settings-section">
-        <h3>Data</h3>
-        <button class="btn-secondary" id="btn-export">Export All Data</button>
-        <button class="btn-secondary" id="btn-import">Import Data</button>
-        <input type="file" id="import-file" accept=".json" hidden>
-        <button class="btn-danger" id="btn-clear">Clear All Data</button>
-      </section>
-
-      <section class="settings-section">
-        <h3>IT Hub</h3>
-        <div class="settings-row">
-          <label for="it-hub-visible">Show IT Hub in main grid</label>
-          <input type="checkbox" id="it-hub-visible" class="toggle">
-        </div>
-      </section>
-
-      <section class="settings-section">
-        <h3>About</h3>
-        <p class="settings-about">Nexus Command Center v1.0</p>
-        <p class="settings-about">Built by AI, for you.</p>
-      </section>
-    </div>
-  </aside>
-  <div id="settings-backdrop" class="settings-backdrop" aria-hidden="true"></div>
-
   <!-- ===== MAIN APP ===== -->
   <div id="app" class="app">
     <!-- Header -->
@@ -719,6 +576,151 @@
             <span id="arcade-game-status">Press SPACE to start</span>
             <span class="arcade-game-keyhint">ESC = exit</span>
           </div>
+        </div>
+      </div>
+      <!-- Settings View -->
+      <div id="view-settings" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>Settings</h2>
+        </div>
+        <div class="view-body settings-view-body">
+          <section class="settings-section">
+            <h3>Appearance</h3>
+            <div class="settings-row">
+              <label for="theme-select">Theme</label>
+              <select id="theme-select">
+                <option value="professional">Professional</option>
+                <option value="midnight-hacker">Midnight Hacker</option>
+                <option value="sakura-garden">Sakura Garden</option>
+                <option value="space-odyssey">Space Odyssey</option>
+                <option value="retro-arcade">Retro Arcade</option>
+                <option value="ocean-breeze">Ocean Breeze</option>
+                <option value="jarvis">Jarvis</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="reduced-motion">Reduce animations</label>
+              <input type="checkbox" id="reduced-motion" class="toggle">
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3>Onboarding</h3>
+            <div class="settings-row">
+              <label for="show-welcome">Replay welcome screen on next visit</label>
+              <input type="checkbox" id="show-welcome" class="toggle">
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3>Agent Activity</h3>
+            <div class="agent-stats-panel" id="agent-stats-panel">
+              <div class="stat-row">
+                <div class="stat-card">
+                  <span class="stat-label">Tasks Done</span>
+                  <span class="stat-value" id="agent-stat-tasks">0</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Bugs Fixed</span>
+                  <span class="stat-value" id="agent-stat-bugs">0</span>
+                </div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-card">
+                  <span class="stat-label">Commits</span>
+                  <span class="stat-value" id="agent-stat-commits">0</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Wake Cycles</span>
+                  <span class="stat-value" id="agent-stat-wakes">0</span>
+                </div>
+              </div>
+              <div class="stat-full">
+                <span class="stat-label">Upcoming Tasks</span>
+                <ul class="agent-upcoming-list" id="agent-upcoming-list">
+                  <li class="agent-upcoming-empty">Loading whiteboard...</li>
+                </ul>
+              </div>
+              <div class="stat-full">
+                <span class="stat-label">Last Agent Run</span>
+                <span class="stat-sub" id="agent-stat-last-run">Never</span>
+              </div>
+              <div class="stat-full">
+                <span class="stat-label">Next Scheduled Run</span>
+                <span class="stat-sub" id="agent-stat-next-run">—</span>
+              </div>
+            </div>
+            <button class="btn-secondary" id="btn-sync-whiteboard" style="margin-top:0.5rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Refresh Whiteboard
+            </button>
+          </section>
+
+          <section class="settings-section">
+            <h3>Google Calendar Sync</h3>
+            <div class="settings-row sync-status-row">
+              <span class="sync-status-label">Status</span>
+              <span class="sync-status-badge" id="sync-status-badge">Not linked</span>
+            </div>
+            <div class="settings-row">
+              <label for="sync-client-id">OAuth Client ID</label>
+              <input type="text" id="sync-client-id" placeholder="From Google Cloud Console" autocomplete="off">
+            </div>
+            <div class="settings-row">
+              <label for="sync-api-key">API Key (read-only)</label>
+              <input type="text" id="sync-api-key" placeholder="Optional — for read-only sync" autocomplete="off">
+            </div>
+            <div class="settings-row">
+              <label for="sync-auto">Auto-sync</label>
+              <input type="checkbox" id="sync-auto" class="toggle">
+            </div>
+            <div class="settings-row">
+              <label for="sync-interval">Sync interval</label>
+              <select id="sync-interval">
+                <option value="15">Every 15 minutes</option>
+                <option value="30">Every 30 minutes</option>
+                <option value="60" selected>Every hour</option>
+                <option value="360">Every 6 hours</option>
+              </select>
+            </div>
+            <div class="settings-row sync-actions">
+              <button class="btn-secondary" id="btn-sync-now">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Sync Now
+              </button>
+              <button class="btn-secondary" id="btn-sync-unlink" style="display:none;">Unlink</button>
+            </div>
+            <p class="settings-hint">Google Calendar sync is a one-way import for now. Events merge into your local calendar.</p>
+          </section>
+
+          <section class="settings-section">
+            <h3>Data</h3>
+            <div class="settings-row" style="gap:.5rem;flex-wrap:wrap;">
+              <button class="btn-secondary" id="btn-export">Export All Data</button>
+              <button class="btn-secondary" id="btn-import">Import Data</button>
+              <input type="file" id="import-file" accept=".json" hidden>
+            </div>
+            <div class="settings-row">
+              <button class="btn-danger" id="btn-clear">Clear All Data</button>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3>IT Hub</h3>
+            <div class="settings-row">
+              <label for="it-hub-visible">Show IT Hub in main grid</label>
+              <input type="checkbox" id="it-hub-visible" class="toggle">
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3>About</h3>
+            <p class="settings-about">Nexus Command Center v1.0</p>
+            <p class="settings-about">Built by AI, for you.</p>
+          </section>
         </div>
       </div>
     </main>

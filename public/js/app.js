@@ -149,33 +149,14 @@ function initNavigation() {
     if (e.key === 'Escape' && drawer.classList.contains('open')) close();
   });
 
-  // Nav links close drawer
+  // Nav links click → close drawer + route via hash (except settings which navigates to #settings)
   drawer.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', () => {
+      const app = link.dataset.app;
       close();
+      if (app) location.hash = app;
     });
   });
-
-  // Settings nav button opens settings modal
-  const settingsNav = document.getElementById('nav-settings-link');
-  if (settingsNav) {
-    settingsNav.addEventListener('click', e => {
-      e.preventDefault();
-      close();
-      const panel = document.getElementById('settings-panel');
-      const sBackdrop = document.getElementById('settings-backdrop');
-      const closeBtn = document.getElementById('settings-close');
-      if (panel) {
-        panel.classList.add('open');
-        panel.setAttribute('aria-hidden', 'false');
-        if (sBackdrop) {
-          sBackdrop.classList.add('visible');
-          sBackdrop.setAttribute('aria-hidden', 'false');
-        }
-        if (closeBtn) closeBtn.focus();
-      }
-    });
-  }
 }
 
 /* ===== THEME ===== */
@@ -201,10 +182,6 @@ export function applyTheme(themeName) {
 
 /* ===== SETTINGS ===== */
 function initSettings() {
-  const panel = document.getElementById('settings-panel');
-  const backdrop = document.getElementById('settings-backdrop');
-  const openBtn = document.getElementById('header-settings-btn');
-  const closeBtn = document.getElementById('settings-close');
   const themeSelect = document.getElementById('theme-select');
   const reducedMotion = document.getElementById('reduced-motion');
   const showWelcome = document.getElementById('show-welcome');
@@ -215,32 +192,6 @@ function initSettings() {
   themeSelect.value = settings.theme || 'professional';
   reducedMotion.checked = settings.reducedMotion || false;
   showWelcome.checked = settings.showWelcomeOnBoot || false;
-
-  function open() {
-    panel.classList.add('open');
-    panel.setAttribute('aria-hidden', 'false');
-    backdrop.classList.add('visible');
-    backdrop.setAttribute('aria-hidden', 'false');
-    closeBtn.focus();
-  }
-
-  function close() {
-    panel.classList.remove('open');
-    panel.setAttribute('aria-hidden', 'true');
-    backdrop.classList.remove('visible');
-    backdrop.setAttribute('aria-hidden', 'true');
-    // Focus hamburger menu as safe fallback
-    const fallback = document.getElementById('header-menu-btn') || openBtn;
-    if (fallback) fallback.focus();
-  }
-
-  if (openBtn) openBtn.addEventListener('click', open);
-  closeBtn.addEventListener('click', close);
-  backdrop.addEventListener('click', close);
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && panel.classList.contains('open')) close();
-  });
 
   // Theme change
   themeSelect.addEventListener('change', () => {

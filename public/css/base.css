@@ -647,70 +647,32 @@ button.nav-link {
   background: radial-gradient(ellipse at center, transparent 0%, var(--welcome-bg) 70%);
 }
 
-/* ===== SETTINGS PANEL ===== */
-.settings-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 100%;
-  max-width: 400px;
-  height: 100vh;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-  z-index: 200;
-  transform: translateX(100%);
-  transition: transform var(--transition-base);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.settings-panel.open {
-  transform: translateX(0);
-}
-
-.settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.settings-header h2 {
-  font-size: var(--font-size-xl);
-  font-weight: 600;
-}
-
-.settings-close {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-fast);
-}
-
-.settings-close:hover {
-  background: var(--hover-bg);
-  color: var(--text);
-}
-
-.settings-body {
-  flex: 1;
-  overflow-y: auto;
+/* ─── Settings App View ─────────────────────────────────── */
+.settings-view-body {
   padding: var(--space-4) var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
 }
 
+.settings-view-body .settings-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  .settings-view-body {
+    padding: var(--space-3);
+    gap: var(--space-5);
+  }
+  .settings-view-body .settings-section {
+    padding: var(--space-4);
+  }
+}
+
+/* ─── Settings App View (existing shared styles, scoped to view) ── */
 .settings-section h3 {
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -887,21 +849,6 @@ button.nav-link {
 .sync-actions .btn-secondary {
   width: auto;
   margin-bottom: 0;
-}
-
-.settings-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--backdrop);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--transition-base), visibility var(--transition-base);
-  z-index: 150;
-}
-
-.settings-backdrop.visible {
-  opacity: 1;
-  visibility: visible;
 }
 
 /* ===== CHAT WIDGET ===== */
