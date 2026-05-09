@@ -10,9 +10,9 @@
 | Metric | Value |
 |--------|-------|
 | **Project Phase** | `SCAFFOLDING_COMPLETE` |
-| **Last Agent Run** | 2026-05-09 (initial scaffold by Hermes) |
-| **Active Tasks** | 0 |
-| **Completed Tasks** | 8 (T-001 through T-008 scaffold complete) |
+| **Last Agent Run** | 2026-05-09 (T-009 month view + CRUD + persistence) |
+| **Active Tasks** | 1 (T-009 in progress, sub-tasks a-c done) |
+| **Completed Tasks** | 11 (T-001 through T-008, T-009-a, T-009-b, T-009-c) |
 | **Bugs Found** | 0 |
 | **Next Wake** | *(set by cron)* |
 
@@ -37,10 +37,10 @@
 ### 🟡 HIGH (Next Sprint)
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| `T-009` | Calendar app — full CRUD, month/week/day views, localStorage persistence | `IN_PROGRESS` | Broken into sub-tasks below. |
-| `T-009-a` | Calendar month grid renderer + navigation | `IN_PROGRESS` | Month view with prev/next/today buttons. |
-| `T-009-b` | Calendar event CRUD modal | `IN_PROGRESS` | Add/edit/delete events with title/time/description. |
-| `T-009-c` | Calendar localStorage persistence | `IN_PROGRESS` | Events load/save to `ncc-calendar-events`. |
+| `T-009` | Calendar app — full CRUD, month/week/day views, localStorage persistence | `IN_PROGRESS` | Month view + CRUD + persistence done. Week/day view pending T-009-d. |
+| `T-009-a` | Calendar month grid renderer + navigation | `DONE` | Month view with prev/next/today buttons. |
+| `T-009-b` | Calendar event CRUD modal | `DONE` | Add/edit/delete events with title/time/description/category. |
+| `T-009-c` | Calendar localStorage persistence | `DONE` | Events load/save to `ncc-calendar-events`. |
 | `T-009-d` | Calendar week/day views | `PENDING` | Switchable view modes. |
 | `T-009-e` | **Google Calendar sync** — OAuth2 + API integration, settings panel auth, auto/manual sync, status indicator | `PENDING` | **User directive.** Settings panel needs Google Calendar token/API field. Manual + auto sync checks. Shows 'linked' / 'synced' / 'error' status. Falls back to localStorage if no auth. |
 | `T-009-f` | Calendar recurring events engine | `PENDING` | Weekly/monthly/yearly recurrence rules. |

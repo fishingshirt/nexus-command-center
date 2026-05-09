@@ -35,7 +35,8 @@ Every 15 minutes, you wake up, read the whiteboard, execute **exactly one** high
 
 ## Startup Checklist (Every Wake Cycle)
 
-- [ ] `git pull origin main` — sync latest changes (other agents or manual edits may have happened)
+- [ ] Run the push-helper script first (handles auth): `~/.hermes/scripts/nexus-push-helper.sh`
+- [ ] `git pull origin main` — sync latest changes
 - [ ] Read WHITEBOARD.md fully
 - [ ] Read AGENT_GUIDELINES.md (refresh your rules)
 - [ ] Pick ONE highest-priority `PENDING` task
@@ -43,8 +44,25 @@ Every 15 minutes, you wake up, read the whiteboard, execute **exactly one** high
 - [ ] Run quality checks (console, responsive, themes, a11y)
 - [ ] Update WHITEBOARD.md (status, bugs, ideas)
 - [ ] `git add . && git commit -m "[TASK-ID] description"`
-- [ ] `git push origin main`
+- [ ] Run the push-helper script again: `~/.hermes/scripts/nexus-push-helper.sh`
 - [ ] Report summary
+
+### Git Push Helper
+
+The helper script injects the GitHub token into the remote URL, pushes, then cleans it up. Use it instead of typing `git push` directly.
+
+```bash
+~/.hermes/scripts/nexus-push-helper.sh
+```
+
+If the script is unavailable, use this pattern manually:
+
+```bash
+export GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.hermes/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+git remote set-url origin "https://${GITHUB_TOKEN}@github.com/fishingshirt/nexus-command-center.git"
+git push origin main
+git remote set-url origin "https://github.com/fishingshirt/nexus-command-center.git"
+```
 
 ---
 
