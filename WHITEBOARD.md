@@ -11,10 +11,10 @@
 |--------|-------|
 | **Project Phase** | `SECURITY & CLOUD` |
 | **Last Agent Run** | 2026-05-09 (T-014-b/c PIN auth frontend + IT Hub card complete) |
-| **Active Tasks** | 9 (T-024 through T-028, T-030-f, T-031, T-032, T-033) |
-| **Completed Tasks** | 39 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-029 + subtasks, T-030 + subtasks a–e) |
+| **Active Tasks** | 8 (T-024 through T-028, T-031, T-032, T-033) |
+| **Completed Tasks** | 40 (T-001 through T-008, T-009 + subtasks, T-010, T-011, T-014 + subtasks a–c, T-015, T-015-a, T-016, T-021-a/b/c, T-021, T-022, T-023, T-029 + subtasks, T-030 + subtasks a–f) |
 
-|**Current Focus:** T-014 opt-in PIN auth system complete (frontend overlay, settings integration, IT Hub card). Next: T-030-f (Backup health auto-check) or T-024 (Phone Bridge).
+|**Current Focus:** T-030-f (Backup health auto-check) DONE. Next: T-024 (Phone Bridge) or T-033-a (Welcome audio preload). |
 
 ---
 
@@ -141,13 +141,13 @@
 ### 🔒 BACKUP & RECOVERY (T-030)
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| `T-030` | **Backup & Recovery** — server-side backup engine, dashboard UI, USB detection, encrypted archives, cloud vault config | `IN_PROGRESS` | Broken into sub-tasks below |
-| `T-030-a` | Backup endpoints wired into `nexus-server.py` — `/api/backup/usb` + `/api/backup/run` | `DONE` | USB scanning via `lsblk` fallback to `/media`/`/mnt`. Run endpoint accepts JSON payload, writes to `~/.hermes/backups`, optionally GPG-encrypts with passphrase, copies to USB target. |
-| `T-030-b` | Backup dashboard UI — `backup.js` card, view, status panel, USB list, cloud config form, history | `DONE` | Self-contained module. Renders card, view, polling. localStorage history + server-side file history. |
-| `T-030-c` | Fix critical `nexus-server.py` structural bug — `_api_backup` was inside class scope causing 501/404 on all backup endpoints | `DONE` | Extracted `_api_backup` to top-level function before `SPAHandler`. Verified `/api/backup/usb` and `/api/backup/run` respond correctly. |
-| `T-030-d` | Backup history endpoint — `GET /api/backup/history` returns list of archived backup files from server disk with metadata (filename, size, created, encrypted) | `DONE` | Lists `nexus-backup-*` files from `~/.hermes/backups`, sorted newest first. Includes download button in UI. |
-| `T-030-e` | Restore endpoint — `POST /api/backup/restore` accepts a backup filename, decrypts if needed, merges data back into browser via download prompt or direct localStorage injection | `DONE` | User picks backup from history, confirms destructive merge, gets success toast. UI: restore button per entry, passphrase modal for encrypted backups, merge preview (Add Only vs Full Replace). Endpoint: decrypt with `gpg --batch --passphrase-fd 0 --decrypt`. Security: path traversal blocked. |
-| `T-030-f` | Backup health auto-check — dashboard badge turns amber if no backup in 7 days, red if > 30 days | `PENDING` | Reads `lastSyncTime` equivalent from backup log. |
+|| `T-030` | **Backup & Recovery** — server-side backup engine, dashboard UI, USB detection, encrypted archives, cloud vault config | `DONE` | All sub-tasks complete T-030-a through T-030-f. Health auto-check badge (green/amber/red) lives in IT Hub card. |
+|| `T-030-a` | Backup endpoints wired into `nexus-server.py` — `/api/backup/usb` + `/api/backup/run` | `DONE` | USB scanning via `lsblk` fallback to `/media`/`/mnt`. Run endpoint accepts JSON payload, writes to `~/.hermes/backups`, optionally GPG-encrypts with passphrase, copies to USB target. |
+|| `T-030-b` | Backup dashboard UI — `backup.js` card, view, status panel, USB list, cloud config form, history | `DONE` | Self-contained module. Renders card, view, polling. localStorage history + server-side file history. |
+|| `T-030-c` | Fix critical `nexus-server.py` structural bug — `_api_backup` was inside class scope causing 501/404 on all backup endpoints | `DONE` | Extracted `_api_backup` to top-level function before `SPAHandler`. Verified `/api/backup/usb` and `/api/backup/run` respond correctly. |
+|| `T-030-d` | Backup history endpoint — `GET /api/backup/history` returns list of archived backup files from server disk with metadata (filename, size, created, encrypted) | `DONE` | Lists `nexus-backup-*` files from `~/.hermes/backups`, sorted newest first. Includes download button in UI. |
+|| `T-030-e` | Restore endpoint — `POST /api/backup/restore` accepts a backup filename, decrypts if needed, merges data back into browser via download prompt or direct localStorage injection | `DONE` | User picks backup from history, confirms destructive merge, gets success toast. UI: restore button per entry, passphrase modal for encrypted backups, merge preview (Add Only vs Full Replace). Endpoint: decrypt with `gpg --batch --passphrase-fd 0 --decrypt`. Security: path traversal blocked. |
+|| `T-030-f` | Backup health auto-check — dashboard badge turns amber if no backup in 7 days, red if > 30 days | `DONE` | Reads backup log `latest` age and updates `#backup-health-status` to green/amber/red. Badge dot in IT Hub card turns matching color. |
 | `T-031` | **Cloud Vault** — encrypted cloud sync via rclone/rsync/S3 | `PENDING` | **User directive.** After T-030 is stable. UI config already present. Actual upload/download deferred. |
 | `T-032` | **Email Agent / Inbox App** — Gmail integration + AI-powered smart inbox sorting, priority triage, and email agent cron job | `PENDING` | **User directive.** New dashboard app for email. Starts dimmed/welcome screen. Two modes: basic inbox (Gmail API read/send) and AI agent mode (auto-sorts, prioritizes, drafts replies, flags action items). |
 || `T-032-a` | Gmail API OAuth2 integration — settings panel for Gmail API key / OAuth, scope `gmail.readonly` + `gmail.send`, token persistence in `ncc-settings.gmail` | `PENDING` | Reuse Google Calendar auth pattern. Trigger `gmailAuthChanged` custom event. Store token expiry. |

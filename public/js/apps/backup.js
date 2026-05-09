@@ -98,6 +98,10 @@ function initBackupView() {
           <span class="backup-status-label">Cloud Sync</span>
           <span class="backup-status-value" id="backup-cloud-status">Not configured</span>
         </div>
+        <div class="backup-status-row">
+          <span class="backup-status-label">Health</span>
+          <span class="backup-status-value" id="backup-health-status"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8;margin-right:6px"></span>Checking…</span>
+        </div>
       </div>
 
       <div class="backup-actions">
@@ -400,14 +404,28 @@ function renderHistory(list, items) {
 
   // Update dashboard badge
   const okCount = items.filter(i => i.status !== 'error').length;
-  updateBadge(okCount);
+  updateBadge(okCount, latest);
+  updateHealthStatus(latest);
 }
 
-function updateBadge(count) {
+function updateBadge(count, latest) {
   const badge = document.getElementById('backup-badge');
   if (!badge) return;
   badge.textContent = count;
   badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+function updateHealthStatus(latest) {
+  const el = document.getElementById('backup-health-status');
+  if (!el) return;
+  const d = latest?.created ? new Date(latest.created) : null;
+  const ageDays = d ? (Date.now() - d) / 86400000 : Infinity;
+  let color = '#10b981'; // green
+  let label = 'Good';
+  if (ageDays > 30) { color = '#ef4444'; label = '>30 days — Backup now!'; }
+  else if (ageDays > 7) { color = '#f59e0b'; label = '>7 days — Time to backup'; }
+  else if (ageDays === Infinity) { color = '#94a3b8'; label = 'No backups yet'; }
+  el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>${label}`;
 }
 
 function showRestoreModal(filename, encrypted) {
