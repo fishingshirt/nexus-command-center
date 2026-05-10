@@ -28,32 +28,43 @@
 || HIGH | `T-029` | IT Hub / System health | `PENDING` | [`tasks/T-029.md`](tasks/T-029.md) |
 || MEDIUM | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
 || HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
-
----
+|| MEDIUM | `T-039` | Multi-city weather manager | `PENDING` | [`tasks/T-039.md`](tasks/T-039.md) |
+|| MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
+|| MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
+|| HIGH | `T-042` | Unified notifications center | `PENDING` | [`tasks/T-042.md`](tasks/T-042.md) |
+|| MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
+|| LOW | `T-044` | World clock widget | `PENDING` | [`tasks/T-044.md`](tasks/T-044.md) |
+|| MEDIUM | `T-045` | Pomodoro timer / focus mode | `PENDING` | [`tasks/T-045.md`](tasks/T-045.md) |
+|| LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
+|| MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
+|| LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
+|| MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
+|| LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
+|
+|---
 
 ## ✅ Recently Done
 
-|| ID | Task |
-||----|------|
-|| `T-039` | Multi-city weather manager |
-|| `T-009` | Calendar app (views, CRUD, recurrence, Google sync) |
-|| `T-010` | Notes app (CRUD, search, auto-save) |
-|| `T-011` | To-Do app (lists, priorities, recurring, filters) |
-|| `T-014` | Opt-in auth system (PIN overlay, per-app lock) |
-|| `T-015` | Offline mode + enhanced service worker |
-|| `T-016` | Weather widget (Open-Meteo, geocoding) |
-|| `T-021` | Feedback AI (form, questions, whiteboard generator) |
-|| `T-022` | Agent Stats Panel (live metrics, heartbeat, notifications) |
-|| `T-023` | Jarvis theme |
-|| `T-024` | Phone Bridge (ADB detect, SMS read/send, threads) |
-|| `T-026` | Mini Games Arcade core (Snake, Pong, Tetromino, Minesweeper, 2048, Typing) |
-|| `T-030` | Backup & Recovery (USB, encrypted archives, restore) |
-|| `T-033` | Welcome rebrand (cinematic onboarding) |
-|| `T-035` | Nexus logo home button |
-|| `T-036` | Stocks & crypto + paper trading |
-|| `T-037` | Settings icon relocation |
-|| `T-038` | Logic bug sweep (calendar, notes, phone-bridge, auth, finance) |
-|| `T-012` | Hermes API bridge (Telegram Bot API relay + dashboard chat polling) |
+| ID | Task |
+|----|------|
+| `T-009` | Calendar app (views, CRUD, recurrence, Google sync) |
+| `T-010` | Notes app (CRUD, search, auto-save) |
+| `T-011` | To-Do app (lists, priorities, recurring, filters) |
+| `T-012` | Hermes API bridge (Telegram Bot API relay + dashboard chat polling) |
+| `T-014` | Opt-in auth system (PIN overlay, per-app lock) |
+| `T-015` | Offline mode + enhanced service worker |
+| `T-016` | Weather widget (Open-Meteo, geocoding) |
+| `T-021` | Feedback AI (form, questions, whiteboard generator) |
+| `T-022` | Agent Stats Panel (live metrics, heartbeat, notifications) |
+| `T-023` | Jarvis theme |
+| `T-024` | Phone Bridge (ADB detect, SMS read/send, threads) |
+| `T-026` | Mini Games Arcade core (Snake, Pong, Tetromino, Minesweeper, 2048, Typing) |
+| `T-030` | Backup & Recovery (USB, encrypted archives, restore) |
+| `T-033` | Welcome rebrand (cinematic onboarding) |
+| `T-035` | Nexus logo home button |
+| `T-036` | Stocks & crypto + paper trading |
+| `T-037` | Settings icon relocation |
+| `T-038` | Logic bug sweep (calendar, notes, phone-bridge, auth, finance) |
 
 ---
 
