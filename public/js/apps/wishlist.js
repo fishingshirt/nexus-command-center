@@ -47,6 +47,36 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function parseTags(input) { return []; } // stub — real impl already exists later in file
+
+let _fetchAbort = null;
+function attemptFetchLink(url) {
+  if (!url || !url.startsWith('http')) return;
+  const titleInput = document.getElementById('wishlist-title');
+  const imageInput = document.getElementById('wishlist-image');
+  const priceInput = document.getElementById('wishlist-price');
+  if (!titleInput || !imageInput || !priceInput) return;
+
+  const modalTitle = document.getElementById('wishlist-modal-title');
+  const oldTitle = modalTitle?.textContent;
+  if (modalTitle) modalTitle.textContent = oldTitle + ' (Fetching…)';
+
+  if (_fetchAbort) _fetchAbort.abort();
+  _fetchAbort = new AbortController();
+
+  fetch(`/api/fetch-link?url=${encodeURIComponent(url)}`, { signal: _fetchAbort.signal })
+    .then(r => r.json())
+    .then(data => {
+      if (modalTitle) modalTitle.textContent = oldTitle;
+      if (!data.ok) return;
+      if (data.title && !titleInput.value.trim()) titleInput.value = data.title;
+      if (data.image && !imageInput.value.trim()) imageInput.value = data.image;
+      if (data.price != null && priceInput.value === '') priceInput.value = data.price;
+    })
+    .catch(() => { if (modalTitle) modalTitle.textContent = oldTitle; })
+    .finally(() => { _fetchAbort = null; });
+}
+
 let _toolbarVisible = false;
 
 export function initWishlist() {
@@ -80,6 +110,22 @@ function bindEvents() {
   document.getElementById('wishlist-sort')?.addEventListener('change', renderWishlist);
   document.getElementById('wishlist-filter')?.addEventListener('change', renderWishlist);
   document.getElementById('wishlist-show-archived')?.addEventListener('change', renderWishlist);
+
+  const urlInput = document.getElementById('wishlist-url');
+  if (urlInput) {
+    let debounceTimer = null;
+    urlInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => attemptFetchLink(urlInput.value.trim()), 800);
+    });
+    urlInput.addEventListener('paste', (e) => {
+      const pasted = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+      if (pasted.startsWith('http')) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => attemptFetchLink(pasted.trim()), 400);
+      }
+    });
+  }
 }
 
 function getFilteredSortedItems() {

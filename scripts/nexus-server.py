@@ -1638,6 +1638,72 @@ def _api_news(handler, path):
     _json(handler, 200, {'articles': paged, 'totalResults': total})
     return True
 
+def _api_fetch_link(handler, path):
+    import urllib.parse, re, html as _html_mod
+    parsed = urllib.parse.urlparse(path)
+    qs = urllib.parse.parse_qs(parsed.query)
+    url = qs.get('url', [''])[0].strip()
+    if not url:
+        _json(handler, 400, {'ok': False, 'error': 'url required'})
+        return True
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) Chrome/120.0.0.0'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode('utf-8', errors='replace')[:50000]
+    except Exception as e:
+        _json(handler, 200, {'ok': False, 'title': None, 'image': None, 'price': None, 'description': None, 'error': str(e)})
+        return True
+
+    title = None
+    image = None
+    description = None
+    price = None
+
+    og_title = re.search(r'<meta[^>]+property=["\']?og:title["\']?[^>]+content=["\']([^"\']+)["\']', html, re.I)
+    og_image = re.search(r'<meta[^>]+property=["\']?og:image["\']?[^>]+content=["\']([^"\']+)["\']', html, re.I)
+    og_desc = re.search(r'<meta[^>]+property=["\']?og:description["\']?[^>]+content=["\']([^"\']+)["\']', html, re.I)
+    title_tag = re.search(r'<title[^>]*>([^<]+)</title>', html, re.I)
+
+    if og_title:
+        title = _html_mod.unescape(og_title.group(1).strip())
+    elif title_tag:
+        title = _html_mod.unescape(title_tag.group(1).strip())
+
+    if og_image:
+        image = og_image.group(1).strip()
+    if og_desc:
+        description = _html_mod.unescape(og_desc.group(1).strip())
+
+    # Price heuristics
+    price_candidates = []
+    for pat in (
+        r'["\']price["\']\s*[:=]\s*["\']?([0-9,.]+)["\']?',
+        r'class=["\'][^"\']*price[^"\']*["\'][^>]*>([^<]+)',
+        r'\$([0-9,.]+(?:\.[0-9]{1,2})?)',
+        r'€([0-9,.]+(?:\.[0-9]{1,2})?)',
+        r'£([0-9,.]+(?:\.[0-9]{1,2})?)',
+    ):
+        m = re.search(pat, html, re.I)
+        if m:
+            s = m.group(1).replace(',', '')
+            try:
+                if s.count('.') > 1:
+                    s = s.replace('.', '', s.count('.') - 1).replace('.', '')
+                price_candidates.append(round(float(s), 2))
+            except ValueError:
+                continue
+    if price_candidates:
+        price = price_candidates[0]
+
+    _json(handler, 200, {
+        'ok': True,
+        'title': title,
+        'image': image,
+        'price': price,
+        'description': description,
+    })
+    return True
+
 _YOUTUBE_POOL = [
     {'title':'The Future of AI in 2025','channel':'Tech Insider','thumbnail':'https://picsum.photos/seed/ai2025/320/180.jpg','url':'https://www.youtube.com/results?search_query=ai+2025','category':'technology'},
     {'title':'Top Gear: Electric Road Trip','channel':'BBC Top Gear','thumbnail':'https://picsum.photos/seed/evroad/320/180.jpg','url':'https://www.youtube.com/results?search_query=top+gear+electric','category':'entertainment'},
@@ -1789,6 +1855,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         if path.startswith('/api/quality/'):
             return _api_quality(self, path)
+
+        if path == '/api/fetch-link':
+            return _api_fetch_link(self, self.path)
 
         # --- News Hub ---
         if path == '/api/news':
