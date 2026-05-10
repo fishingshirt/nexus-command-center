@@ -79,7 +79,7 @@ The first time you open it, you're greeted with a cinematic welcome: ambient mus
 
 - **Weather Widget** — current + 5-day forecast
 - **Music Player** — Spotify integration or local audio
-- **RSS Reader** — news / blog aggregator
+- **RSS Reader** — news / blog aggregator → **replaced by T-053 News & Media Hub**
 - **Finance Tracker** — expenses, budgets, charts
 - **Habit Tracker** — streaks, visual grids
 - **AI Task Suggester** — analyzes patterns, suggests improvements

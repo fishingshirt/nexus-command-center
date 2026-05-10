@@ -8,8 +8,8 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 10:18 UTC
-- **Active tasks:** 10
+- **Last updated:** 2026-05-10 10:36 UTC
+- **Active tasks:** 11
 - **Completed tasks:** 22 shown below
 ---
 
@@ -36,6 +36,7 @@
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
 | LOW | `T-051` | Post-completion QA & continuous improvement loop | `PENDING` | [`tasks/T-051.md`](tasks/T-051.md) |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
+| HIGH | `T-053` | News & Media Hub | `PENDING` | [`tasks/T-053.md`](tasks/T-053.md) |
 
 ---
 
