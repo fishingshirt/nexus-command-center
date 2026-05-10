@@ -19,7 +19,7 @@
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
 | CRITICAL | `T-060` | Quality Check Pipeline + Quality Approval Gate | `IN_PROGRESS` | [`tasks/T-060.md`](tasks/T-060.md) |
-| CRITICAL | `T-060-e` | Fast-Track & Merge Gate Rules | `PENDING` | [`tasks/T-060-e.md`](tasks/T-060-e.md) |
+| ~~CRITICAL~~ | ~~`T-060-e`~~ | ~~Fast-Track & Merge Gate Rules~~ | ~~`DONE`~~ | ~~2026-05-10 — push helper gate check + AGENT_GUIDELINES rules~~ |
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
@@ -37,6 +37,8 @@
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
+| MEDIUM | `T-061` | Wishlist App (links, notes, priority, status) | `PENDING` | [`tasks/T-061.md`](tasks/T-061.md) |
+| MEDIUM | `T-062` | Recipe App (recipes, ratings, cook notes, shopping list) | `PENDING` | [`tasks/T-062.md`](tasks/T-062.md) |
 | ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | HIGH | `T-053` | News & Media Hub | `IN_PROGRESS` | `T-053-a` shell registered, `T-053-b` news feed engine next
@@ -81,6 +83,7 @@
 | `T-060-b` | QA Agent Review Checklist & Sign-Off |
 | `T-060-c` | Backlog Audit: all legacy files queued (48 files in nexus-quality-queue.json) |
 | `T-060-d` | Dashboard Quality Status Panel (server endpoints, settings UI, CSS, JS) |
+| `T-060-e` | Fast-Track & Merge Gate Rules |
 
 ---
 
