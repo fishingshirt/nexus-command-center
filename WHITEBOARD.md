@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 21:46 UTC
-- **Active tasks:** 23
-- **Completed tasks:** 30 shown below
+- **Last updated:** 2026-05-10 22:50 UTC
+- **Active tasks:** 22
+- **Completed tasks:** 31 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 ---
 
@@ -25,7 +25,6 @@
 | HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
 | HIGH | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
 | HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
-| MEDIUM | `T-039` | Multi-city weather manager | `PENDING` | [`tasks/T-039.md`](tasks/T-039.md) |
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 | MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
@@ -50,6 +49,7 @@
 
 | ID | Task |
 |----|------|
+| `T-039` | Multi-city weather manager |
 | `T-044` | World Clock Widget |
 | `T-053` | News & Media Hub |
 | `T-058` | All themes should support dark mode (default on) |
@@ -91,9 +91,9 @@
 
 || ID | Description | Severity | Status |
 ||----|-------------|----------|--------|
-||| B-001 | Missing `tasks/*.md` files for T-016, T-021, T-022, T-023, T-024, T-026, T-030, T-033, T-035, T-036, T-037, T-038. WHITEBOARD points to non-existent files. | LOW | OPEN |
-||| B-002 | Calendar Google sync was one-way read-only via public API key. T-034 implemented OAuth token exchange, outbound events.insert/patch/delete, conflict resolution, offline queue, agent commands, and re-authorize prompt. | HIGH | **FIXED** |
-|| B-003 | `calendar.js` event save does not check for overlapping time slots. | LOW | OPEN |
+|||| B-001 | Missing `tasks/*.md` files for T-016, T-021, T-022, T-023, T-024, T-026, T-030, T-033, T-035, T-036, T-037, T-038. WHITEBOARD points to non-existent files. | LOW | OPEN |
+|||| B-002 | Calendar Google sync was one-way read-only via public API key. T-034 implemented OAuth token exchange, outbound events.insert/patch/delete, conflict resolution, offline queue, agent commands, and re-authorize prompt. | HIGH | **FIXED** |
+||| B-003 | `calendar.js` event save does not check for overlapping time slots. | LOW | OPEN |
 
 ---
 
