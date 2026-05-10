@@ -4,6 +4,17 @@
 
 const AUDIO_PATH = 'assets/audio/we-do-what-we-want-edit.mp3';
 
+/* === shared helpers (duplicated here to avoid circular import with app.js) === */
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem('ncc-settings') || '{}'); } catch { return {}; }
+}
+function saveSettings(patch) {
+  const current = loadSettings();
+  const next = { ...current, ...patch };
+  localStorage.setItem('ncc-settings', JSON.stringify(next));
+  return next;
+}
+
 const COPY_LINES = [
   { time: 2.0,   text: "I DON'T SLEEP." },
   { time: 4.5,   text: "I DON'T EAT." },
