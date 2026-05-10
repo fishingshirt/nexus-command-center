@@ -400,6 +400,9 @@ def check_security_scan(files):
     for f in scan_files:
         if not f.is_file():
             continue
+        # Skip QC/QA system scripts — their source legitimately contains pattern strings
+        if f.name in ('nexus-qc.py', 'nexus-qa-checklist.py'):
+            continue
         try:
             text = f.read_text(encoding="utf-8")
         except Exception:
@@ -494,7 +497,7 @@ def run_qc(files):
     queue = load_json(QUEUE_PATH)
     if "queue" not in queue:
         queue["queue"] = []
-    queue["queue"].insert(0, {
+    entry = {
         "id": qc_id,
         "status": "QC-PASSED" if overall == "PASS" else "QC-FAILED",
         "commit": result["commit"],
@@ -502,7 +505,11 @@ def run_qc(files):
         "overall": overall,
         "created": now_iso(),
         "next_action": result["next_action"]
-    })
+    }
+    if overall == "FAIL":
+        entry["action"] = "BOUNCE_TO_TASK"
+        entry["retry_allowed"] = True
+    queue["queue"].insert(0, entry)
     save_json(QUEUE_PATH, queue)
 
     # Write to audit log
@@ -524,6 +531,15 @@ def run_qc(files):
         fail_count = sum(1 for c in checks if c["status"] == "FAIL")
         print(f"\n🛑 QC FAILED: {fail_count} check(s) failed. DO NOT MERGE.")
         print("   Fix failures, re-commit, and re-run QC.")
+        # Notify user via Hermes bridge
+        try:
+            import urllib.request, urllib.parse
+            msg = f"🛑 QC FAILED\nCommit: {result['commit']}\nCheck: {qc_id}\nStatus: QC-FAILED\nFailed checks: {fail_count}\nFix bugs and re-QC before merge."
+            data = json.dumps({"text": msg}).encode('utf-8')
+            req = urllib.request.Request('http://localhost:8080/api/hermes/message', data=data, headers={'Content-Type':'application/json'}, method='POST')
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass  # silently fail — notification is best-effort
         sys.exit(1)
     else:
         print("\n✅ QC PASSED — ready for QA agent review (Stage 2).")

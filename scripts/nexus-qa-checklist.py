@@ -264,6 +264,15 @@ def sign_off(qc_id, passed=True, notes=""):
     else:
         print("\n🛑 QA FAILED — change is bounced back to the task file.")
         print("   Fix failures, re-commit, and re-run QC from the beginning.")
+        # Notify user via Hermes bridge (best-effort)
+        try:
+            import json as _json, urllib.request
+            _msg = f"🛑 QA FAILED\nCommit: {result['commit']}\nCheck: {qa_id}\nParent QC: {qc_id}\nStatus: QA-FAILED\nFix bugs and re-enter QC+QA before merge."
+            _data = _json.dumps({"text": _msg}).encode('utf-8')
+            _req = urllib.request.Request('http://localhost:8080/api/hermes/message', data=_data, headers={'Content-Type':'application/json'}, method='POST')
+            urllib.request.urlopen(_req, timeout=5)
+        except Exception:
+            pass
         sys.exit(1)
 
 # ─── Main ────────────────────────────────────────────────────────────
