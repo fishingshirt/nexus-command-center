@@ -49,6 +49,8 @@ export const storage = {
     }
     localStorage.setItem(_lsKey(app), JSON.stringify(data));
     window.__nexusOffline = true;
+    window.__offlineQueue = window.__offlineQueue || [];
+    window.__offlineQueue.push({ app, data });
     return false;
   },
 

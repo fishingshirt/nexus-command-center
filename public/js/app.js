@@ -58,6 +58,10 @@ export function initApp() {
   initAuth();
   initHomeButton();
   updateDashboardDate();
+  initOfflineMode();
+  startOfflineWatcher();
+  renderFeedbackList(true);
+  updateFeedbackBadge();
   registerServiceWorker();
 
   // EMERGENCY_REVEAL: if welcome.js fails to reveal app, force it after 2s
@@ -68,6 +72,33 @@ export function initApp() {
       console.warn('[Nexus] Emergency reveal triggered — welcome overlay may have failed');
     }
   }, 2000);
+}
+
+/* ===== OFFLINE QUEUE FLUSH ===== */
+let __offlineTimer = null;
+function startOfflineWatcher() {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('offline', () => {
+    // no-op: indicator in initOfflineMode catches this
+  });
+  window.addEventListener('online', async () => {
+    if (!window.__offlineQueue?.length) return;
+    while (window.__offlineQueue.length) {
+      const job = window.__offlineQueue.shift();
+      try {
+        const ok = await storage.write(job.app, job.data);
+        if (!ok) { window.__offlineQueue.unshift(job); break; }
+      } catch {
+        window.__offlineQueue.unshift(job);
+        break;
+      }
+    }
+    if (!window.__offlineQueue.length) {
+      window.__nexusOffline = false;
+      const indicator = document.getElementById('offline-indicator');
+      if (indicator) { indicator.style.display = 'none'; indicator.className = 'offline-indicator'; }
+    }
+  });
 }
 
 /* ===== ROUTER ===== */
@@ -687,10 +718,28 @@ export function loadSettings() {
   }
 }
 
+/** Merge server settings over local cache when available (server wins on conflict). */
+async function loadSettingsSync() {
+  if (typeof storage !== 'undefined' && storage?.read) {
+    try {
+      const server = await storage.read('settings');
+      if (server && Object.keys(server).length) {
+        localStorage.setItem('ncc-settings', JSON.stringify(server));
+        return server;
+      }
+    } catch { /* fallthrough */ }
+  }
+  return loadSettings();
+}
+
 export function saveSettings(patch) {
   const current = loadSettings();
   const next = { ...current, ...patch };
   localStorage.setItem('ncc-settings', JSON.stringify(next));
+  // Background sync to server (fire-and-forget; keep localStorage as fast cache)
+  if (typeof storage !== 'undefined' && storage?.write) {
+    storage.write('settings', next).catch(() => {});
+  }
   return next;
 }
 
@@ -1216,7 +1265,7 @@ function initOfflineMode() {
         indicator.className = 'offline-indicator';
       } else {
         indicator.style.display = 'inline-flex';
-        indicator.textContent = 'Offline';
+        indicator.textContent = window.__nexusOffline ? 'Offline — syncing when back' : 'Offline';
         indicator.className = 'offline-indicator visible';
       }
     }
