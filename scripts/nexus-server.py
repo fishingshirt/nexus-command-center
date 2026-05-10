@@ -1420,6 +1420,55 @@ def _api_backup(handler, path, repo):
     _json(handler, 404, {'ok': False, 'error': 'Unknown backup endpoint'})
     return True
 
+# ── Quality API helpers ───────────────────────
+_QUALITY_QUEUE_PATH = os.path.expanduser('~/.hermes/nexus-quality-queue.json')
+
+def _load_quality_queue():
+    try:
+        with open(_QUALITY_QUEUE_PATH, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {'queue': []}
+
+def _api_quality(handler, path):
+    """Quality queue endpoints."""
+    if path == '/api/quality/queue':
+        data = _load_quality_queue()
+        queue = data.get('queue', [])
+        counts = {}
+        for item in queue:
+            s = item.get('status', 'UNKNOWN')
+            counts[s] = counts.get(s, 0) + 1
+        last_audit = None
+        for item in sorted(queue, key=lambda x: x.get('created', ''), reverse=True):
+            if item.get('created'):
+                last_audit = item['created']
+                break
+        _json(handler, 200, {
+            'ok': True,
+            'counts': counts,
+            'total': len(queue),
+            'lastAudit': last_audit,
+            'recent': queue[-10:][::-1]
+        })
+        return True
+
+    if path.startswith('/api/quality/result/'):
+        qid = path.split('/api/quality/result/')[-1]
+        data = _load_quality_queue()
+        item = next((i for i in data.get('queue', []) if i.get('id') == qid), None)
+        if item:
+            _json(handler, 200, {'ok': True, 'item': item})
+        else:
+            _json(handler, 404, {'ok': False, 'error': 'Not found'})
+        return True
+
+    if path == '/api/quality/approve':
+        _json(handler, 200, {'ok': True, 'note': 'Approval recorded (stub)'})
+        return True
+
+    return False
+
 class SPAHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         self.args_dir = k.pop('args_dir')
@@ -1545,6 +1594,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             elif self.command == 'POST':
                 return _api_store_post(self, self.path)
             return False
+
+        if path.startswith('/api/quality/'):
+            return _api_quality(self, path)
 
         # --- News Hub stubs ---
         if path == '/api/news':

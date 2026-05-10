@@ -45,6 +45,7 @@ export function initApp() {
   initChat();
   initFeedback();
   initAgentStats();
+  initQualityPanel();
   initBackup();
   initITHub();
   initPhoneBridge();
@@ -1202,28 +1203,28 @@ function initAgentNotificationPoll() {
   window.addEventListener('beforeunload', () => clearInterval(timer));
 }
 
-function fetchWhiteboard() {
+async function fetchWhiteboard() {
   // Try loading WHITEBOARD.md from the server (same origin)
-  fetch('WHITEBOARD.md')
-    .then(r => r.ok ? r.text() : Promise.reject(new Error('Not found')))
-    .then(text => {
-      const parsed = parseWhiteboard(text);
-      localStorage.setItem('ncc-whiteboard-cache', JSON.stringify(parsed));
-      // Update upcoming list
-      const upcomingList = document.getElementById('agent-upcoming-list');
-      if (upcomingList) {
-        const tasks = (parsed.tasks || []).filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').slice(0, 6);
-        if (tasks.length) {
-          upcomingList.innerHTML = tasks.map(t => `<li>${escapeHtml(t.title || t.id)}</li>`).join('');
-        } else {
-          upcomingList.innerHTML = '<li class="agent-upcoming-empty">All tasks are done</li>';
-        }
+  try {
+    const r = await fetch('WHITEBOARD.md');
+    if (!r.ok) throw new Error('Not found');
+    const text = await r.text();
+    const parsed = parseWhiteboard(text);
+    localStorage.setItem('ncc-whiteboard-cache', JSON.stringify(parsed));
+    // Update upcoming list
+    const upcomingList = document.getElementById('agent-upcoming-list');
+    if (upcomingList) {
+      const tasks = (parsed.tasks || []).filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').slice(0, 6);
+      if (tasks.length) {
+        upcomingList.innerHTML = tasks.map(t => `<li>${escapeHtml(t.title || t.id)}</li>`).join('');
+      } else {
+        upcomingList.innerHTML = '<li class="agent-upcoming-empty">All tasks are done</li>';
       }
-      toast('Whiteboard refreshed');
-    })
-    .catch(() => {
-      toast('Could not load WHITEBOARD.md — check server / repo', 'error');
-    });
+    }
+    toast('Whiteboard refreshed');
+  } catch {
+    toast('Could not load WHITEBOARD.md — check server / repo', 'error');
+  }
 }
 
 function parseWhiteboard(md) {
@@ -1297,4 +1298,85 @@ function registerServiceWorker() {
       .then(reg => console.log('SW registered'))
       .catch(err => console.log('SW failed', err));
   }
+}
+
+/* ===== QUALITY PANEL (Settings) ===== */
+function initQualityPanel() {
+  const badgeEl = document.getElementById('quality-badge');
+  const countsEl = document.getElementById('quality-counts');
+  const lastEl = document.getElementById('quality-last');
+  const recentEl = document.getElementById('quality-recent-list');
+  if (!badgeEl || !countsEl) return;
+
+  async function refresh() {
+    try {
+      const res = await fetch('/api/quality/queue');
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      if (!data.ok) throw new Error('not ok');
+      render(data);
+    } catch {
+      badgeEl.textContent = 'Unavailable';
+      badgeEl.className = 'quality-badge quality-warn';
+    }
+  }
+
+  function render(data) {
+    const counts = data.counts || {};
+    const total = data.total || 0;
+    const lastAudit = data.lastAudit;
+
+    // Determine overall badge
+    const fail = (counts['QC-FAILED'] || 0) + (counts['QA-FAILED'] || 0);
+    if (fail > 0) {
+      badgeEl.textContent = `${fail} Failed`;
+      badgeEl.className = 'quality-badge quality-fail';
+    } else if ((counts['QC-PENDING'] || 0) + (counts['QA-PENDING'] || 0) > 0) {
+      badgeEl.textContent = 'In Progress';
+      badgeEl.className = 'quality-badge quality-warn';
+    } else {
+      badgeEl.textContent = 'Healthy';
+      badgeEl.className = 'quality-badge quality-pass';
+    }
+
+    // Count grid
+    const labels = {
+      'QC-PENDING': 'QC Pending',
+      'QC-PASSED': 'QC Passed',
+      'QC-FAILED': 'QC Failed',
+      'QA-PENDING': 'QA Pending',
+      'QA-PASSED': 'QA Passed',
+      'QA-FAILED': 'QA Failed',
+      'BACKLOG-PENDING': 'Backlog'
+    };
+    countsEl.innerHTML = Object.entries(labels).map(([key, label]) => {
+      const n = counts[key] || 0;
+      return `<div class="quality-count"><span class="qc-n">${n}</span><span class="qc-label">${escapeHtml(label)}</span></div>`;
+    }).join('');
+
+    // Last audit
+    if (lastEl) {
+      lastEl.textContent = lastAudit ? `Last audit: ${new Date(lastAudit).toLocaleString()}` : 'No audits yet';
+    }
+
+    // Recent list
+    if (recentEl) {
+      const recent = (data.recent || []).slice(0, 5);
+      if (recent.length) {
+        recentEl.innerHTML = recent.map(item => {
+          const status = item.status || 'UNKNOWN';
+          const statusClass = status.toLowerCase().replace(/ /g, '-');
+          const files = (item.files || []).map(f => f.split('/').pop()).join(', ');
+          return `<li><span>${escapeHtml(files || item.id || '—')}</span><span class="q-status ${statusClass}">${escapeHtml(status)}</span></li>`;
+        }).join('');
+      } else {
+        recentEl.innerHTML = '<li>No recent items</li>';
+      }
+    }
+  }
+
+  refresh();
+  // Refresh every 60s while settings is visible
+  const timer = setInterval(refresh, 60000);
+  window.addEventListener('beforeunload', () => clearInterval(timer));
 }
