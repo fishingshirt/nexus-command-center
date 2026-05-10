@@ -26,10 +26,11 @@
 || MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
 || HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
 || HIGH | `T-029` | IT Hub / System health | `PENDING` | [`tasks/T-029.md`](tasks/T-029.md) |
-|| MEDIUM | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
-|| HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
-
----
+||| MEDIUM | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
+||| HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
+||| MEDIUM | `T-039` | Multi-city weather manager | `PENDING` | [`tasks/T-039.md`](tasks/T-039.md) |
+|
+|---
 
 ## ✅ Recently Done
 
