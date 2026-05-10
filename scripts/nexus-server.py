@@ -1218,6 +1218,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             if path.startswith('/api/hermes/'):
                 if _api_hermes(self, path):
                     return
+            if path.startswith('/api/calendar/'):
+                if _api_calendar(self, self.path):
+                    return
         self.send_response(405)
         self.end_headers()
 

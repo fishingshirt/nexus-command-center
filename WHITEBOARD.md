@@ -9,7 +9,7 @@
 
 - **Project phase:** Agent Task System
 - **Last updated:** 2026-05-10
-- **Active tasks:** 10
+- **Active tasks:** 11
 - **Completed tasks:** 19 shown below
 
 ---
@@ -39,8 +39,9 @@
 || MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
 || LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 || MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
-|| LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-|
+||| LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
+||| LOW | `T-051` | Post-completion QA & continuous improvement loop | `PENDING` | [`tasks/T-051.md`](tasks/T-051.md) |
+||
 |---
 
 ## ✅ Recently Done
