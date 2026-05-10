@@ -8,18 +8,16 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 16:55 UTC
-- **Active tasks:** 17
-- **Completed tasks:** 27 shown below
-- **Quality system:** QC/QA pipeline (T-060) in progress — T-060-a DONE, T-060-b DONE, T-060-c DONE, T-060-d DONE, T-060-e DONE
+- **Last updated:** 2026-05-10 19:40 UTC
+- **Active tasks:** 24
+- **Completed tasks:** 29 shown below
+- **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 ---
 
 ## 🎯 Active Tasks
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| CRITICAL | `T-060` | Quality Check Pipeline + Quality Approval Gate | `IN_PROGRESS` | [`tasks/T-060.md`](tasks/T-060.md) |
-| ~~CRITICAL~~ | ~~`T-060-e`~~ | ~~Fast-Track & Merge Gate Rules~~ | ~~`DONE`~~ | ~~2026-05-10 — push helper gate check + AGENT_GUIDELINES rules~~ |
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
@@ -44,7 +42,7 @@
 | HIGH | `T-053` | News & Media Hub | `IN_PROGRESS` | `T-053-a` shell registered, `T-053-b` news feed engine next
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
 | HIGH | `T-055` | Feedback System Overhaul — Agent-Integrated Pipeline | `PENDING` | [`tasks/T-055.md`](tasks/T-055.md) |
-|| HIGH | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
+| HIGH | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
 || ~~HIGH~~ | ~~`T-057`~~ | ~~Default theme should be dark~~ | ~~`DONE`~~ | ~~2026-05-10 — changed index.html and app.js defaults to jarvis~~ |
 | HIGH | `T-058` | All themes should support dark mode (default on) | `PENDING` | [`tasks/T-058.md`](tasks/T-058.md) |
 
@@ -79,6 +77,7 @@
 | `T-038` | Logic bug sweep (calendar, notes, phone-bridge, auth, finance) |
 | `T-013` | Data persistence layer (all sub-tasks complete: adapter, migration, per-app audit, settings bridge, offline badge + retry queue, integrity guard) |
 | `T-056` | Fix Weather app layout centering (hero + forecast off-center) |
+| `T-060` | Quality Check Pipeline + Quality Approval Gate — COMPLETE |
 | `T-060-a` | QC Auto Gate: syntax & cross-ref validator |
 | `T-060-b` | QA Agent Review Checklist & Sign-Off |
 | `T-060-c` | Backlog Audit: all legacy files queued (48 files in nexus-quality-queue.json) |
