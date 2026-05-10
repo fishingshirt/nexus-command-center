@@ -58,8 +58,9 @@
 ## 📝 Agent Notes
 
 - **Tech stack:** Pure HTML/CSS/JS dashboard (no build step) + Python server on local machine.
-- **This repo is the task source of truth.** GitHub is the backup mirror.
+- **This repo lives on this local Linux machine.** GitHub is the **backup mirror** — always push commits there after every change.
 - **One task per cycle.** Read the task file before starting. Update this board after finishing.
+- **Backup rule:** Every commit must be pushed to GitHub immediately. Do not let local and remote drift.
 
 ---
 

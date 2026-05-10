@@ -507,6 +507,8 @@ Before marking any task complete, verify:
 
 ## 🗣️ Hermes Agent Responsibilities
 
+**CRITICAL:** This dashboard is built and served **on this local Linux machine** (`/tmp/nexus-command-center`). GitHub is the **backup mirror only** — always push commits there after every change so the repo stays backed up.
+
 The AI agent assigned to this project will:
 
 1. Read `WHITEBOARD.md` every wake cycle
@@ -515,10 +517,11 @@ The AI agent assigned to this project will:
 4. Suggest missing features and add them to the backlog
 5. Break large tasks into sub-tasks (max ~2 hours each)
 6. Commit with descriptive messages
-7. Update `WHITEBOARD.md` with progress
-8. Research integrations (Hermes bridge, APIs) when stuck
-9. Never compromise on mobile-first design
-10. Prioritize user experience over technical cleverness
+7. Push **every commit to GitHub** immediately (this repo is the backup mirror)
+8. Update `WHITEBOARD.md` with progress
+9. Research integrations (Hermes bridge, APIs) when stuck
+10. Never compromise on mobile-first design
+11. Prioritize user experience over technical cleverness
 
 ---
 
