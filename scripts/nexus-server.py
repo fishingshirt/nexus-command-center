@@ -1091,6 +1091,81 @@ def _api_adb(handler, path):
 
     return False
 
+# ── Store helpers ─────────────────────────────
+STORE_ROOT = os.path.expanduser('~/.hermes/nexus-store')
+
+def _store_path(app):
+    return os.path.join(STORE_ROOT, f"{app}.json")
+
+def _store_read(app):
+    try:
+        with open(_store_path(app), 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def _store_write(app, data):
+    os.makedirs(STORE_ROOT, exist_ok=True)
+    temp = _store_path(app) + '.tmp'
+    try:
+        with open(temp, 'w') as f:
+            json.dump(data, f, indent=2)
+        os.rename(temp, _store_path(app))
+        return True
+    except Exception:
+        try: os.remove(temp)
+        except FileNotFoundError: pass
+        return False
+
+def _deep_merge(base, patch):
+    if not isinstance(base, dict) or not isinstance(patch, dict):
+        return patch
+    merged = dict(base)
+    for k, v in patch.items():
+        if isinstance(v, dict) and isinstance(merged.get(k), dict):
+            merged[k] = _deep_merge(merged[k], v)
+        else:
+            merged[k] = v
+    return merged
+
+def _api_store_get(handler, path):
+    """Handle GET /api/store/read?app=xxx"""
+    import urllib.parse
+    parsed = urllib.parse.urlparse(path)
+    qs = urllib.parse.parse_qs(parsed.query)
+    app = (qs.get('app', [''])[0] or '').replace('/', '').replace('\\', '')
+    if not app:
+        _json(handler, 400, {'ok': False, 'error': 'Missing app'})
+        return True
+    data = _store_read(app)
+    _json(handler, 200, {'ok': True, 'data': data})
+    return True
+
+def _api_store_post(handler, path):
+    """Handle POST /api/store/write and POST /api/store/merge"""
+    try:
+        length = int(handler.headers.get('Content-Length', 0))
+        body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+        req = json.loads(body)
+    except Exception:
+        _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+        return True
+    app = str(req.get('app', '')).replace('/', '').replace('\\', '')
+    if not app:
+        _json(handler, 400, {'ok': False, 'error': 'Missing app'})
+        return True
+    if path.endswith('/merge'):
+        patch = req.get('patch', {})
+        existing = _store_read(app)
+        merged = _deep_merge(existing, patch)
+        ok = _store_write(app, merged)
+        _json(handler, 200, {'ok': ok, 'data': merged})
+        return True
+    data = req.get('data', {})
+    ok = _store_write(app, data)
+    _json(handler, 200, {'ok': ok})
+    return True
+
 # ── Request Handler ─────────────────────────────
 def _api_backup(handler, path, repo):
     import tempfile, glob, re
@@ -1464,6 +1539,13 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/calendar/'):
             return _api_calendar(self, self.path)
 
+        if path.startswith('/api/store/'):
+            if self.command == 'GET':
+                return _api_store_get(self, self.path)
+            elif self.command == 'POST':
+                return _api_store_post(self, self.path)
+            return False
+
         return False
 
     def do_OPTIONS(self):
@@ -1548,6 +1630,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                     pass
                 _json(self, 200, {'ok': True, 'notification': note, 'queued': len(queue)})
                 return
+            if path.startswith('/api/store/'):
+                if _api_store_post(self, path):
+                    return
         self.send_response(405)
         self.end_headers()
 

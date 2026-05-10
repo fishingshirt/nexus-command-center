@@ -1,3 +1,4 @@
+import { storage } from './lib/storage-adapter.js';
 import { initCalendar } from './apps/calendar.js';
 import { initNotes } from './apps/notes.js';
 import { initTodo } from './apps/todo.js';
@@ -1206,17 +1207,17 @@ function initOfflineMode() {
   const indicator = document.getElementById('offline-indicator');
   if (!indicator) return;
 
-  function setOnline(online) {
-    if (online) {
-      indicator.style.display = 'none';
-      indicator.textContent = '';
-      indicator.className = 'offline-indicator';
-    } else {
-      indicator.style.display = 'inline-flex';
-      indicator.textContent = 'Offline';
-      indicator.className = 'offline-indicator visible';
+    function setOnline(online) {
+      if (online && !window.__nexusOffline) {
+        indicator.style.display = 'none';
+        indicator.textContent = '';
+        indicator.className = 'offline-indicator';
+      } else {
+        indicator.style.display = 'inline-flex';
+        indicator.textContent = 'Offline';
+        indicator.className = 'offline-indicator visible';
+      }
     }
-  }
 
   setOnline(navigator.onLine);
 
