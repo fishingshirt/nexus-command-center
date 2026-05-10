@@ -47,6 +47,15 @@ export function initApp() {
   initHomeButton();
   updateDashboardDate();
   registerServiceWorker();
+
+  // EMERGENCY_REVEAL: if welcome.js fails to reveal app, force it after 2s
+  setTimeout(() => {
+    const app = document.getElementById('app');
+    if (app && getComputedStyle(app).display === 'none') {
+      app.classList.add('welcome-ready');
+      console.warn('[Nexus] Emergency reveal triggered — welcome overlay may have failed');
+    }
+  }, 2000);
 }
 
 /* ===== ROUTER ===== */
