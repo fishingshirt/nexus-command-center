@@ -317,6 +317,9 @@
           </div>
         </div>
 
+        <!-- Weather mini-view (horizontal scroll row) -->
+        <div class="weather-pill-row" id="weather-pill-row" aria-label="Saved weather locations"></div>
+
         <!-- World Clock pill row widget -->
         <div class="clock-pill-row" id="clock-pill-row" aria-label="World clocks"></div>
       </div>
@@ -551,6 +554,9 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           </button>
           <h2>Weather</h2>
+          <button class="view-action" id="weather-add-btn" aria-label="Add location">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
         </div>
         <div class="view-body weather-view-body">
           <div class="weather-search-row">
@@ -563,6 +569,13 @@
           <div class="weather-forecast">
             <h4>5-Day Forecast</h4>
             <div class="weather-forecast-grid" id="weather-forecast"></div>
+          </div>
+          <div class="weather-locations">
+            <div class="weather-locations-header">
+              <h4>Saved Locations</h4>
+              <span class="weather-locations-count" id="weather-loc-count">0 / 10</span>
+            </div>
+            <div class="weather-locations-list" id="weather-locations"></div>
           </div>
         </div>
       </div>
