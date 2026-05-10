@@ -16,6 +16,8 @@ After finishing work:
 - Do NOT leave broken code uncommented
 - Update WHITEBOARD.md status before sleeping
 - Do NOT commit secrets (tokens, passwords)
+- **ARCHIVE RULE: When a task is marked DONE, move it from Active Tasks to the Recently Done section immediately. Do NOT leave DONE tasks in Active Tasks.**
+- **TOKEN-SAVING RULE: Only read PENDING or IN_PROGRESS task files. Ignore Recently Done tasks.
 
 ## 5. If Stuck
 Document the blocker in a note beneath the task entry in `WHITEBOARD.md`, then move on to the next task. Do not spin for >20 min.

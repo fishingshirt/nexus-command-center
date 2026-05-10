@@ -16,41 +16,40 @@
 
 ## 🎯 Active Tasks
 
-||| Priority | ID | Task | Status | Details |
-||----------|----|------|--------|---------|
-|||| HIGH | `T-034` | Google Calendar two-way sync audit & fix | `DONE` | Sub-tasks: T-034-a DONE, T-034-b DONE, T-034-c-1 DONE, T-034-c-2 DONE, T-034-c-3 DONE, T-034-d DONE, T-034-e DONE. OAuth scope upgraded to full read/write, conflict resolution panel, offline queue, agent command endpoints, re-authorize prompt all live. |
-|| HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
-|| MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
-|| MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
-|| MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
-|| MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
-|| HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
-|| HIGH | `T-029` | IT Hub / System health | `PENDING` | [`tasks/T-029.md`](tasks/T-029.md) |
-|| MEDIUM | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
-|| HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
-|| MEDIUM | `T-039` | Multi-city weather manager | `PENDING` | [`tasks/T-039.md`](tasks/T-039.md) |
-|| MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
-|| MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
-|||| HIGH | `T-042` | Unified notifications center | `DONE` | Sub-tasks: T-042-a **DONE**, T-042-b **DONE** (bell, badge, slide-out panel), T-042-c **DONE** (calendar + todo wired, reminders, due alerts), T-042-d **DONE** (browser push, per-app toggles, DND hours, agent poll). [`tasks/T-042.md`](tasks/T-042.md) |
-|| MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
-|| LOW | `T-044` | World clock widget | `PENDING` | [`tasks/T-044.md`](tasks/T-044.md) |
-||| MEDIUM | `T-045` | Pomodoro timer / focus mode | **`DONE`** | [`tasks/T-045.md`](tasks/T-045.md) |
-|| LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
-|| MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
-|| LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
-|| MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
-||| LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-||| LOW | `T-051` | Post-completion QA & continuous improvement loop | `PENDING` | [`tasks/T-051.md`](tasks/T-051.md) |
-||| HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
-||
-|---
+| Priority | ID | Task | Status | Details |
+|----------|----|------|--------|---------|
+| HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
+| MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
+| MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
+| MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
+| MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
+| HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
+| HIGH | `T-029` | IT Hub / System health | `PENDING` | [`tasks/T-029.md`](tasks/T-029.md) |
+| MEDIUM | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
+| HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
+| MEDIUM | `T-039` | Multi-city weather manager | `PENDING` | [`tasks/T-039.md`](tasks/T-039.md) |
+| MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
+| MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
+| MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
+| LOW | `T-044` | World clock widget | `PENDING` | [`tasks/T-044.md`](tasks/T-044.md) |
+| LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
+| MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
+| LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
+| MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
+| LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
+| LOW | `T-051` | Post-completion QA & continuous improvement loop | `PENDING` | [`tasks/T-051.md`](tasks/T-051.md) |
+| HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
+
+---
 
 ## ✅ Recently Done
 
 | ID | Task |
 |----|------|
-|| `T-034` | Google Calendar two-way sync audit & fix |
-|| `T-009` | Calendar app (views, CRUD, recurrence, Google sync) |
+| `T-034` | Google Calendar two-way sync audit & fix |
+| `T-042` | Unified notifications center |
+| `T-045` | Pomodoro timer / focus mode |
+| `T-009` | Calendar app (views, CRUD, recurrence, Google sync) |
 | `T-010` | Notes app (CRUD, search, auto-save) |
 | `T-011` | To-Do app (lists, priorities, recurring, filters) |
 | `T-012` | Hermes API bridge (Telegram Bot API relay + dashboard chat polling) |
