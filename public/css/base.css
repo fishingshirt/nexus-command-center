@@ -701,7 +701,8 @@ button.nav-link {
 
 .settings-row select,
 .settings-row input[type="text"],
-.settings-row input[type="password"] {
+.settings-row input[type="password"],
+.settings-row input[type="time"] {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);

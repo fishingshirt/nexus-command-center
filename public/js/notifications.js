@@ -34,6 +34,33 @@ function _shouldPlaySound() {
   return true;
 }
 
+function _isDND() {
+  const s = loadSettings();
+  const start = s.dndStart || '22:00';
+  const end = s.dndEnd || '07:00';
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const sMin = sh * 60 + sm;
+  const eMin = eh * 60 + em;
+  if (sMin < eMin) {
+    return cur >= sMin && cur < eMin;
+  }
+  return cur >= sMin || cur < eMin;
+}
+
+function _appEnabled(app) {
+  const s = loadSettings();
+  const map = s.notifyApps || {};
+  if (map[app] === false) return false;
+  if (app === 'calendar' && map.calendar === false) return false;
+  if (app === 'todo' && map.todo === false) return false;
+  if (app === 'agent' && map.agent === false) return false;
+  if (app === 'system' && map.system === false) return false;
+  return true;
+}
+
 function _shouldBrowserPush() {
   const s = loadSettings();
   return s.browserPush === true && 'Notification' in window && Notification.permission === 'granted';
@@ -81,6 +108,9 @@ export function notify({ title = '', body = '', app = 'system', priority = 'norm
     }
   }
 
+  // Per-app toggle gate
+  if (!_appEnabled(app)) return null;
+
   const note = {
     id: _genId(),
     title,
@@ -96,8 +126,11 @@ export function notify({ title = '', body = '', app = 'system', priority = 'norm
   if (list.length > MAX_ITEMS) list.splice(0, list.length - MAX_ITEMS);
   _save(list);
 
-  _playBeep();
-  _browserPush(title, body);
+  const dnd = _isDND();
+  if (!dnd) {
+    _playBeep();
+    _browserPush(title, body);
+  }
 
   // Dispatch event so UI can react immediately
   document.dispatchEvent(new CustomEvent('nexusNotification', { detail: note }));

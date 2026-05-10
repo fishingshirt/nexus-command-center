@@ -11,7 +11,7 @@ import { initArcade } from './apps/arcade.js';
 import { initFinance } from './apps/finance.js';
 import { initPomodoro } from './apps/pomodoro.js';
 import { initWelcome } from './welcome.js';
-import { initNotifications } from './notifications.js';
+import { initNotifications, notify } from './notifications.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -34,6 +34,7 @@ export function initApp() {
   initCalendarSync();
   initWelcome();
   initNotifications();
+  initAgentNotificationPoll();
   initChat();
   initFeedback();
   initAgentStats();
@@ -249,6 +250,13 @@ function initSettings() {
   // Notification settings
   const notificationSound = document.getElementById('notification-sound');
   const browserPush = document.getElementById('browser-push');
+  const notifyCalendar = document.getElementById('notify-calendar');
+  const notifyTodo = document.getElementById('notify-todo');
+  const notifyAgent = document.getElementById('notify-agent');
+  const notifySystem = document.getElementById('notify-system');
+  const dndStart = document.getElementById('dnd-start');
+  const dndEnd = document.getElementById('dnd-end');
+
   if (notificationSound) {
     notificationSound.checked = settings.notificationSound !== false;
     notificationSound.addEventListener('change', () => {
@@ -274,6 +282,30 @@ function initSettings() {
         toast(browserPush.checked ? 'Browser push enabled' : 'Browser push disabled');
       }
     });
+  }
+  // Per-app toggles
+  function setupAppToggle(el, key) {
+    if (!el) return;
+    const map = settings.notifyApps || {};
+    el.checked = map[key] !== false;
+    el.addEventListener('change', () => {
+      const next = { ...(loadSettings().notifyApps || {}), [key]: el.checked };
+      saveSettings({ notifyApps: next });
+      toast(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications ${el.checked ? 'enabled' : 'disabled'}`);
+    });
+  }
+  setupAppToggle(notifyCalendar, 'calendar');
+  setupAppToggle(notifyTodo, 'todo');
+  setupAppToggle(notifyAgent, 'agent');
+  setupAppToggle(notifySystem, 'system');
+  // DND hours
+  if (dndStart) {
+    dndStart.value = settings.dndStart || '22:00';
+    dndStart.addEventListener('change', () => saveSettings({ dndStart: dndStart.value }));
+  }
+  if (dndEnd) {
+    dndEnd.value = settings.dndEnd || '07:00';
+    dndEnd.addEventListener('change', () => saveSettings({ dndEnd: dndEnd.value }));
   }
 
   // Export data
@@ -1074,6 +1106,41 @@ export function initAgentStats() {
 function setStat(id, n) {
   const el = document.getElementById(id);
   if (el) el.textContent = n;
+}
+
+/* ===== AGENT NOTIFICATION POLL ===== */
+function initAgentNotificationPoll() {
+  const INTERVAL = 30000; // 30s
+  let lastId = null;
+
+  async function poll() {
+    try {
+      const res = await fetch('/api/agent/notifications');
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = (data.notifications || []);
+      if (!list.length) return;
+      // Find new items since last poll
+      let startIdx = 0;
+      if (lastId) {
+        const idx = list.findIndex(n => n.id === lastId);
+        if (idx !== -1) startIdx = idx + 1;
+      }
+      for (let i = startIdx; i < list.length; i++) {
+        const n = list[i];
+        if (typeof notify === 'function') {
+          notify({ title: n.title || 'Agent Update', body: n.message || '', app: 'agent', priority: n.type === 'error' ? 'high' : 'normal' });
+        }
+      }
+      lastId = list[list.length - 1]?.id || lastId;
+    } catch {
+      // network hiccup — ignore
+    }
+  }
+
+  poll();
+  const timer = setInterval(poll, INTERVAL);
+  window.addEventListener('beforeunload', () => clearInterval(timer));
 }
 
 function fetchWhiteboard() {
