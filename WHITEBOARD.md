@@ -8,7 +8,7 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 22:50 UTC
+- **Last updated:** 2026-05-10 23:15 UTC
 - **Active tasks:** 22
 - **Completed tasks:** 31 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
@@ -33,7 +33,7 @@
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-| MEDIUM | `T-061` | Wishlist App (links, notes, priority, status) | `PENDING` | [`tasks/T-061.md`](tasks/T-061.md) |
+| MEDIUM | `T-061` | Wishlist App (links, notes, priority, status) | `IN_PROGRESS` | [`tasks/T-061-a.md`](tasks/T-061-a.md) shell ✓, [`T-061-b`](tasks/T-061-b.md) CRUD, [`T-061-c`](tasks/T-061-c.md) auto-fetch, [`T-061-d`](tasks/T-061-d.md) search/filter, [`T-061-e`](tasks/T-061-e.md) bulk/share, [`T-061-f`](tasks/T-061-f.md) polish |
 | MEDIUM | `T-062` | Recipe App (recipes, ratings, cook notes, shopping list) | `PENDING` | [`tasks/T-062.md`](tasks/T-062.md) |
 | ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |

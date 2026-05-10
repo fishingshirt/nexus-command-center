@@ -1,0 +1,31 @@
+/* ===== WISHLIST APP ===== */
+.wishlist-view-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.wishlist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  color: var(--text-secondary);
+  text-align: center;
+}
+.wishlist-empty-icon { font-size: 3rem; }
+.wishlist-empty p { margin: 0; font-weight: 600; color: var(--text); }
+.wishlist-empty span { font-size: 0.875rem; }
+
+.wishlist-grid {
+  display: none;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .wishlist-grid { grid-template-columns: 1fr; }
+}
