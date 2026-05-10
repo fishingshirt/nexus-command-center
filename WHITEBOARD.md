@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 19:45 UTC
-- **Active tasks:** 24
-- **Completed tasks:** 29 shown below
+- **Last updated:** 2026-05-10 21:46 UTC
+- **Active tasks:** 23
+- **Completed tasks:** 30 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 ---
 
@@ -29,7 +29,6 @@
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 | MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
-| MEDIUM | `T-044` | World Clock Widget | `PENDING` | [`tasks/T-044.md`](tasks/T-044.md) |
 | LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
@@ -51,6 +50,7 @@
 
 | ID | Task |
 |----|------|
+| `T-044` | World Clock Widget |
 | `T-053` | News & Media Hub |
 | `T-058` | All themes should support dark mode (default on) |
 | `T-057` | Default theme should be dark |
