@@ -13,6 +13,7 @@ import { initArcade } from './apps/arcade.js';
 import { initFinance } from './apps/finance.js';
 import { initPomodoro } from './apps/pomodoro.js';
 import { initWorldClock } from './apps/worldclock.js';
+import { initNews, openNews } from './apps/news.js';
 import { initWelcome } from './welcome.js';
 import { initNotifications, notify } from './notifications.js';
 
@@ -27,7 +28,8 @@ const APP_REGISTRY = [
   { id: 'arcade', name: 'Arcade', icon: '🎮', path: 'arcade' },
   { id: 'finance', name: 'Finance', icon: '💰', path: 'finance' },
   { id: 'worldclock', name: 'World Clock', icon: '🌍', path: 'worldclock' },
-  { id: 'pomodoro', name: 'Focus', icon: '🍅', path: 'pomodoro' }
+  { id: 'pomodoro', name: 'Focus', icon: '🍅', path: 'pomodoro' },
+  { id: 'news', name: 'News Hub', icon: '📰', path: 'news' }
 ];
 
 export function initApp() {
@@ -50,6 +52,7 @@ export function initApp() {
   initFinance();
   initPomodoro();
   initWorldClock();
+  initNews();
   initWeather();
   initCalendar();
   initNotes();
@@ -141,6 +144,7 @@ function switchView(viewId) {
     target.classList.add('active');
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
+    if (viewId === 'news') openNews();
     // Per-app auth check
     if (['calendar','notes','todo'].includes(viewId)) {
       if (typeof ensureAuthEnabled === 'function') {

@@ -1546,6 +1546,20 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                 return _api_store_post(self, self.path)
             return False
 
+        # --- News Hub stubs ---
+        if path == '/api/news':
+            _json(self, 200, {'articles': [], 'totalResults': 0})
+            return True
+        if path == '/api/news/categories':
+            _json(self, 200, ['world','politics','technology','business','sports','entertainment','science','health'])
+            return True
+        if path == '/api/youtube/daily':
+            _json(self, 200, {'videos': []})
+            return True
+        if path.startswith('/api/news/digest/'):
+            _json(self, 200, {'ready': False, 'content': None})
+            return True
+
         return False
 
     def do_OPTIONS(self):
@@ -1633,6 +1647,10 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             if path.startswith('/api/store/'):
                 if _api_store_post(self, path):
                     return
+            # -- News Hub POST stubs --
+            if path == '/api/news/digest':
+                _json(self, 200, {'digestId': 'digest-' + str(int(time.time())), 'status': 'queued'})
+                return
         self.send_response(405)
         self.end_headers()
 

@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="css/apps/finance.css">
     <link rel="stylesheet" href="css/apps/pomodoro.css">
     <link rel="stylesheet" href="css/apps/worldclock.css">
+    <link rel="stylesheet" href="css/apps/news.css">
   <style>
     /* CRITICAL: hide app before any CSS/JS loads. Zero flash. */
     #app { display: none !important; }
@@ -129,6 +130,10 @@
         <a href="#worldclock" class="nav-link" data-app="worldclock">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
           World Clock
+        </a>
+        <a href="#news" class="nav-link" data-app="news">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          News Hub
         </a>
         <div class="nav-divider"></div>
         <button class="nav-link nav-settings-link" id="nav-settings-link" data-app="settings" aria-label="Open Settings">
@@ -294,6 +299,21 @@
               <p id="worldclock-card-text">Global time</p>
             </div>
             <div class="app-card-badge" id="worldclock-badge" style="background:#8b5cf612;color:#8b5cf6;font-size:0.7rem;">NEW</div>
+          </div>
+
+          <!-- News Hub Card -->
+          <div class="app-card" data-app="news" tabindex="0" role="button" aria-label="Open News Hub">
+            <div class="app-card-icon" style="--card-accent: #06b6d4;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+            </div>
+            <div class="app-card-info">
+              <h3>News Hub</h3>
+              <p id="news-card-text">Headlines & videos</p>
+            </div>
+            <div class="app-card-badge" id="news-badge" style="background:#06b6d412;color:#06b6d4;font-size:0.7rem;">NEW</div>
           </div>
         </div>
 
@@ -858,6 +878,22 @@
           <!-- Grid -->
           <div class="clock-grid" id="clock-grid">
           </div>
+        </div>
+      </div>
+
+      <!-- News Hub View -->
+      <div id="view-news" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>News Hub</h2>
+          <button class="view-action" id="news-refresh-btn" aria-label="Refresh news">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+          </button>
+        </div>
+        <div class="view-body news-view-body">
+          <!-- Shell rendered by news.js -->
         </div>
       </div>
 
