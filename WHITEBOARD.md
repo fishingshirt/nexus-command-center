@@ -33,7 +33,7 @@
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-| MEDIUM | `T-061` | Wishlist App (links, notes, priority, status) | `IN_PROGRESS` | T-061-a ✅ shell, T-061-b-1 ✅ add/delete/grid, T-061-b-2 ✅ edit/search/sort |
+| MEDIUM | `T-061` | Wishlist App (links, notes, priority, status) | `IN_PROGRESS` | T-061-a ✅ shell, T-061-b-1 ✅ add/delete/grid, T-061-b-2 ✅ edit/search/sort, **T-061-c** ✅ auto-fetch metadata |
 | MEDIUM | `T-062` | Recipe App (recipes, ratings, cook notes, shopping list) | `PENDING` | [`tasks/T-062.md`](tasks/T-062.md) |
 | ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
