@@ -1872,8 +1872,10 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         self.extensions_map['.svg'] = 'image/svg+xml'
         self.extensions_map['.json'] = 'application/json'
         # ── TEMP PIN GATE ──
-        # Skip PIN check for static assets the gate page needs
-        if not self.path.startswith('/api/') and not (self.path.endswith('.css') or self.path.endswith('.js') or self.path.endswith('.ico')):
+        # Skip PIN check for static assets (files that exist on disk)
+        static_path = os.path.join(self.args_dir, self.path.lstrip('/'))
+        is_static = os.path.isfile(static_path)
+        if not self.path.startswith('/api/') and not is_static and not (self.path.endswith('.css') or self.path.endswith('.js') or self.path.endswith('.ico')):
             cookies = self.headers.get('Cookie', '')
             if 'nexus_pin=fullroot88' not in cookies:
                 self.send_response(200)

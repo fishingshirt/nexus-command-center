@@ -91,57 +91,73 @@ function renderNewsShell() {
   `;
 }
 
+let _debounceTimer = null;
+
+function _onNewsClick(e) {
+  const chip = e.target.closest('.news-chip');
+  if (chip) {
+    setNewsCategory(chip.dataset.cat);
+    return;
+  }
+  const dismiss = e.target.closest('#digest-dismiss');
+  if (dismiss) {
+    const banner = document.getElementById('news-digest-banner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+  const refresh = e.target.closest('#youtube-refresh');
+  if (refresh) {
+    loadYouTubeSuggestions();
+    return;
+  }
+  const searchBtn = e.target.closest('#news-search-btn');
+  if (searchBtn) {
+    const input = document.getElementById('news-search-input');
+    newsState.query = input ? input.value.trim() : '';
+    loadNews();
+    return;
+  }
+  const retry = e.target.closest('#news-retry');
+  if (retry) {
+    loadNews();
+    return;
+  }
+}
+
+function _onSearchInput(e) {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(() => {
+    newsState.query = e.target.value.trim();
+    loadNews();
+  }, 300);
+}
+
+function _onRefreshClick() {
+  loadNews();
+}
+
 function bindNewsEvents() {
   const view = document.getElementById('view-news');
   if (!view) return;
-
-  view.addEventListener('click', (e) => {
-    const chip = e.target.closest('.news-chip');
-    if (chip) {
-      setNewsCategory(chip.dataset.cat);
-      return;
-    }
-    const dismiss = e.target.closest('#digest-dismiss');
-    if (dismiss) {
-      const banner = document.getElementById('news-digest-banner');
-      if (banner) banner.style.display = 'none';
-      return;
-    }
-    const refresh = e.target.closest('#youtube-refresh');
-    if (refresh) {
-      loadYouTubeSuggestions();
-      return;
-    }
-    const searchBtn = e.target.closest('#news-search-btn');
-    if (searchBtn) {
-      const input = document.getElementById('news-search-input');
-      newsState.query = input ? input.value.trim() : '';
-      loadNews();
-      return;
-    }
-    const retry = e.target.closest('#news-retry');
-    if (retry) {
-      loadNews();
-      return;
-    }
-  });
-
+  view.addEventListener('click', _onNewsClick);
   const input = view.querySelector('#news-search-input');
   if (input) {
-    let debounceTimer;
-    input.addEventListener('input', () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        newsState.query = input.value.trim();
-        loadNews();
-      }, 300);
-    });
+    input.addEventListener('input', _onSearchInput);
   }
-
   const refreshBtn = document.getElementById('news-refresh-btn');
   if (refreshBtn) {
-    refreshBtn.addEventListener('click', loadNews);
+    refreshBtn.addEventListener('click', _onRefreshClick);
   }
+}
+
+export function unbindNewsEvents() {
+  const view = document.getElementById('view-news');
+  if (view) view.removeEventListener('click', _onNewsClick);
+  const input = view ? view.querySelector('#news-search-input') : null;
+  if (input) input.removeEventListener('input', _onSearchInput);
+  const refreshBtn = document.getElementById('news-refresh-btn');
+  if (refreshBtn) refreshBtn.removeEventListener('click', _onRefreshClick);
+  clearTimeout(_debounceTimer);
 }
 
 function setNewsCategory(cat) {
@@ -233,7 +249,7 @@ async function loadYouTubeSuggestions() {
 }
 
 function escapeHtml(text) {
-  if (text == null) return '';
+  if (text === null || text === undefined) return '';
   return String(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
