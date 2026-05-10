@@ -17,7 +17,7 @@
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| HIGH | `T-013` | Data persistence layer | `IN_PROGRESS` | [`tasks/T-013.md`](tasks/T-013.md) — Sub-tasks: **T-013-a DONE** (StorageAdapter + server endpoints), T-013-b (legacy migration), T-013-c (per-app audit), T-013-d (settings bridge), T-013-e (offline badge), T-013-f (integrity guard) |
+| HIGH | `T-013` | Data persistence layer | `IN_PROGRESS` | [`tasks/T-013.md`](tasks/T-013.md) — Sub-tasks: **T-013-a DONE** (StorageAdapter + server endpoints), **T-013-b DONE** (legacy migration), T-013-c (per-app audit), T-013-d (settings bridge), T-013-e (offline badge), T-013-f (integrity guard) |
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
