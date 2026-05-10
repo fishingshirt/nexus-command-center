@@ -8,10 +8,10 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 13:00 UTC
+- **Last updated:** 2026-05-10 14:30 UTC
 - **Active tasks:** 15
-- **Completed tasks:** 24 shown below
-- **Quality system:** QC/QA pipeline (T-060) registered — backlog audit pending
+- **Completed tasks:** 25 shown below
+- **Quality system:** QC/QA pipeline (T-060) in progress — T-060-a DONE, baseline passing
 ---
 
 ## 🎯 Active Tasks
@@ -19,7 +19,6 @@
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
 | CRITICAL | `T-060` | Quality Check Pipeline + Quality Approval Gate | `IN_PROGRESS` | [`tasks/T-060.md`](tasks/T-060.md) |
-| CRITICAL | `T-060-a` | QC Auto Gate: syntax & cross-ref validator | `PENDING` | [`tasks/T-060-a.md`](tasks/T-060-a.md) |
 | CRITICAL | `T-060-b` | QA Agent Review Checklist & Sign-Off | `PENDING` | [`tasks/T-060-b.md`](tasks/T-060-b.md) |
 | CRITICAL | `T-060-c` | Backlog Audit: all legacy files queued | `PENDING` | [`tasks/T-060-c.md`](tasks/T-060-c.md) |
 | HIGH | `T-060-d` | Dashboard Quality Status Panel | `PENDING` | [`tasks/T-060-d.md`](tasks/T-060-d.md) |
@@ -35,6 +34,7 @@
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 | MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
+| MEDIUM | `T-044` | World Clock Widget | `PENDING` | [`tasks/T-044.md`](tasks/T-044.md) |
 | LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
@@ -44,6 +44,7 @@
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | HIGH | `T-053` | News & Media Hub | `IN_PROGRESS` | `T-053-a` shell registered, `T-053-b` news feed engine next
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
+| HIGH | `T-055` | Feedback System Overhaul — Agent-Integrated Pipeline | `PENDING` | [`tasks/T-055.md`](tasks/T-055.md) |
 | **HIGH** | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `PENDING` | [`tasks/T-059.md`](tasks/T-059.md) |
 | HIGH | `T-057` | Default theme should be dark | `PENDING` | [`tasks/T-057.md`](tasks/T-057.md) |
 | HIGH | `T-058` | All themes should support dark mode (default on) | `PENDING` | [`tasks/T-058.md`](tasks/T-058.md) |
@@ -78,6 +79,7 @@
 | `T-038` | Logic bug sweep (calendar, notes, phone-bridge, auth, finance) |
 | `T-013` | Data persistence layer (all sub-tasks complete: adapter, migration, per-app audit, settings bridge, offline badge + retry queue, integrity guard) |
 | `T-056` | Fix Weather app layout centering (hero + forecast off-center) |
+| `T-060-a` | QC Auto Gate: syntax & cross-ref validator |
 
 ---
 

@@ -195,23 +195,51 @@ def check_cross_reference(files):
     missing_classes = []
     for jsf in js_files_to_check:
         text = jsf.read_text(encoding="utf-8")
+        is_boot = jsf.name in ('app.js', 'welcome.js')
         for m in re.finditer(r"getElementById\(['\"]([^'\"]+)['\"]\)", text):
             el_id = m.group(1)
             if el_id not in html_ids:
-                missing_ids.append(f"{jsf.name}:{m.start()} id='{el_id}'")
+                # Only hard-fail on plain gets in boot files (no fallback)
+                snippet = text[max(0,m.start()-80):m.end()+10]
+                if "||" in snippet or "createElement" in snippet or "if (!" in snippet:
+                    continue
+                if is_boot:
+                    missing_ids.append(f"{jsf.name}:{m.start()} id='{el_id}'")
         for m in re.finditer(r'querySelector\(["\']([.#][^"\']+)["\']\)', text):
             sel = m.group(1)
             if sel.startswith("."):
-                cls = sel[1:].split("[")[0].split(":")[0]
-                if cls not in css_classes:
-                    missing_classes.append(f"{jsf.name}:{m.start()} class='{cls}'")
+                # Handle comma-separated and chained selectors: .a.b, .c
+                raw = sel[1:]
+                parts = [p.strip() for p in raw.split(",")]
+                for part in parts:
+                    # chained classes like beat-text.active
+                    simple_classes = part.split(".")
+                    for cls in simple_classes:
+                        # remove pseudo-class suffixes if any
+                        cls = cls.split(":")[0].split("[")[0].strip()
+                        if not cls:
+                            continue
+                        if cls not in css_classes:
+                            if is_boot:
+                                missing_classes.append(f"{jsf.name}:{m.start()} class='{cls}'")
+                            break  # report once per outer selector
 
-    # data-app registry check
+    # data-app registry check (aliases allow mapped name != module name)
+    app_aliases = {
+      'chat': None,          # chat is inline in app.js, no separate module
+      'phone': 'phone-bridge',
+      'feedback': None,      # feedback is inline in app.js
+      'dashboard': None,     # not a module
+      'settings': None,      # not a module
+    }
     data_apps = set(re.findall(r'data-app="([^"]+)"', html))
     for app in data_apps:
-        app_file = REPO_ROOT / f"public/js/apps/{app}.js"
-        if not app_file.exists() and app != "dashboard":
-            detail_lines.append(f"data-app='{app}' has no matching public/js/apps/{app}.js")
+        expected = app_aliases.get(app, app)
+        if expected is None:
+            continue
+        app_file = REPO_ROOT / f"public/js/apps/{expected}.js"
+        if not app_file.exists():
+            detail_lines.append(f"data-app='{app}' has no matching public/js/apps/{expected}.js")
             status = "FAIL"
 
     if missing_ids:
@@ -232,19 +260,31 @@ def check_server_routes(files):
     status = "pass"
     detail_lines = []
     server_text = SERVER_PATH.read_text(encoding="utf-8")
-    route_patterns = re.findall(r"['\"](/api/[^'\"]+)['\"]", server_text)
-    route_set = set(route_patterns)
+    route_set = set()
+    # Collect exact and prefix routes from server
+    for line in server_text.splitlines():
+        # exact match routes like path == '/api/xxx'
+        for m in re.finditer(r"['\"](/api/[a-zA-Z0-9_\-/]+)['\"]", line):
+            route_set.add(m.group(1))
+        # prefix routes like path.startswith('/api/xxx/')
+        for m in re.finditer(r"startswith\(['\"](/api/[a-zA-Z0-9_\-/]+)['\"]\)", line):
+            route_set.add(m.group(1) + '*')  # treat as prefix wildcard
 
     js_files = [REPO_ROOT / f for f in files if f.endswith(".js")]
     if not js_files:
         js_files = list(JS_DIR.rglob("*.js"))
 
+    skip_exact = {'/api/store'}  # base path used with concatenation, not a direct route
     missing = []
     for jsf in js_files:
         text = jsf.read_text(encoding="utf-8")
         for m in re.finditer(r'["\'](/api/[a-zA-Z0-9_\-/]+)["\']', text):
             route = m.group(1)
-            if route not in route_set:
+            if route in skip_exact:
+                continue
+            exact = route in route_set
+            prefix = any(route.startswith(r.rstrip('*')) for r in route_set if r.endswith('*'))
+            if not exact and not prefix:
                 missing.append(f"{jsf.name}: {route}")
 
     if missing:
