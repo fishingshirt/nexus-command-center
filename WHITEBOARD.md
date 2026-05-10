@@ -37,6 +37,7 @@
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | HIGH | `T-053` | News & Media Hub | `IN_PROGRESS` | `T-053-a` shell registered, `T-053-b` news feed engine next
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
+| **HIGH** | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `PENDING` | [`tasks/T-059.md`](tasks/T-059.md) |
 | HIGH | `T-056` | Fix Weather app layout centering (hero + forecast off-center) | `PENDING` | [`tasks/T-056.md`](tasks/T-056.md) |
 | HIGH | `T-057` | Default theme should be dark | `PENDING` | [`tasks/T-057.md`](tasks/T-057.md) |
 | HIGH | `T-058` | All themes should support dark mode (default on) | `PENDING` | [`tasks/T-058.md`](tasks/T-058.md) |
