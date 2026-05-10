@@ -1194,6 +1194,16 @@
             <option value="Purchased">Purchased</option>
             <option value="Archived">Archived</option>
           </select>
+          <select id="wishlist-filter-priority" class="wishlist-select" aria-label="Filter by priority">
+            <option value="">All Priorities</option>
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+            <option value="Must Buy">Must Buy</option>
+          </select>
+          <select id="wishlist-filter-tag" class="wishlist-select" aria-label="Filter by tag">
+            <option value="">All Tags</option>
+          </select>
           <label class="wishlist-toggle"><input type="checkbox" id="wishlist-show-archived"> Show Archived</label>
         </div>
         <div class="wishlist-count" id="wishlist-count"></div>
@@ -1268,6 +1278,34 @@
             <button type="submit" class="btn-primary" id="wishlist-modal-save">Add Item</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Wishlist Detail Panel (inline slide-over) -->
+    <div class="wishlist-detail-backdrop" id="wishlist-detail-backdrop"></div>
+    <div class="wishlist-detail-panel" id="wishlist-detail-panel" role="dialog" aria-label="Item details">
+      <div class="wishlist-detail-header">
+        <h3>Item</h3>
+        <button id="wishlist-detail-close" class="wishlist-detail-close" aria-label="Close details">✕</button>
+      </div>
+      <div class="wishlist-detail-image" data-placeholder=""></div>
+      <div class="wishlist-detail-meta"></div>
+      <div class="wishlist-detail-url-wrap">
+        <a class="wishlist-detail-url" href="#" target="_blank" rel="noopener noreferrer" style="display:none"></a>
+      </div>
+      <div class="wishlist-detail-status-row">
+        <span class="wishlist-detail-status-label">Change status:</span>
+        <button type="button" class="wishlist-detail-status-btn" data-status="Want">Want</button>
+        <button type="button" class="wishlist-detail-status-btn" data-status="Watching">Watching</button>
+        <button type="button" class="wishlist-detail-status-btn" data-status="Purchased">Purchased</button>
+        <button type="button" class="wishlist-detail-status-btn" data-status="Archived">Archive</button>
+      </div>
+      <div class="wishlist-detail-note-wrap">
+        <span class="wishlist-detail-note-label">Notes</span>
+        <textarea class="wishlist-detail-notes" rows="4" placeholder="Add notes…"></textarea>
+      </div>
+      <div class="wishlist-detail-actions">
+        <button type="button" class="wishlist-detail-edit" id="wishlist-detail-edit" aria-label="Edit this item">Edit</button>
       </div>
     </div>
     </main>

@@ -47,8 +47,6 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function parseTags(input) { return []; } // stub — real impl already exists later in file
-
 let _fetchAbort = null;
 function attemptFetchLink(url) {
   if (!url || !url.startsWith('http')) return;
@@ -109,7 +107,10 @@ function bindEvents() {
   document.getElementById('wishlist-search')?.addEventListener('input', renderWishlist);
   document.getElementById('wishlist-sort')?.addEventListener('change', renderWishlist);
   document.getElementById('wishlist-filter')?.addEventListener('change', renderWishlist);
+  document.getElementById('wishlist-filter-priority')?.addEventListener('change', renderWishlist);
+  document.getElementById('wishlist-filter-tag')?.addEventListener('change', renderWishlist);
   document.getElementById('wishlist-show-archived')?.addEventListener('change', renderWishlist);
+  populateTagFilter();
 
   const urlInput = document.getElementById('wishlist-url');
   if (urlInput) {
@@ -126,6 +127,34 @@ function bindEvents() {
       }
     });
   }
+
+  const detailClose = document.getElementById('wishlist-detail-close');
+  const detailBackdrop = document.getElementById('wishlist-detail-backdrop');
+  const detailEdit = document.getElementById('wishlist-detail-edit');
+  const detailNotes = document.querySelector('.wishlist-detail-notes');
+  detailClose?.addEventListener('click', closeDetailModal);
+  detailBackdrop?.addEventListener('click', closeDetailModal);
+  detailEdit?.addEventListener('click', () => {
+    const id = detailEdit.dataset.id;
+    closeDetailModal();
+    if (id) openEditModal(id);
+  });
+  detailNotes?.addEventListener('change', onDetailNotesChange);
+  detailNotes?.addEventListener('blur', onDetailNotesChange);
+  document.querySelectorAll('.wishlist-detail-status-btn').forEach(b => {
+    b.addEventListener('click', onStatusChange);
+  });
+}
+
+function populateTagFilter() {
+  const sel = document.getElementById('wishlist-filter-tag');
+  if (!sel) return;
+  const { items } = ensureData();
+  const current = sel.value;
+  const all = new Set();
+  items.forEach(i => (i.tags || []).forEach(t => all.add(t)));
+  sel.innerHTML = '<option value="">All Tags</option>' + [...all].sort().map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  sel.value = all.has(current) ? current : '';
 }
 
 function getFilteredSortedItems() {
@@ -133,12 +162,16 @@ function getFilteredSortedItems() {
   const query = (document.getElementById('wishlist-search')?.value || '').toLowerCase().trim();
   const sort = document.getElementById('wishlist-sort')?.value || 'created-desc';
   const statusFilter = document.getElementById('wishlist-filter')?.value || '';
+  const priorityFilter = document.getElementById('wishlist-filter-priority')?.value || '';
+  const tagFilter = document.getElementById('wishlist-filter-tag')?.value || '';
   const showArchived = document.getElementById('wishlist-show-archived')?.checked;
 
   let list = [...items];
 
   if (!showArchived) list = list.filter(i => i.status !== 'Archived');
   if (statusFilter) list = list.filter(i => i.status === statusFilter);
+  if (priorityFilter) list = list.filter(i => i.priority === priorityFilter);
+  if (tagFilter) list = list.filter(i => (i.tags || []).includes(tagFilter));
 
   if (query) {
     list = list.filter(i => {
@@ -218,6 +251,18 @@ function renderWishlist() {
       openEditModal(btn.dataset.id);
     });
   });
+  grid.querySelectorAll('.wishlist-card-copy').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      copyLink(btn.dataset.url);
+    });
+  });
+  grid.querySelectorAll('.wishlist-card').forEach(card => {
+    card.addEventListener('click', () => openDetailModal(card.dataset.id));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') openDetailModal(card.dataset.id);
+    });
+  });
 }
 
 function renderCard(item) {
@@ -240,7 +285,11 @@ function renderCard(item) {
           <span class="wishlist-card-status ${s.class}">${escapeHtml(item.status)}</span>
         </div>
         ${item.tags?.length ? `<div class="wishlist-card-tags">${item.tags.map(t => `<span class="wishlist-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+        ${item.notes ? `<div class="wishlist-card-note-preview">${escapeHtml(item.notes.substring(0, 120))}${item.notes.length > 120 ? '…' : ''}</div>` : ''}
         <div class="wishlist-card-actions">
+          <button class="wishlist-card-action-btn wishlist-card-copy" data-url="${escapeHtml(item.url || '')}" aria-label="Copy link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          </button>
           <button class="wishlist-card-action-btn wishlist-card-edit" data-id="${escapeHtml(item.id)}" aria-label="Edit ${escapeHtml(item.title)}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
           </button>
@@ -251,6 +300,86 @@ function renderCard(item) {
       </div>
     </div>
   `;
+}
+
+function copyLink(url) {
+  if (!url) { showToast('No URL to copy'); return; }
+  try {
+    navigator.clipboard.writeText(url).then(() => showToast('Copied link'));
+  } catch (_) { showToast('Could not copy'); }
+}
+
+function openDetailModal(id) {
+  const d = ensureData();
+  const item = d.items.find(i => i.id === id);
+  if (!item) return;
+  const panel = document.getElementById('wishlist-detail-panel');
+  if (!panel) { openEditModal(id); return; }
+  const p = PRIORITY_META[item.priority] || PRIORITY_META.Normal;
+  const s = STATUS_META[item.status] || STATUS_META.Want;
+  const img = item.image || '';
+  const priceStr = item.price != null ? `${currencySymbol(item.currency)}${Number(item.price).toFixed(2)}` : '';
+  const placeholderSvg = panel.querySelector('.wishlist-detail-image')?.dataset?.placeholder || '';
+  panel.querySelector('.wishlist-detail-header h3').textContent = item.title;
+  panel.querySelector('.wishlist-detail-image').innerHTML = img ? `<img src="${escapeHtml(img)}" alt="" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;">` : (placeholderSvg || '');
+  const metaEl = panel.querySelector('.wishlist-detail-meta');
+  metaEl.innerHTML = `
+    ${priceStr ? `<span class="wishlist-detail-price">${priceStr}</span>` : ''}
+    <span class="wishlist-detail-priority" style="color:${p.color}">${p.label}</span>
+    <span class="wishlist-detail-status ${s.class}">${escapeHtml(item.status)}</span>
+    ${(item.tags || []).length ? `<div class="wishlist-detail-tags">${item.tags.map(t => `<span class="wishlist-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+  `;
+  const notesEl = panel.querySelector('.wishlist-detail-notes');
+  notesEl.value = item.notes || '';
+  notesEl.dataset.id = id;
+  const urlEl = panel.querySelector('.wishlist-detail-url');
+  if (item.url) {
+    urlEl.href = item.url;
+    urlEl.textContent = item.url.replace(/^https?:\/\//, '').substring(0, 40);
+    urlEl.style.display = 'inline-block';
+  } else { urlEl.style.display = 'none'; }
+  panel.querySelector('.wishlist-detail-edit').dataset.id = id;
+  panel.querySelectorAll('.wishlist-detail-status-btn').forEach(b => {
+    b.dataset.id = id;
+    b.disabled = item.status === b.dataset.status;
+  });
+  panel.classList.add('open');
+  const bd = document.getElementById('wishlist-detail-backdrop');
+  if (bd) bd.classList.add('open');
+}
+
+function closeDetailModal() {
+  const panel = document.getElementById('wishlist-detail-panel');
+  const backdrop = document.getElementById('wishlist-detail-backdrop');
+  if (panel) panel.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
+}
+
+function onDetailNotesChange(e) {
+  const id = e.target.dataset.id;
+  const notes = e.target.value || '';
+  if (!id) return;
+  const d = ensureData();
+  const idx = d.items.findIndex(i => i.id === id);
+  if (idx === -1) return;
+  d.items[idx].notes = notes;
+  d.items[idx].updated = new Date().toISOString();
+  saveData(d);
+  renderWishlist();
+}
+
+function onStatusChange(e) {
+  const id = e.target.dataset.id;
+  const status = e.target.dataset.status;
+  if (!id || !status) return;
+  const d = ensureData();
+  const idx = d.items.findIndex(i => i.id === id);
+  if (idx === -1) return;
+  d.items[idx].status = status;
+  d.items[idx].updated = new Date().toISOString();
+  saveData(d);
+  renderWishlist();
+  openDetailModal(id);
 }
 
 function currencySymbol(cur) {
