@@ -1,5 +1,6 @@
 import { toast } from '../app.js';
 import { syncEventToGoogle, deleteEventFromGoogle, flushOutboundQueue } from './gcal-outbound.js';
+import { notify } from '../notifications.js';
 
 // ===== CALENDAR APP =====
 // Handles month/week/day views, event CRUD, and localStorage persistence.
@@ -467,12 +468,14 @@ function deleteEvent() {
   if (!confirm('Delete this event?')) return;
   const events = loadEvents();
   const ev = events.find(e => e.id === editingEventId);
+  const evTitle = ev?.title || 'Untitled event';
   deleteEventFromGoogle(ev?.gcalId).catch(() => {});
   const filtered = events.filter(e => e.id !== editingEventId);
   saveEvents(filtered);
   closeModal();
   renderCalendar();
   toast('Event deleted');
+  notify({ title: 'Event deleted', body: evTitle, app: 'calendar', priority: 'low' });
 }
 
 async function saveEvent(e) {
@@ -512,6 +515,12 @@ async function saveEvent(e) {
   closeModal();
   renderCalendar();
   toast(editingEventId ? 'Event updated' : 'Event added');
+  notify({
+    title: editingEventId ? 'Event updated' : 'Event added',
+    body: payload.title || 'Untitled event',
+    app: 'calendar',
+    priority: 'normal'
+  });
 
   // Background outbound sync — don't block UI
   const result = await syncEventToGoogle(payload, action);
@@ -571,12 +580,41 @@ export function initCalendar() {
 
   updateCalendarBadge();
   renderCalendar();
+  _checkCalendarReminders();
+  window.__calendarReminderTimer = setInterval(_checkCalendarReminders, 60 * 60 * 1000);
+  window.addEventListener('beforeunload', () => {
+    if (window.__calendarReminderTimer) { clearInterval(window.__calendarReminderTimer); window.__calendarReminderTimer = null; }
+  });
 
   // Re-render when external sync merges events
   window.addEventListener('ncc-cal-updated', () => {
     renderCalendar();
     updateCalendarBadge();
   });
+}
+
+function _checkCalendarReminders() {
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const events = loadEvents();
+  let pushed = 0;
+  for (const ev of events) {
+    if (ev.date !== todayStr || ev._notifiedReminder) continue;
+    if (!ev.start) {
+      notify({ title: 'Event today', body: ev.title, app: 'calendar', priority: 'normal' });
+      ev._notifiedReminder = true; pushed++;
+    } else {
+      const [hh, mm] = ev.start.split(':');
+      const evTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hh||0,10), parseInt(mm||0,10));
+      const diffMin = Math.floor((evTime - now) / 60000);
+      if (diffMin > 0 && diffMin <= 15) {
+        notify({ title: 'Upcoming event', body: `${ev.title} at ${ev.start}`, app: 'calendar', priority: 'high' });
+        ev._notifiedReminder = true; pushed++;
+      }
+    }
+    if (pushed >= 5) break; // limit per check
+  }
+  if (pushed) saveEvents(events);
 }
 
 async function openConflictPanel(dateStr, eventId) {

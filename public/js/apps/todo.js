@@ -1,8 +1,10 @@
 import { toast } from '../app.js';
+import { notify } from '../notifications.js';
 
 const KEY = 'ncc-todo';
 let tasks = [];
 let filter = 'all';
+let _dueReminderTimer = null;
 
 function load() { try { tasks = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { tasks = []; } }
 function save() { localStorage.setItem(KEY, JSON.stringify(tasks)); updateBadge(); }
@@ -14,6 +16,36 @@ export function initTodo() {
   bindEvents();
   render();
   updateBadge();
+  _startDueReminders();
+  window.addEventListener('beforeunload', _stopDueReminders);
+}
+
+function _startDueReminders() {
+  _stopDueReminders();
+  _checkDueReminders();
+  _dueReminderTimer = setInterval(_checkDueReminders, 60 * 60 * 1000); // check every hour
+}
+
+function _stopDueReminders() {
+  if (_dueReminderTimer) { clearInterval(_dueReminderTimer); _dueReminderTimer = null; }
+}
+
+function _checkDueReminders() {
+  const today = new Date().toISOString().slice(0, 10);
+  for (const t of tasks) {
+    if (!t.completed && t.due) {
+      if (t.due === today && !t._notifiedDue) {
+        notify({ title: 'Task due today', body: t.text, app: 'todo', priority: 'high' });
+        t._notifiedDue = true;
+      }
+      if (t.due < today && !t._notifiedOverdue) {
+        notify({ title: 'Overdue task', body: t.text, app: 'todo', priority: 'high' });
+        t._notifiedOverdue = true;
+      }
+    }
+  }
+  // persist notification flags without full re-render
+  try { localStorage.setItem(KEY, JSON.stringify(tasks)); } catch {}
 }
 
 let els = {};
@@ -63,16 +95,23 @@ function addTask() {
   els.due.value = '';
   render();
   toast('Task added');
+  notify({ title: 'Task added', body: text, app: 'todo', priority: 'normal' });
 }
 
 function toggleTask(id) {
   const t = tasks.find(x => x.id === id);
-  if (t) { t.completed = !t.completed; save(); render(); }
+  if (t) {
+    t.completed = !t.completed;
+    save(); render();
+    notify({ title: t.completed ? 'Task completed' : 'Task reopened', body: t.text, app: 'todo', priority: 'low' });
+  }
 }
 
 function deleteTask(id) {
+  const t = tasks.find(x => x.id === id);
   tasks = tasks.filter(x => x.id !== id);
   save(); render(); toast('Task deleted');
+  notify({ title: 'Task deleted', body: t?.text || '', app: 'todo', priority: 'low' });
 }
 
 function fmtDue(d) {
