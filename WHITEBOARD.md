@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 07:21 UTC
-- **Active tasks:** 12
-- **Completed tasks:** 20 shown below
+- **Last updated:** 2026-05-10 07:32 UTC
+- **Active tasks:** 11
+- **Completed tasks:** 21 shown below
 
 ---
 
@@ -34,7 +34,7 @@
 || HIGH | `T-042` | Unified notifications center | `PENDING` | [`tasks/T-042.md`](tasks/T-042.md) |
 || MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
 || LOW | `T-044` | World clock widget | `PENDING` | [`tasks/T-044.md`](tasks/T-044.md) |
-|| MEDIUM | `T-045` | Pomodoro timer / focus mode | `PENDING` | [`tasks/T-045.md`](tasks/T-045.md) |
+||| MEDIUM | `T-045` | Pomodoro timer / focus mode | **`DONE`** | [`tasks/T-045.md`](tasks/T-045.md) |
 || LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
 || MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
 || LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |

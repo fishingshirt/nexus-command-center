@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="css/welcome.css">
     <link rel="stylesheet" href="css/apps/arcade.css">
     <link rel="stylesheet" href="css/apps/finance.css">
+    <link rel="stylesheet" href="css/apps/pomodoro.css">
   <style>
     /* CRITICAL: hide app before any CSS/JS loads. Zero flash. */
     #app { display: none !important; }
@@ -115,6 +116,10 @@
         <a href="#finance" class="nav-link" data-app="finance">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
           Finance
+        </a>
+        <a href="#pomodoro" class="nav-link" data-app="pomodoro">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Focus
         </a>
         <div class="nav-divider"></div>
         <button class="nav-link nav-settings-link" id="nav-settings-link" data-app="settings" aria-label="Open Settings">
@@ -249,6 +254,21 @@
               <p id="finance-card-text">Track &amp; trade</p>
             </div>
             <div class="app-card-badge" id="finance-badge" style="background:#22c55e12;color:#22c55e;font-size:0.7rem;">BETA</div>
+          </div>
+
+          <!-- Focus Card -->
+          <div class="app-card" data-app="pomodoro" tabindex="0" role="button" aria-label="Open Focus Timer">
+            <div class="app-card-icon" style="--card-accent: #ef4444;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="app-card-info">
+              <h3>Focus</h3>
+              <p id="pomodoro-card-text">Pomodoro timer</p>
+            </div>
+            <div class="app-card-badge" id="pomodoro-badge" style="background:#ef444412;color:#ef4444;font-size:0.7rem;">NEW</div>
           </div>
         </div>
       </div>
@@ -688,6 +708,101 @@
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Finance View -->
+
+      <!-- Pomodoro / Focus View -->
+      <div id="view-pomodoro" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>Focus</h2>
+          <button class="view-action" id="pomodoro-fullscreen-btn" aria-label="Enter focus mode">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+          </button>
+        </div>
+        <div class="view-body pomodoro-view-body">
+          <!-- Mode Tabs -->
+          <div class="pomodoro-tabs">
+            <button class="pomodoro-tab-btn active" data-mode="pomodoro" aria-label="Pomodoro 25 minutes">🍅 Pomodoro</button>
+            <button class="pomodoro-tab-btn" data-mode="short" aria-label="Short break 5 minutes">☕ Short Break</button>
+            <button class="pomodoro-tab-btn" data-mode="long" aria-label="Long break 15 minutes">🌴 Long Break</button>
+            <button class="pomodoro-tab-btn" data-mode="custom" aria-label="Custom timer">⚙️ Custom</button>
+          </div>
+
+          <!-- Timer Display -->
+          <div class="pomodoro-timer-wrap">
+            <svg class="pomodoro-ring" viewBox="0 0 120 120">
+              <circle class="pomodoro-ring-bg" cx="60" cy="60" r="54"></circle>
+              <circle class="pomodoro-ring-progress" cx="60" cy="60" r="54" id="pomodoro-ring-progress"></circle>
+            </svg>
+            <div class="pomodoro-timer-text" id="pomodoro-timer-text">25:00</div>
+            <div class="pomodoro-timer-label" id="pomodoro-timer-label">Ready to focus</div>
+          </div>
+
+          <!-- Custom Duration (hidden by default) -->
+          <div class="pomodoro-custom-row" id="pomodoro-custom-row" style="display:none;">
+            <label>Minutes: <input type="number" id="pomodoro-custom-min" min="1" max="120" value="25"></label>
+          </div>
+
+          <!-- Controls -->
+          <div class="pomodoro-controls">
+            <button class="pomodoro-ctrl-btn pomodoro-play" id="pomodoro-play" aria-label="Start timer">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"></polygon></svg>
+              Start
+            </button>
+            <button class="pomodoro-ctrl-btn pomodoro-pause" id="pomodoro-pause" aria-label="Pause timer" style="display:none;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+              Pause
+            </button>
+            <button class="pomodoro-ctrl-btn" id="pomodoro-reset" aria-label="Reset timer">Reset</button>
+            <button class="pomodoro-ctrl-btn" id="pomodoro-skip" aria-label="Skip session">Skip</button>
+          </div>
+
+          <!-- Task Link -->
+          <div class="pomodoro-task-row">
+            <label>Working on:</label>
+            <select id="pomodoro-task-select">
+              <option value="">— Select a task —</option>
+            </select>
+          </div>
+
+          <!-- Stats -->
+          <div class="pomodoro-stats">
+            <div class="pomodoro-stat">
+              <span class="pomodoro-stat-num" id="pomodoro-today-count">0</span>
+              <span class="pomodoro-stat-label">Today</span>
+            </div>
+            <div class="pomodoro-stat">
+              <span class="pomodoro-stat-num" id="pomodoro-streak">0</span>
+              <span class="pomodoro-stat-label">Streak</span>
+            </div>
+            <div class="pomodoro-stat">
+              <span class="pomodoro-stat-num" id="pomodoro-total-time">0</span>
+              <span class="pomodoro-stat-label">Minutes</span>
+            </div>
+          </div>
+
+          <!-- Session History -->
+          <div class="pomodoro-history" id="pomodoro-history-wrap">
+            <h4>Recent Sessions</h4>
+            <ul class="pomodoro-history-list" id="pomodoro-history-list">
+              <li class="pomodoro-empty">No sessions yet. Start your first focus block!</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Focus Overlay (full-screen) -->
+        <div class="pomodoro-overlay" id="pomodoro-overlay" aria-hidden="true">
+          <div class="pomodoro-overlay-backdrop" id="pomodoro-overlay-backdrop"></div>
+          <div class="pomodoro-overlay-panel">
+            <div class="pomodoro-overlay-timer" id="pomodoro-overlay-timer">25:00</div>
+            <div class="pomodoro-overlay-task" id="pomodoro-overlay-task"></div>
+            <button class="pomodoro-overlay-exit" id="pomodoro-overlay-exit" aria-label="Exit focus mode"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg></button>
           </div>
         </div>
       </div>

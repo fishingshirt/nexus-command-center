@@ -9,6 +9,7 @@ import { initAuth, ensureAuthEnabled } from './apps/auth.js';
 import { initPhoneBridge } from './apps/phone-bridge.js';
 import { initArcade } from './apps/arcade.js';
 import { initFinance } from './apps/finance.js';
+import { initPomodoro } from './apps/pomodoro.js';
 import { initWelcome } from './welcome.js';
 
 const APP_REGISTRY = [
@@ -20,7 +21,8 @@ const APP_REGISTRY = [
   { id: 'phone', name: 'Phone Bridge', icon: '📱', path: 'phone' },
   { id: 'feedback', name: 'Feedback', icon: '💬', path: 'feedback' },
   { id: 'arcade', name: 'Arcade', icon: '🎮', path: 'arcade' },
-  { id: 'finance', name: 'Finance', icon: '💰', path: 'finance' }
+  { id: 'finance', name: 'Finance', icon: '💰', path: 'finance' },
+  { id: 'pomodoro', name: 'Focus', icon: '🍅', path: 'pomodoro' }
 ];
 
 export function initApp() {
@@ -38,6 +40,7 @@ export function initApp() {
   initPhoneBridge();
   initArcade();
   initFinance();
+  initPomodoro();
   initWeather();
   initCalendar();
   initNotes();
