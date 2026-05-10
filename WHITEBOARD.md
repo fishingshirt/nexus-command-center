@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 15:05 UTC
+- **Last updated:** 2026-05-10 15:30 UTC
 - **Active tasks:** 15
-- **Completed tasks:** 25 shown below
+- **Completed tasks:** 26 shown below
 - **Quality system:** QC/QA pipeline (T-060) in progress — T-060-a DONE, T-060-b DONE
 ---
 
@@ -19,8 +19,7 @@
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
 | CRITICAL | `T-060` | Quality Check Pipeline + Quality Approval Gate | `IN_PROGRESS` | [`tasks/T-060.md`](tasks/T-060.md) |
-| CRITICAL | `T-060-d` | Dashboard Quality Status Panel | `PENDING` | [`tasks/T-060-d.md`](tasks/T-060-d.md) |
-| MEDIUM | `T-060-e` | Fast-Track & Merge Gate Rules | `PENDING` | [`tasks/T-060-e.md`](tasks/T-060-e.md) |
+| CRITICAL | `T-060-e` | Fast-Track & Merge Gate Rules | `PENDING` | [`tasks/T-060-e.md`](tasks/T-060-e.md) |
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
@@ -80,6 +79,7 @@
 | `T-060-a` | QC Auto Gate: syntax & cross-ref validator |
 | `T-060-b` | QA Agent Review Checklist & Sign-Off |
 | `T-060-c` | Backlog Audit: all legacy files queued (48 files in nexus-quality-queue.json) |
+| `T-060-d` | Dashboard Quality Status Panel (server endpoints, settings UI, CSS, JS) |
 
 ---
 
