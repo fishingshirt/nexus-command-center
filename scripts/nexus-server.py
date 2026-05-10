@@ -1431,6 +1431,21 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             _json(self, 200, {'notifications': queue[-20:]})
             return True
 
+        if path == '/api/notifications':
+            queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')
+            queue = []
+            try:
+                with open(queue_path, 'r') as f:
+                    queue = json.load(f)
+            except Exception:
+                pass
+            _json(self, 200, {'notifications': queue[-50:]})
+            return True
+
+        if path == '/api/backup/':
+            _json(self, 200, {'ok': True})
+            return True
+
         if path.startswith('/api/backup/'):
             return _api_backup(self, path, repo)
 
@@ -1500,6 +1515,39 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             if path.startswith('/api/calendar/'):
                 if _api_calendar(self, self.path):
                     return
+            if path == '/api/notifications':
+                queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')
+                queue = []
+                try:
+                    with open(queue_path, 'r') as f:
+                        queue = json.load(f)
+                except Exception:
+                    pass
+                try:
+                    length = int(self.headers.get('Content-Length', 0))
+                    body = self.rfile.read(length).decode('utf-8') if length else '{}'
+                    payload = json.loads(body)
+                except Exception:
+                    _json(self, 400, {'ok': False, 'error': 'Invalid JSON'})
+                    return
+                import datetime
+                note = {
+                    'id': 'ui-' + str(int(time.time() * 1000)),
+                    'title': payload.get('title', ''),
+                    'body': payload.get('body', ''),
+                    'app': payload.get('app', 'system'),
+                    'priority': payload.get('priority', 'normal'),
+                    'timestamp': datetime.datetime.now().isoformat()
+                }
+                queue.append(note)
+                queue = queue[-50:]
+                try:
+                    with open(queue_path, 'w') as f:
+                        json.dump(queue, f, indent=2)
+                except Exception:
+                    pass
+                _json(self, 200, {'ok': True, 'notification': note, 'queued': len(queue)})
+                return
         self.send_response(405)
         self.end_headers()
 

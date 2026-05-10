@@ -11,6 +11,7 @@ import { initArcade } from './apps/arcade.js';
 import { initFinance } from './apps/finance.js';
 import { initPomodoro } from './apps/pomodoro.js';
 import { initWelcome } from './welcome.js';
+import { initNotifications } from './notifications.js';
 
 const APP_REGISTRY = [
   { id: 'calendar', name: 'Calendar', icon: '📅', path: 'calendar' },
@@ -32,6 +33,7 @@ export function initApp() {
   initSettings();
   initCalendarSync();
   initWelcome();
+  initNotifications();
   initChat();
   initFeedback();
   initAgentStats();
@@ -241,6 +243,36 @@ function initSettings() {
       saveSettings({ itHubVisible: itHubVisible.checked });
       toggleItHubGrid(itHubVisible.checked);
       toast(itHubVisible.checked ? 'IT Hub shown on main grid' : 'IT Hub hidden from main grid');
+    });
+  }
+
+  // Notification settings
+  const notificationSound = document.getElementById('notification-sound');
+  const browserPush = document.getElementById('browser-push');
+  if (notificationSound) {
+    notificationSound.checked = settings.notificationSound !== false;
+    notificationSound.addEventListener('change', () => {
+      saveSettings({ notificationSound: notificationSound.checked });
+      toast(notificationSound.checked ? 'Notification sound enabled' : 'Notification sound muted');
+    });
+  }
+  if (browserPush) {
+    browserPush.checked = settings.browserPush === true;
+    browserPush.addEventListener('change', () => {
+      if (browserPush.checked && 'Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission().then(perm => {
+          if (perm !== 'granted') {
+            browserPush.checked = false;
+            toast('Push permission denied', 'error');
+            return;
+          }
+          saveSettings({ browserPush: true });
+          toast('Browser push enabled');
+        });
+      } else {
+        saveSettings({ browserPush: browserPush.checked });
+        toast(browserPush.checked ? 'Browser push enabled' : 'Browser push disabled');
+      }
     });
   }
 
