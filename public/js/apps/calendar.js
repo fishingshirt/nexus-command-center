@@ -374,7 +374,12 @@ function attachDayClicks(container) {
     chip.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = chip.dataset.id;
-      if (id) openModal(chip.closest('[data-date]')?.dataset.date, id);
+      if (!id) return;
+      if (chip.querySelector('.conflict-dot')) {
+        openConflictPanel(chip.closest('[data-date]')?.dataset.date, id);
+        return;
+      }
+      openModal(chip.closest('[data-date]')?.dataset.date, id);
     });
   });
 }
@@ -413,6 +418,14 @@ const elEnd = document.getElementById('event-end');
 const elCategory = document.getElementById('event-category');
 const elRecurrence = document.getElementById('event-recurrence');
 const elDesc = document.getElementById('event-desc');
+
+// Conflict panel elements
+let conflictEventId = null;
+const conflictPanel = document.getElementById('conflict-panel');
+const conflictBackdrop = document.getElementById('conflict-panel-backdrop');
+const conflictPanelCloseBtn = document.getElementById('conflict-panel-close');
+const conflictBtnMine = document.getElementById('conflict-use-mine');
+const conflictBtnGoogle = document.getElementById('conflict-use-google');
 
 function openModal(dateStr, eventId = null) {
   selectedDate = dateStr;
@@ -547,7 +560,14 @@ export function initCalendar() {
   modalForm.addEventListener('submit', saveEvent);
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+    if (e.key === 'Escape' && conflictPanel.classList.contains('active')) closeConflictPanel();
   });
+
+  // Conflict panel listeners
+  conflictPanelCloseBtn.addEventListener('click', closeConflictPanel);
+  conflictBackdrop.addEventListener('click', closeConflictPanel);
+  conflictBtnMine.addEventListener('click', resolveKeepMine);
+  conflictBtnGoogle.addEventListener('click', resolveUseGoogle);
 
   updateCalendarBadge();
   renderCalendar();
@@ -557,6 +577,120 @@ export function initCalendar() {
     renderCalendar();
     updateCalendarBadge();
   });
+}
+
+async function openConflictPanel(dateStr, eventId) {
+  conflictEventId = eventId;
+  const events = loadEvents();
+  const ev = events.find(e => e.id === eventId);
+  if (!ev || !ev.conflict) return;
+  document.getElementById('conflict-local-title').textContent = ev.title || '(no title)';
+  document.getElementById('conflict-local-date').textContent = ev.date || '—';
+  document.getElementById('conflict-local-time').textContent = (ev.start ? `${ev.start}${ev.end ? '–' + ev.end : ''}` : '-') || '—';
+  document.getElementById('conflict-local-desc').textContent = ev.description || '—';
+  // Reset remote column
+  document.getElementById('conflict-remote-title').textContent = 'Loading…';
+  document.getElementById('conflict-remote-date').textContent = '—';
+  document.getElementById('conflict-remote-time').textContent = '—';
+  document.getElementById('conflict-remote-desc').textContent = '—';
+  conflictPanel.classList.add('active');
+  conflictPanel.setAttribute('aria-hidden', 'false');
+  // Fetch fresh remote version
+  if (ev.gcalId) {
+    try {
+      const res = await fetch(`/api/calendar/events/${encodeURIComponent(ev.gcalId)}`);
+      const data = await res.json();
+      if (data.summary !== undefined) {
+        document.getElementById('conflict-remote-title').textContent = data.summary || '(no title)';
+        const startD = data.start?.date || data.start?.dateTime?.slice(0,10) || '—';
+        const endD = data.end?.date || data.end?.dateTime?.slice(0,10) || '—';
+        document.getElementById('conflict-remote-date').textContent = (startD === endD) ? startD : `${startD} – ${endD}`;
+        const startT = data.start?.dateTime?.slice(11,16) || '';
+        const endT = data.end?.dateTime?.slice(11,16) || '';
+        document.getElementById('conflict-remote-time').textContent = (startT ? `${startT}${endT ? '–' + endT : ''}` : '—');
+        document.getElementById('conflict-remote-desc').textContent = data.description || '—';
+      } else {
+        document.getElementById('conflict-remote-title').textContent = data.error ? 'Error loading' : 'Not found';
+      }
+    } catch (e) {
+      document.getElementById('conflict-remote-title').textContent = 'Unavailable';
+    }
+  } else {
+    document.getElementById('conflict-remote-title').textContent = 'No Google mapping';
+  }
+}
+
+function closeConflictPanel() {
+  conflictPanel.classList.remove('active');
+  conflictPanel.setAttribute('aria-hidden', 'true');
+  conflictEventId = null;
+}
+
+async function resolveKeepMine() {
+  if (!conflictEventId) return;
+  const events = loadEvents();
+  const ev = events.find(e => e.id === conflictEventId);
+  if (!ev) { closeConflictPanel(); return; }
+  // Patch remote with local data
+  if (ev.gcalId) {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const body = {
+        summary: ev.title,
+        description: ev.description || '',
+        start: ev.start
+          ? { dateTime: `${ev.date}T${ev.start}:00`, timeZone: tz }
+          : { date: ev.date },
+        end: ev.end
+          ? { dateTime: `${ev.date}T${ev.end}:00`, timeZone: tz }
+          : { date: ev.date },
+      };
+      await fetch(`/api/calendar/events/${encodeURIComponent(ev.gcalId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      toast('Could not update Google Calendar — will retry later.', 'warning');
+    }
+  }
+  ev.conflict = false;
+  ev.lastSyncedAt = Date.now();
+  saveEvents(events);
+  closeConflictPanel();
+  renderCalendar();
+  toast('Conflict resolved: kept local version');
+}
+
+async function resolveUseGoogle() {
+  if (!conflictEventId) return;
+  const events = loadEvents();
+  const ev = events.find(e => e.id === conflictEventId);
+  if (!ev) { closeConflictPanel(); return; }
+  // Fetch fresh remote data again
+  if (ev.gcalId) {
+    try {
+      const res = await fetch(`/api/calendar/events/${encodeURIComponent(ev.gcalId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        ev.title = data.summary || ev.title;
+        ev.description = data.description || '';
+        const s = data.start?.date || data.start?.dateTime?.slice(0,10);
+        const eD = data.end?.date || data.end?.dateTime?.slice(0,10);
+        if (s) ev.date = s;
+        ev.start = data.start?.dateTime?.slice(11,16) || '';
+        ev.end = data.end?.dateTime?.slice(11,16) || '';
+      }
+    } catch (e) {
+      toast('Could not fetch Google version.', 'warning');
+    }
+  }
+  ev.conflict = false;
+  ev.lastSyncedAt = Date.now();
+  saveEvents(events);
+  closeConflictPanel();
+  renderCalendar();
+  toast('Conflict resolved: used Google version');
 }
 
 function navigate(dir) {

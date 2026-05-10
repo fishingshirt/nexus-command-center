@@ -929,6 +929,39 @@
     </div>
   </div>
 
+  <!-- Conflict Resolution Panel -->
+  <div id="conflict-panel" class="conflict-panel" aria-hidden="true" role="dialog" aria-label="Conflict resolution" aria-modal="true">
+    <div class="conflict-panel-backdrop" id="conflict-panel-backdrop"></div>
+    <div class="conflict-panel-panel">
+      <div class="conflict-panel-header">
+        <h3>Resolve Conflict</h3>
+        <button class="conflict-panel-close" id="conflict-panel-close" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="conflict-panel-body">
+        <div class="conflict-col" id="conflict-local">
+          <div class="conflict-col-header">Local</div>
+          <div class="conflict-field"><span>Title</span><div id="conflict-local-title"></div></div>
+          <div class="conflict-field"><span>Date</span><div id="conflict-local-date"></div></div>
+          <div class="conflict-field"><span>Time</span><div id="conflict-local-time"></div></div>
+          <div class="conflict-field"><span>Description</span><div id="conflict-local-desc"></div></div>
+        </div>
+        <div class="conflict-col" id="conflict-remote">
+          <div class="conflict-col-header">Google Calendar</div>
+          <div class="conflict-field"><span>Title</span><div id="conflict-remote-title">Loading…</div></div>
+          <div class="conflict-field"><span>Date</span><div id="conflict-remote-date">—</div></div>
+          <div class="conflict-field"><span>Time</span><div id="conflict-remote-time">—</div></div>
+          <div class="conflict-field"><span>Description</span><div id="conflict-remote-desc">—</div></div>
+        </div>
+      </div>
+      <div class="conflict-panel-actions">
+        <button type="button" class="btn-secondary" id="conflict-use-mine">Keep Mine</button>
+        <button type="button" class="btn-primary" id="conflict-use-google">Use Google</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script type="module">
     import { initApp } from './js/app.js';
