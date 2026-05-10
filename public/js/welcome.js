@@ -521,12 +521,4 @@ function addParticleLayer(container) {
 }
 
 /* ========= SETTINGS HELPERS ========= */
-function loadSettings() {
-  try { return JSON.parse(localStorage.getItem('ncc-settings') || '{}'); }
-  catch { return {}; }
-}
-function saveSettings(patch) {
-  const s = loadSettings();
-  Object.assign(s, patch);
-  localStorage.setItem('ncc-settings', JSON.stringify(s));
-}
+/* DUPLICATE loadSettings/saveSettings removed — already in app.js */

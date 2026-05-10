@@ -1407,7 +1407,7 @@ function startMinesweeper(container) {
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
     const mineSet = new Set(candidates.slice(0, mines));
-    board = Array.from({ length: rows }, (_, y) =
+    board = Array.from({ length: rows }, (_, y) =>
       Array.from({ length: cols }, (_, x) => {
         const idx = y * cols + x;
         return { mine: mineSet.has(idx), revealed: false, flagged: false, neighborMines: 0 };
