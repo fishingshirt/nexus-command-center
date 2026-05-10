@@ -8,8 +8,8 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 10:36 UTC
-- **Active tasks:** 11
+- **Last updated:** 2026-05-10 10:45 UTC
+- **Active tasks:** 12
 - **Completed tasks:** 22 shown below
 ---
 
@@ -37,6 +37,7 @@
 | LOW | `T-051` | Post-completion QA & continuous improvement loop | `PENDING` | [`tasks/T-051.md`](tasks/T-051.md) |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | HIGH | `T-053` | News & Media Hub | `PENDING` | [`tasks/T-053.md`](tasks/T-053.md) |
+| MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
 
 ---
 
