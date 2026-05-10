@@ -9,11 +9,44 @@ let newsState = {
 };
 
 const NEWS_CATEGORIES = ['all','world','politics','technology','business','sports','entertainment','science','health'];
+const NEWS_CACHE_KEY = 'ncc-news-cache';
+const NEWS_CACHE_HOURS = 24;
 
 export function initNews() {
   renderNewsShell();
   bindNewsEvents();
-  // Lazy-load data only when view opens
+}
+
+function getCachedNews() {
+  try {
+    const raw = localStorage.getItem(NEWS_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data.cachedAt && (Date.now() - data.cachedAt) < NEWS_CACHE_HOURS * 3600 * 1000) {
+      return data.articles || [];
+    }
+  } catch (_) {}
+  return null;
+}
+
+function setCachedNews(articles) {
+  try {
+    localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({ cachedAt: Date.now(), articles }));
+  } catch (_) {}
+}
+
+function _fmtRel(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
 }
 
 function renderNewsShell() {
@@ -44,7 +77,7 @@ function renderNewsShell() {
       <div class="digest-body" id="digest-body"></div>
     </div>
     <div class="news-list" id="news-list" role="feed" aria-busy="false" aria-label="News articles">
-      <div class="news-empty">📭 No articles yet. Pull to refresh or check connection.</div>
+      <div class="news-skeleton">Loading headlines…</div>
     </div>
     <div class="news-youtube-section">
       <div class="youtube-header">
@@ -86,6 +119,11 @@ function bindNewsEvents() {
       loadNews();
       return;
     }
+    const retry = e.target.closest('#news-retry');
+    if (retry) {
+      loadNews();
+      return;
+    }
   });
 
   const input = view.querySelector('#news-search-input');
@@ -98,6 +136,11 @@ function bindNewsEvents() {
         loadNews();
       }, 300);
     });
+  }
+
+  const refreshBtn = document.getElementById('news-refresh-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', loadNews);
   }
 }
 
@@ -124,17 +167,24 @@ async function loadNews() {
     const res = await fetch('/api/news?' + params.toString());
     const data = await res.json();
     newsState.articles = data.articles || [];
+    if (newsState.articles.length) {
+      setCachedNews(newsState.articles);
+    }
     renderNewsList(newsState.articles);
   } catch (err) {
-    list.innerHTML = '<div class="news-error">Failed to load news. <button id="news-retry">Retry</button></div>';
-    const retry = document.getElementById('news-retry');
-    if (retry) retry.addEventListener('click', loadNews);
+    const cached = getCachedNews();
+    if (cached && cached.length) {
+      newsState.articles = cached;
+      renderNewsList(cached, true);
+    } else {
+      list.innerHTML = '<div class="news-error">Failed to load news. <button id="news-retry">Retry</button></div>';
+    }
   } finally {
     list.setAttribute('aria-busy', 'false');
   }
 }
 
-function renderNewsList(articles) {
+function renderNewsList(articles, offline=false) {
   const list = document.getElementById('news-list');
   if (!list) return;
   if (!articles.length) {
@@ -146,7 +196,8 @@ function renderNewsList(articles) {
       ${a.urlToImage ? `<img class="news-thumb" src="${escapeHtml(a.urlToImage)}" alt="">` : ''}
       <div class="news-meta">
         <span class="news-source">${escapeHtml(a.source?.name || 'News')}</span>
-        <span class="news-time">${escapeHtml(a.publishedAt || '')}</span>
+        <span class="news-time">${escapeHtml(_fmtRel(a.publishedAt))}</span>
+        ${offline ? '<span class="news-offline-chip">Offline</span>' : ''}
       </div>
       <h4 class="news-title">${escapeHtml(a.title || 'Untitled')}</h4>
       <p class="news-snippet">${escapeHtml(a.description || '')}</p>
@@ -169,7 +220,7 @@ async function loadYouTubeSuggestions() {
     }
     strip.innerHTML = newsState.videos.map(v => `
       <a class="youtube-card" href="${escapeHtml(v.url || '#')}" target="_blank" rel="noopener" aria-label="${escapeHtml(v.title || 'Video')}">
-        <img class="youtube-thumb" src="${escapeHtml(v.thumbnail || '')}" alt="">
+        <img class="youtube-thumb" src="${escapeHtml(v.thumbnail || '')}" alt="" loading="lazy">
         <div class="youtube-info">
           <div class="youtube-title">${escapeHtml(v.title || '')}</div>
           <div class="youtube-channel">${escapeHtml(v.channel || '')}</div>

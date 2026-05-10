@@ -1512,6 +1512,117 @@ def _api_quality(handler, path):
 
     return False
 
+# ── News Hub helpers ──────────────────────────
+_NEWS_CACHE_PATH = os.path.expanduser('~/.hermes/nexus-news-cache.json')
+_NEWS_CACHE_TTL = 900  # 15 minutes
+_NEWS_FEEDS = {
+    'world': 'http://feeds.bbci.co.uk/news/world/rss.xml',
+    '_default': 'http://feeds.bbci.co.uk/news/rss.xml',
+}
+
+import time, re, xml.etree.ElementTree as ET, urllib.request, email.utils
+
+def _parse_rfc822(ts):
+    try:
+        dt = email.utils.parsedate_to_datetime(ts)
+        return dt.isoformat()
+    except Exception:
+        return None
+
+def _guess_category(title, desc):
+    txt = f"{title or ''} {desc or ''}".lower()
+    scores = {
+        'world': ['world', 'global', 'international', 'war', 'conflict', 'diplomacy'],
+        'politics': ['politics', 'minister', 'mp ', 'mps', 'labour', 'conservative', 'starmer', 'sunak', 'parliament', 'election', 'government'],
+        'technology': ['technology', ' tech ', ' ai ', 'artificial intelligence', 'digital', 'internet', 'smartphone', 'robot', 'cyber'],
+        'business': ['business', 'economy', 'market', 'firms', 'company', 'profit', 'shares', 'trade', 'inflation', 'recession'],
+        'sports': ['sport', 'football', 'cricket', 'rugby', 'tennis', 'golf', 'racing', 'olympic', 'fifa', 'uefa', 'nfl', 'nba'],
+        'entertainment': ['entertainment', 'film', 'movie', 'music', 'tv', 'television', 'celeb', 'arts', 'fashion', 'theatre'],
+        'science': ['science', 'space', 'climate', 'medical research', 'research', 'study', 'dna', 'species'],
+        'health': ['health', 'hospital', 'medical', 'nhs', 'doctor', 'virus', 'disease', 'covid', 'cancer'],
+    }
+    best = 'world'
+    best_score = 0
+    for cat, keywords in scores.items():
+        sc = sum(1 for k in keywords if k in txt)
+        if sc > best_score:
+            best_score = sc
+            best = cat
+    return best
+
+def _fetch_bbc_news():
+    try:
+        req = urllib.request.Request('http://feeds.bbci.co.uk/news/rss.xml', headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read()
+        root = ET.fromstring(data)
+        items = []
+        for item in root.findall('.//item'):
+            title = item.find('title')
+            link = item.find('link')
+            desc = item.find('description')
+            pub = item.find('pubDate')
+            thumb = item.find('{http://search.yahoo.com/mrss/}thumbnail')
+            if title is not None and link is not None:
+                t = (title.text or '').strip()
+                d = (desc.text or '').strip() if desc is not None else ''
+                items.append({
+                    'title': t,
+                    'description': d,
+                    'url': link.text.strip(),
+                    'publishedAt': _parse_rfc822(pub.text) if pub is not None else None,
+                    'urlToImage': thumb.get('url') if thumb is not None else None,
+                    'source': {'name': 'BBC News'},
+                    'category': _guess_category(t, d),
+                })
+        return items[:50]
+    except Exception as e:
+        return []
+
+def _load_news_cache():
+    try:
+        with open(_NEWS_CACHE_PATH, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _save_news_cache(data):
+    os.makedirs(os.path.dirname(_NEWS_CACHE_PATH), exist_ok=True)
+    with open(_NEWS_CACHE_PATH, 'w') as f:
+        json.dump(data, f, default=str)
+
+def _api_news(handler, path):
+    import urllib.parse
+    parsed = urllib.parse.urlparse(path)
+    qs = urllib.parse.parse_qs(parsed.query)
+    category = qs.get('category', [''])[0].strip().lower()
+    q = qs.get('q', [''])[0].strip().lower()
+    page = int(qs.get('page', ['1'])[0])
+    page_size = min(int(qs.get('pageSize', ['20'])[0]), 50)
+
+    cache = _load_news_cache()
+    if cache.get('cachedAt') and time.time() - cache['cachedAt'] < _NEWS_CACHE_TTL and cache.get('articles'):
+        articles = cache['articles']
+    else:
+        articles = _fetch_bbc_news()
+        if articles:
+            _save_news_cache({'cachedAt': time.time(), 'articles': articles})
+        else:
+            articles = cache.get('articles', [])
+
+    if category:
+        articles = [a for a in articles if a.get('category') == category]
+    if q:
+        articles = [a for a in articles if q in (a.get('title') or '').lower() or q in (a.get('description') or '').lower()]
+
+    total = len(articles)
+    start = (page - 1) * page_size
+    end = start + page_size
+    paged = articles[start:end]
+
+    _json(handler, 200, {'articles': paged, 'totalResults': total})
+    return True
+
 class SPAHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         self.args_dir = k.pop('args_dir')
@@ -1641,15 +1752,21 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/quality/'):
             return _api_quality(self, path)
 
-        # --- News Hub stubs ---
+        # --- News Hub ---
         if path == '/api/news':
-            _json(self, 200, {'articles': [], 'totalResults': 0})
-            return True
+            return _api_news(self, self.path)
         if path == '/api/news/categories':
             _json(self, 200, ['world','politics','technology','business','sports','entertainment','science','health'])
             return True
         if path == '/api/youtube/daily':
-            _json(self, 200, {'videos': []})
+            _json(self, 200, {'videos': [
+                {'title':'The Future of AI in 2025','channel':'Tech Insider','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'technology'},
+                {'title':'Top Gear: Electric Road Trip','channel':'BBC Top Gear','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'entertainment'},
+                {'title':'How to Stay Productive','channel':'Better Humans','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'lifestyle'},
+                {'title':'SpaceX Starship Launch','channel':'NASA','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'science'},
+                {'title':'Premier League Highlights','channel':'Sky Sports','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'sports'},
+                {'title':'Healthy Morning Routine','channel':'Wellness Weekly','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'health'},
+            ]})
             return True
         if path.startswith('/api/news/digest/'):
             _json(self, 200, {'ready': False, 'content': None})
