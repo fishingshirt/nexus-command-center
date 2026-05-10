@@ -76,7 +76,7 @@ function renderNewsShell() {
       </div>
       <div class="digest-body" id="digest-body"></div>
     </div>
-    <div class="news-list" id="news-list" role="feed" aria-busy="false" aria-label="News articles">
+    <div class="news-list" id="news-list" role="feed" aria-busy="false" aria-label="News articles" aria-live="polite">
       <div class="news-skeleton">Loading headlines…</div>
     </div>
     <div class="news-youtube-section">
@@ -84,7 +84,7 @@ function renderNewsShell() {
         <h3>🎬 Suggested for You</h3>
         <button class="youtube-refresh" id="youtube-refresh" aria-label="Refresh suggestions">↻</button>
       </div>
-      <div class="youtube-strip" id="youtube-strip">
+      <div class="youtube-strip" id="youtube-strip" aria-live="polite" aria-label="YouTube suggestions">
         <div class="youtube-empty">No suggestions loaded.</div>
       </div>
     </div>
