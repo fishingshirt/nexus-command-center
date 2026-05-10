@@ -26,6 +26,7 @@ const STATIC_ASSETS = [
   '/js/apps/notes.js',
   '/js/apps/todo.js',
   '/js/apps/gcal-sync.js',
+  '/js/apps/gcal-outbound.js',
   '/js/apps/weather.js',
   '/js/apps/it-hub.js',
   '/js/apps/auth.js',
