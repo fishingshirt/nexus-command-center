@@ -31,7 +31,7 @@
 || MEDIUM | `T-039` | Multi-city weather manager | `PENDING` | [`tasks/T-039.md`](tasks/T-039.md) |
 || MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 || MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
-|||| HIGH | `T-042` | Unified notifications center | `IN_PROGRESS` | Sub-tasks: T-042-a **DONE**, T-042-b (next), T-042-c, T-042-d. [`tasks/T-042.md`](tasks/T-042.md) |
+|||| HIGH | `T-042` | Unified notifications center | `IN_PROGRESS` | Sub-tasks: T-042-a **DONE**, T-042-b **DONE** (bell, badge, slide-out panel), T-042-c (wire calendar/todo), T-042-d (agent posting endpoint). [`tasks/T-042.md`](tasks/T-042.md) |
 || MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
 || LOW | `T-044` | World clock widget | `PENDING` | [`tasks/T-044.md`](tasks/T-044.md) |
 ||| MEDIUM | `T-045` | Pomodoro timer / focus mode | **`DONE`** | [`tasks/T-045.md`](tasks/T-045.md) |
