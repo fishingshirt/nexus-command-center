@@ -18,7 +18,7 @@
 
 ||| Priority | ID | Task | Status | Details |
 ||----------|----|------|--------|---------|
-||| HIGH | `T-034` | Google Calendar two-way sync audit & fix | `IN_PROGRESS` | Sub-tasks: `T-034-b` DONE, `T-034-c` IN_PROGRESS — see below |
+|||| HIGH | `T-034` | Google Calendar two-way sync audit & fix | `IN_PROGRESS` | Sub-tasks: `T-034-b` DONE, `T-034-c-1` DONE, `T-034-c-2` DONE, `T-034-c-3` PENDING — see below |
 || HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
 || MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 || MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
