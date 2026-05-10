@@ -1,4 +1,5 @@
 import { toast } from '../app.js';
+import { syncEventToGoogle, deleteEventFromGoogle, flushOutboundQueue } from './gcal-outbound.js';
 
 // ===== CALENDAR APP =====
 // Handles month/week/day views, event CRUD, and localStorage persistence.
@@ -435,14 +436,17 @@ function closeModal() {
 function deleteEvent() {
   if (!editingEventId) return;
   if (!confirm('Delete this event?')) return;
-  const events = loadEvents().filter(e => e.id !== editingEventId);
-  saveEvents(events);
+  const events = loadEvents();
+  const ev = events.find(e => e.id === editingEventId);
+  deleteEventFromGoogle(ev?.gcalId).catch(() => {});
+  const filtered = events.filter(e => e.id !== editingEventId);
+  saveEvents(filtered);
   closeModal();
   renderCalendar();
   toast('Event deleted');
 }
 
-function saveEvent(e) {
+async function saveEvent(e) {
   e.preventDefault();
   const events = loadEvents();
   const payload = {
@@ -457,10 +461,16 @@ function saveEvent(e) {
     updatedAt: Date.now(),
   };
 
+  let action = 'create';
   if (editingEventId) {
     const idx = events.findIndex(e => e.id === editingEventId);
-    if (idx !== -1) events[idx] = payload;
-    else events.push(payload);
+    if (idx !== -1) {
+      payload.gcalId = events[idx].gcalId; // preserve mapping
+      events[idx] = payload;
+      action = payload.gcalId ? 'update' : 'create';
+    } else {
+      events.push(payload);
+    }
   } else {
     events.push(payload);
   }
@@ -469,6 +479,18 @@ function saveEvent(e) {
   closeModal();
   renderCalendar();
   toast(editingEventId ? 'Event updated' : 'Event added');
+
+  // Background outbound sync — don't block UI
+  const result = await syncEventToGoogle(payload, action);
+  if (result.ok && result.gcalId && !payload.gcalId) {
+    // Store the returned Google event ID on the local event
+    const fresh = loadEvents();
+    const ev = fresh.find(e => e.id === payload.id);
+    if (ev) {
+      ev.gcalId = result.gcalId;
+      saveEvents(fresh);
+    }
+  }
 }
 
 // ---- Listeners ----
@@ -513,6 +535,11 @@ export function initCalendar() {
   window.addEventListener('ncc-cal-updated', () => {
     renderCalendar();
     updateCalendarBadge();
+  });
+
+  // Flush any pending outbound syncs when we come back online
+  window.addEventListener('nexusOnline', () => {
+    flushOutboundQueue().catch(() => {});
   });
 }
 

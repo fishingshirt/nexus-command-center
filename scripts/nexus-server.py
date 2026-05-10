@@ -744,6 +744,86 @@ def _api_calendar(handler, raw_path):
         _json(handler, 200, {'ok': True})
         return True
 
+    # ── Outbound write endpoints (POST / PATCH / DELETE) ──
+    if path == '/api/calendar/events':
+        at = _gcal_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'
+        data = json.dumps(req).encode('utf-8')
+        hreq = urllib.request.Request(url, data=data, headers={'Authorization': f'Bearer {at}', 'Content-Type': 'application/json'}, method='POST')
+        try:
+            with urllib.request.urlopen(hreq, timeout=15) as resp:
+                rdata = json.loads(resp.read().decode())
+                _json(handler, 200, {'ok': True, 'eventId': rdata.get('id')})
+                return True
+        except urllib.error.HTTPError as e:
+            _json(handler, 502, {'ok': False, 'error': f'Google API error {e.code}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
+    import re
+    m = re.match(r'^/api/calendar/events/([^/]+)$', path)
+    if m and handler.command == 'PATCH':
+        at = _gcal_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        event_id = urllib.parse.unquote(m.group(1))
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        url = f'https://www.googleapis.com/calendar/v3/calendars/primary/events/{urllib.parse.quote(event_id)}'
+        data = json.dumps(req).encode('utf-8')
+        hreq = urllib.request.Request(url, data=data, headers={'Authorization': f'Bearer {at}', 'Content-Type': 'application/json'}, method='PATCH')
+        try:
+            with urllib.request.urlopen(hreq, timeout=15) as resp:
+                rdata = json.loads(resp.read().decode())
+                _json(handler, 200, {'ok': True, 'eventId': rdata.get('id')})
+                return True
+        except urllib.error.HTTPError as e:
+            _json(handler, 502, {'ok': False, 'error': f'Google API error {e.code}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
+    if m and handler.command == 'DELETE':
+        at = _gcal_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        event_id = urllib.parse.unquote(m.group(1))
+        url = f'https://www.googleapis.com/calendar/v3/calendars/primary/events/{urllib.parse.quote(event_id)}'
+        hreq = urllib.request.Request(url, headers={'Authorization': f'Bearer {at}'}, method='DELETE')
+        try:
+            with urllib.request.urlopen(hreq, timeout=15) as resp:
+                _json(handler, 200, {'ok': True})
+                return True
+        except urllib.error.HTTPError as e:
+            if e.code == 410:
+                _json(handler, 200, {'ok': True, 'note': 'Already deleted'})
+                return True
+            _json(handler, 502, {'ok': False, 'error': f'Google API error {e.code}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
     return False
 
 # ── ADB Bridge helpers ──────────────────────

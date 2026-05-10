@@ -9,7 +9,7 @@
 
 - **Project phase:** Agent Task System
 - **Last updated:** 2026-05-10
-- **Active tasks:** 11
+- **Active tasks:** 12
 - **Completed tasks:** 19 shown below
 
 ---
@@ -41,6 +41,7 @@
 || MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 ||| LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
 ||| LOW | `T-051` | Post-completion QA & continuous improvement loop | `PENDING` | [`tasks/T-051.md`](tasks/T-051.md) |
+||| HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 ||
 |---
 
