@@ -1,4 +1,5 @@
 import { storage } from './lib/storage-adapter.js';
+import { runMigration } from './lib/migrate-legacy.js';
 import { initCalendar } from './apps/calendar.js';
 import { initNotes } from './apps/notes.js';
 import { initTodo } from './apps/todo.js';
@@ -36,6 +37,7 @@ export function initApp() {
   initSettings();
   initCalendarSync();
   initWelcome();
+  runMigration();
   initNotifications();
   initAgentNotificationPoll();
   initChat();
