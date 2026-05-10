@@ -9,6 +9,19 @@ const TIMEOUT = 2000;
 
 function _lsKey(app) { return LS_PREFIX + app; }
 
+function _safeParse(raw, app) {
+  try { return raw ? JSON.parse(raw) : {}; }
+  catch {
+    console.warn(`[StorageAdapter] Corrupted data for ${app}`);
+    return {};
+  }
+}
+
+function _isSerializable(data) {
+  try { JSON.parse(JSON.stringify(data)); return true; }
+  catch { return false; }
+}
+
 async function _req(method, endpoint, body) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), TIMEOUT);
@@ -35,16 +48,25 @@ export const storage = {
       localStorage.setItem(_lsKey(app), JSON.stringify(server.data));
       return server.data;
     }
-    // Fallback to localStorage
+    // Fallback to localStorage; backfill server silently if local data exists
     const raw = localStorage.getItem(_lsKey(app));
-    try { return raw ? JSON.parse(raw) : {}; }
-    catch { return {}; }
+    const parsed = _safeParse(raw, app);
+    if (raw && parsed && Object.keys(parsed).length) {
+      // silent backfill (fire-and-forget)
+      _req('POST', `${STORE_DIR}/write`, { app, data: parsed }).catch(() => {});
+    }
+    return parsed;
   },
 
   async write(app, data) {
+    if (!_isSerializable(data)) {
+      console.warn(`[StorageAdapter] Non-serializable data for ${app}`);
+      return false;
+    }
     const server = await _req('POST', `${STORE_DIR}/write`, { app, data });
     if (server.ok) {
       localStorage.setItem(_lsKey(app), JSON.stringify(data));
+      window.__nexusOffline = false;
       return true;
     }
     localStorage.setItem(_lsKey(app), JSON.stringify(data));
@@ -55,15 +77,19 @@ export const storage = {
   },
 
   async merge(app, patch) {
+    if (!_isSerializable(patch)) {
+      console.warn(`[StorageAdapter] Non-serializable patch for ${app}`);
+      return {};
+    }
     const server = await _req('POST', `${STORE_DIR}/merge`, { app, patch });
     if (server.ok && server.data !== undefined) {
       localStorage.setItem(_lsKey(app), JSON.stringify(server.data));
+      window.__nexusOffline = false;
       return server.data;
     }
     // Local merge fallback
     const raw = localStorage.getItem(_lsKey(app));
-    let current = {};
-    try { current = raw ? JSON.parse(raw) : {}; } catch { current = {}; }
+    const current = _safeParse(raw, app);
     const merged = { ...current, ...patch };
     localStorage.setItem(_lsKey(app), JSON.stringify(merged));
     window.__nexusOffline = true;

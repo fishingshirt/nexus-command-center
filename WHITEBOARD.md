@@ -8,16 +8,15 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 10:52 UTC
-- **Active tasks:** 13
-- **Completed tasks:** 22 shown below
+- **Last updated:** 2026-05-10 11:00 UTC
+- **Active tasks:** 12
+- **Completed tasks:** 23 shown below
 ---
 
 ## 🎯 Active Tasks
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| HIGH | `T-013` | Data persistence layer | `IN_PROGRESS` | [`tasks/T-013.md`](tasks/T-013.md) — Sub-tasks: **T-013-a DONE** (StorageAdapter + server endpoints), **T-013-b DONE** (legacy migration), **T-013-c DONE** (per-app audit), **T-013-d DONE** (settings bridge), **T-013-e DONE** (offline badge + auto-retry queue), T-013-f (integrity guard) |
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
@@ -29,7 +28,7 @@
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 | MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
-|| LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
+| LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
@@ -67,6 +66,7 @@
 | `T-036` | Stocks & crypto + paper trading |
 | `T-037` | Settings icon relocation |
 | `T-038` | Logic bug sweep (calendar, notes, phone-bridge, auth, finance) |
+| `T-013` | Data persistence layer (all sub-tasks complete: adapter, migration, per-app audit, settings bridge, offline badge + retry queue, integrity guard) |
 
 ---
 
