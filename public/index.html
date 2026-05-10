@@ -1184,6 +1184,71 @@
         <div class="wishlist-grid" id="wishlist-grid"></div>
       </div>
     </div>
+
+    <!-- Wishlist Modal -->
+    <div id="wishlist-modal" class="wishlist-modal" aria-hidden="true" role="dialog" aria-label="Add wishlist item">
+      <div class="wishlist-modal-backdrop" id="wishlist-modal-backdrop"></div>
+      <div class="wishlist-modal-panel">
+        <div class="wishlist-modal-header">
+          <h3 id="wishlist-modal-title">Add Item</h3>
+          <button class="wishlist-modal-close" id="wishlist-modal-close" aria-label="Close">✕</button>
+        </div>
+        <form class="wishlist-modal-body" id="wishlist-form">
+          <div class="wishlist-field">
+            <span>Title</span>
+            <input type="text" id="wishlist-title" required placeholder="Item name" maxlength="200">
+          </div>
+          <div class="wishlist-field">
+            <span>URL</span>
+            <input type="url" id="wishlist-url" placeholder="https://…">
+          </div>
+          <div class="wishlist-field-row">
+            <div class="wishlist-field">
+              <span>Price</span>
+              <input type="number" id="wishlist-price" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="wishlist-field">
+              <span>Currency</span>
+              <select id="wishlist-currency">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="CAD">CAD (CA$)</option>
+                <option value="JPY">JPY (¥)</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="wishlist-field">
+            <span>Image URL</span>
+            <input type="url" id="wishlist-image" placeholder="https://…">
+          </div>
+          <div class="wishlist-field-row">
+            <div class="wishlist-field">
+              <span>Priority</span>
+              <select id="wishlist-priority">
+                <option value="Normal" selected>Normal</option>
+                <option value="Low">Low</option>
+                <option value="High">High</option>
+                <option value="Must Buy">Must Buy</option>
+              </select>
+            </div>
+          </div>
+          <div class="wishlist-field">
+            <span>Tags</span>
+            <input type="text" id="wishlist-tags" placeholder="tech, gift, book (comma separated)">
+          </div>
+          <div class="wishlist-field">
+            <span>Notes</span>
+            <textarea id="wishlist-notes" rows="3" placeholder="Extra details…"></textarea>
+          </div>
+          <div class="wishlist-modal-actions">
+            <button type="button" class="btn-secondary" id="wishlist-modal-cancel">Cancel</button>
+            <button type="submit" class="btn-primary" id="wishlist-modal-save">Add Item</button>
+          </div>
+        </form>
+      </div>
+    </div>
     </main>
 
     <!-- Chat Widget (Floating) -->
