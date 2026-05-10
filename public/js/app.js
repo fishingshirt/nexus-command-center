@@ -222,7 +222,7 @@ function initNavigation() {
 /* ===== THEME ===== */
 export function initTheme() {
   const saved = loadSettings();
-  applyTheme(saved.theme || 'professional');
+  applyTheme(saved.theme || 'jarvis');
 }
 
 export function applyTheme(themeName) {
@@ -249,7 +249,7 @@ function initSettings() {
   const settings = loadSettings();
 
   // Apply saved values
-  themeSelect.value = settings.theme || 'professional';
+  themeSelect.value = settings.theme || 'jarvis';
   reducedMotion.checked = settings.reducedMotion || false;
   showWelcome.checked = settings.showWelcomeOnBoot || false;
 

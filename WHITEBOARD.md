@@ -43,7 +43,7 @@
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
 | HIGH | `T-055` | Feedback System Overhaul — Agent-Integrated Pipeline | `PENDING` | [`tasks/T-055.md`](tasks/T-055.md) |
 | **HIGH** | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `PENDING` | [`tasks/T-059.md`](tasks/T-059.md) |
-| HIGH | `T-057` | Default theme should be dark | `PENDING` | [`tasks/T-057.md`](tasks/T-057.md) |
+| ~~HIGH~~ | ~~`T-057`~~ | ~~Default theme should be dark~~ | ~~`DONE`~~ | ~~2026-05-10 — changed index.html and app.js defaults to jarvis~~ |
 | HIGH | `T-058` | All themes should support dark mode (default on) | `PENDING` | [`tasks/T-058.md`](tasks/T-058.md) |
 
 ---
@@ -52,6 +52,7 @@
 
 | ID | Task |
 |----|------|
+| `T-057` | Default theme should be dark |
 | `T-029` | IT Hub / System health dashboard (backup view integration, status cards, API endpoints, settings toggle) |
 | `T-034` | Google Calendar two-way sync audit & fix |
 | `T-042` | Unified notifications center |
