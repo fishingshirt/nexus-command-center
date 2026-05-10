@@ -1,5 +1,8 @@
 const LS_KEY = 'ncc-wishlist-v1';
 
+const PRIORITY_ORDER = { 'Must Buy': 4, High: 3, Normal: 2, Low: 1 };
+const STATUS_ORDER = { Want: 1, Watching: 2, Purchased: 3, Archived: 4 };
+
 const PRIORITY_META = {
   Low:    { color: '#22c55e', label: 'Low' },
   Normal: { color: '#3b82f6', label: 'Normal' },
@@ -44,6 +47,8 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+let _toolbarVisible = false;
+
 export function initWishlist() {
   ensureData();
   renderWishlist();
@@ -70,16 +75,71 @@ function bindEvents() {
       closeModal();
     }
   });
+
+  document.getElementById('wishlist-search')?.addEventListener('input', renderWishlist);
+  document.getElementById('wishlist-sort')?.addEventListener('change', renderWishlist);
+  document.getElementById('wishlist-filter')?.addEventListener('change', renderWishlist);
+  document.getElementById('wishlist-show-archived')?.addEventListener('change', renderWishlist);
+}
+
+function getFilteredSortedItems() {
+  const { items } = ensureData();
+  const query = (document.getElementById('wishlist-search')?.value || '').toLowerCase().trim();
+  const sort = document.getElementById('wishlist-sort')?.value || 'created-desc';
+  const statusFilter = document.getElementById('wishlist-filter')?.value || '';
+  const showArchived = document.getElementById('wishlist-show-archived')?.checked;
+
+  let list = [...items];
+
+  if (!showArchived) list = list.filter(i => i.status !== 'Archived');
+  if (statusFilter) list = list.filter(i => i.status === statusFilter);
+
+  if (query) {
+    list = list.filter(i => {
+      const hay = [i.title, i.notes, ...(i.tags || [])].join(' ').toLowerCase();
+      return hay.includes(query);
+    });
+  }
+
+  const [field, dir] = sort.split('-');
+  const desc = dir === 'desc' ? -1 : 1;
+  list.sort((a, b) => {
+    if (field === 'price') {
+      const av = a.price ?? -Infinity, bv = b.price ?? -Infinity;
+      return (av - bv) * desc;
+    }
+    if (field === 'priority') {
+      const av = PRIORITY_ORDER[a.priority] || 0, bv = PRIORITY_ORDER[b.priority] || 0;
+      return (av - bv) * desc;
+    }
+    if (field === 'status') {
+      const av = STATUS_ORDER[a.status] || 0, bv = STATUS_ORDER[b.status] || 0;
+      return (av - bv) * desc;
+    }
+    if (field === 'created') {
+      return (new Date(a.created) - new Date(b.created)) * desc;
+    }
+    if (field === 'updated') {
+      return (new Date(a.updated) - new Date(b.updated)) * desc;
+    }
+    return 0;
+  });
+  return list;
 }
 
 function renderWishlist() {
   const grid = document.getElementById('wishlist-grid');
   const empty = document.getElementById('wishlist-empty');
-  if (!grid || !empty) return;
+  const toolbar = document.getElementById('wishlist-toolbar');
+  if (!grid || !empty || !toolbar) return;
 
   const { items } = ensureData();
-  const showArchived = document.getElementById('wishlist-show-archived')?.checked;
-  const visible = showArchived ? items : items.filter(i => i.status !== 'Archived');
+  const hasItems = items.length > 0;
+
+  // Show/hide toolbar using class (CSS handles display)
+  toolbar.classList.toggle('active', hasItems);
+
+  const visible = getFilteredSortedItems();
 
   if (!visible.length) {
     grid.style.display = 'none';
@@ -93,12 +153,23 @@ function renderWishlist() {
 
   grid.innerHTML = visible.map(item => renderCard(item)).join('');
 
-  // Attach delete handlers
+  const countEl = document.getElementById('wishlist-count');
+  if (countEl) {
+    const total = (ensureData().items || []).length;
+    countEl.textContent = `Showing ${visible.length} of ${total}`;
+  }
+
+  // Attach delete + edit handlers
   grid.querySelectorAll('.wishlist-card-delete').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const id = btn.dataset.id;
-      deleteItem(id);
+      deleteItem(btn.dataset.id);
+    });
+  });
+  grid.querySelectorAll('.wishlist-card-edit').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEditModal(btn.dataset.id);
     });
   });
 }
@@ -111,7 +182,7 @@ function renderCard(item) {
   const placeholderSvg = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
 
   return `
-    <article class="wishlist-card" data-id="${escapeHtml(item.id)}" style="border-left: 4px solid ${p.color}">
+    <div class="wishlist-card" data-id="${escapeHtml(item.id)}" style="border-left: 4px solid ${p.color}" role="button" tabindex="0">
       <div class="wishlist-card-img-wrap">
         ${img ? `<img src="${escapeHtml(img)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` : ''}
         <div class="wishlist-card-img-placeholder" style="display:${img ? 'none' : 'flex'}">${placeholderSvg}</div>
@@ -124,12 +195,15 @@ function renderCard(item) {
         </div>
         ${item.tags?.length ? `<div class="wishlist-card-tags">${item.tags.map(t => `<span class="wishlist-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
         <div class="wishlist-card-actions">
+          <button class="wishlist-card-action-btn wishlist-card-edit" data-id="${escapeHtml(item.id)}" aria-label="Edit ${escapeHtml(item.title)}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </button>
           <button class="wishlist-card-action-btn wishlist-card-delete" data-id="${escapeHtml(item.id)}" aria-label="Delete ${escapeHtml(item.title)}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
       </div>
-    </article>
+    </div>
   `;
 }
 
@@ -143,8 +217,35 @@ function openAddModal() {
   const form = document.getElementById('wishlist-form');
   if (!modal || !form) return;
   form.reset();
+  delete form.dataset.editingId;
   document.getElementById('wishlist-modal-title').textContent = 'Add Item';
   document.getElementById('wishlist-modal-save').textContent = 'Add Item';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('wishlist-title')?.focus(), 50);
+}
+
+function openEditModal(id) {
+  const d = ensureData();
+  const item = d.items.find(i => i.id === id);
+  if (!item) return;
+
+  const modal = document.getElementById('wishlist-modal');
+  const form = document.getElementById('wishlist-form');
+  if (!modal || !form) return;
+
+  form.dataset.editingId = id;
+  document.getElementById('wishlist-title').value = item.title || '';
+  document.getElementById('wishlist-url').value = item.url || '';
+  document.getElementById('wishlist-image').value = item.image || '';
+  document.getElementById('wishlist-price').value = item.price != null ? item.price : '';
+  document.getElementById('wishlist-currency').value = item.currency || 'USD';
+  document.getElementById('wishlist-priority').value = item.priority || 'Normal';
+  document.getElementById('wishlist-tags').value = (item.tags || []).join(', ');
+  document.getElementById('wishlist-notes').value = item.notes || '';
+
+  document.getElementById('wishlist-modal-title').textContent = 'Edit Item';
+  document.getElementById('wishlist-modal-save').textContent = 'Save Changes';
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   setTimeout(() => document.getElementById('wishlist-title')?.focus(), 50);
@@ -157,6 +258,8 @@ function closeModal() {
   modal.setAttribute('aria-hidden', 'true');
   const trigger = document.getElementById('wishlist-add-btn');
   trigger?.focus();
+  const form = document.getElementById('wishlist-form');
+  if (form) delete form.dataset.editingId;
 }
 
 function onFormSubmit(e) {
@@ -164,6 +267,35 @@ function onFormSubmit(e) {
   const title = document.getElementById('wishlist-title')?.value.trim();
   if (!title) {
     showToast('Title is required');
+    return;
+  }
+
+  const form = document.getElementById('wishlist-form');
+  const editingId = form?.dataset.editingId;
+
+  const d = ensureData();
+  if (editingId) {
+    const idx = d.items.findIndex(i => i.id === editingId);
+    if (idx === -1) {
+      showToast('Item not found');
+      return;
+    }
+    d.items[idx] = {
+      ...d.items[idx],
+      title,
+      url: document.getElementById('wishlist-url')?.value.trim() || '',
+      image: document.getElementById('wishlist-image')?.value.trim() || '',
+      price: parseFloat(document.getElementById('wishlist-price')?.value) || null,
+      currency: document.getElementById('wishlist-currency')?.value || 'USD',
+      priority: document.getElementById('wishlist-priority')?.value || 'Normal',
+      tags: parseTags(document.getElementById('wishlist-tags')?.value),
+      notes: document.getElementById('wishlist-notes')?.value.trim() || '',
+      updated: new Date().toISOString()
+    };
+    saveData(d);
+    renderWishlist();
+    closeModal();
+    showToast('Item updated');
     return;
   }
 
@@ -182,7 +314,6 @@ function onFormSubmit(e) {
     updated: new Date().toISOString()
   };
 
-  const d = ensureData();
   d.items.unshift(item);
   saveData(d);
   renderWishlist();

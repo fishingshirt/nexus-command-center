@@ -1176,6 +1176,27 @@
         <button class="view-action" id="wishlist-add-btn" aria-label="Add item">+ Add</button>
       </div>
       <div class="view-body wishlist-view-body">
+        <div class="wishlist-toolbar" id="wishlist-toolbar">
+          <input type="search" id="wishlist-search" class="wishlist-search" placeholder="Search items…" aria-label="Search wishlist">
+          <select id="wishlist-sort" class="wishlist-select" aria-label="Sort by">
+            <option value="created-desc">Newest</option>
+            <option value="created-asc">Oldest</option>
+            <option value="updated-desc">Recently Updated</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="priority-desc">Priority: High → Low</option>
+            <option value="status-asc">Status</option>
+          </select>
+          <select id="wishlist-filter" class="wishlist-select" aria-label="Filter by status">
+            <option value="">All Status</option>
+            <option value="Want">Want</option>
+            <option value="Watching">Watching</option>
+            <option value="Purchased">Purchased</option>
+            <option value="Archived">Archived</option>
+          </select>
+          <label class="wishlist-toggle"><input type="checkbox" id="wishlist-show-archived"> Show Archived</label>
+        </div>
+        <div class="wishlist-count" id="wishlist-count"></div>
         <div class="wishlist-empty" id="wishlist-empty">
           <div class="wishlist-empty-icon">🛍️</div>
           <p>No items yet.</p>
