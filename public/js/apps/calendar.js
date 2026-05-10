@@ -138,6 +138,18 @@ function renderCalendar() {
   else if (currentView === 'week') renderWeek();
   else if (currentView === 'day') renderDay();
   renderLegend();
+  updateConflictCount();
+}
+
+function conflictBadge(ev) {
+  return ev.conflict ? '<span class="conflict-dot" aria-label="Conflict" title="Modified on both sides since last sync">●</span> ' : '';
+}
+
+function updateConflictCount() {
+  const events = loadEvents();
+  const count = events.filter(e => e.conflict).length;
+  const el = document.getElementById('calendar-conflict-count');
+  if (el) el.textContent = count ? `${count} conflict${count > 1 ? 's' : ''}` : '';
 }
 
 // ---- Month View ----
@@ -190,7 +202,8 @@ function renderMonth() {
     chips.forEach(ev => {
       const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
       const recCls = ev.recurrence && ev.recurrence !== 'none' ? 'recurring' : '';
-      eventsHtml += `<div class="calendar-event-chip ${ev.category || 'other'} ${recCls}" style="background:${cat.bg};color:${cat.text}" title="${escapeHtml(ev.title)}">${recCls ? '↻ ' : ''}${escapeHtml(truncate(ev.title, 14))}</div>`;
+      const cfl = conflictBadge(ev);
+      eventsHtml += `<div class="calendar-event-chip ${ev.category || 'other'} ${recCls}" style="background:${cat.bg};color:${cat.text}" title="${escapeHtml(ev.title)}">${cfl}${recCls ? '↻ ' : ''}${escapeHtml(truncate(ev.title, 14))}</div>`;
     });
     if (more > 0) {
       eventsHtml += `<div class="calendar-more">+${more} more</div>`;
@@ -253,7 +266,8 @@ function renderWeek() {
     let evHtml = '';
     dayEvents.forEach(ev => {
       const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
-      evHtml += `<div class="calendar-week-event ${ev.category || 'other'}" style="background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${escapeHtml(truncate(ev.title, 28))}</div>`;
+      const cfl = conflictBadge(ev);
+      evHtml += `<div class="calendar-week-event ${ev.category || 'other'}" style="background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${cfl}${escapeHtml(truncate(ev.title, 28))}</div>`;
     });
 
     bodyHtml += `<div class="day-column ${isToday ? 'today' : ''}" data-date="${dateStr}">${evHtml}</div>`;
@@ -302,7 +316,8 @@ function renderDay() {
     if (slotEvents.length) {
       slotEvents.forEach(ev => {
         const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
-        slotContent += `<div class="calendar-day-event ${ev.category || 'other'}" style="background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${escapeHtml(ev.title)} ${ev.start ? `<small>${ev.start}${ev.end ? '–'+ev.end : ''}</small>` : ''}</div>`;
+        const cfl = conflictBadge(ev);
+        slotContent += `<div class="calendar-day-event ${ev.category || 'other'}" style="background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${cfl}${escapeHtml(ev.title)} ${ev.start ? `<small>${ev.start}${ev.end ? '–'+ev.end : ''}</small>` : ''}</div>`;
       });
     }
     timelineHtml += `<div class="time-slot">
@@ -318,7 +333,8 @@ function renderDay() {
       <div style="margin-top:var(--space-1);">
         ${untimed.map(ev => {
           const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
-          return `<span class="calendar-day-event ${ev.category || 'other'}" style="display:inline-block;margin-right:4px;background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${escapeHtml(ev.title)}</span>`;
+          const cfl = conflictBadge(ev);
+          return `<span class="calendar-day-event ${ev.category || 'other'}" style="display:inline-block;margin-right:4px;background:${cat.bg};color:${cat.text}" data-id="${ev.id}">${cfl}${escapeHtml(ev.title)}</span>`;
         }).join('')}
       </div>
     </div>`;
@@ -459,6 +475,7 @@ async function saveEvent(e) {
     recurrence: elRecurrence.value || 'none',
     description: elDesc.value.trim(),
     updatedAt: Date.now(),
+    lastModifiedAt: Date.now(),
   };
 
   let action = 'create';
@@ -466,6 +483,9 @@ async function saveEvent(e) {
     const idx = events.findIndex(e => e.id === editingEventId);
     if (idx !== -1) {
       payload.gcalId = events[idx].gcalId; // preserve mapping
+      payload.lastSyncedAt = events[idx].lastSyncedAt;
+      payload.lastModifiedAt = Date.now();
+      payload.conflict = events[idx].conflict;
       events[idx] = payload;
       action = payload.gcalId ? 'update' : 'create';
     } else {
@@ -482,12 +502,13 @@ async function saveEvent(e) {
 
   // Background outbound sync — don't block UI
   const result = await syncEventToGoogle(payload, action);
-  if (result.ok && result.gcalId && !payload.gcalId) {
-    // Store the returned Google event ID on the local event
+  if (result.ok && !result.skipped && !result.queued) {
     const fresh = loadEvents();
     const ev = fresh.find(e => e.id === payload.id);
     if (ev) {
-      ev.gcalId = result.gcalId;
+      if (result.gcalId && !ev.gcalId) ev.gcalId = result.gcalId;
+      ev.lastSyncedAt = Date.now();
+      ev.conflict = false;
       saveEvents(fresh);
     }
   }

@@ -824,6 +824,25 @@ def _api_calendar(handler, raw_path):
             _json(handler, 502, {'ok': False, 'error': str(e)})
             return True
 
+    if m and handler.command == 'GET':
+        at = _gcal_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        event_id = urllib.parse.unquote(m.group(1))
+        url = f'https://www.googleapis.com/calendar/v3/calendars/primary/events/{urllib.parse.quote(event_id)}'
+        hreq = urllib.request.Request(url, headers={'Authorization': f'Bearer {at}'})
+        try:
+            with urllib.request.urlopen(hreq, timeout=15) as resp:
+                _json(handler, 200, json.loads(resp.read().decode()))
+                return True
+        except urllib.error.HTTPError as e:
+            _json(handler, 502, {'ok': False, 'error': f'Google API error {e.code}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
     return False
 
 # ── ADB Bridge helpers ──────────────────────

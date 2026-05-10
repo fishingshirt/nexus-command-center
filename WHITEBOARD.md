@@ -18,7 +18,7 @@
 
 ||| Priority | ID | Task | Status | Details |
 ||----------|----|------|--------|---------|
-|| HIGH | `T-034` | Google Calendar two-way sync audit & fix | `IN_PROGRESS` | [`tasks/T-034.md`](tasks/T-034.md) |
+||| HIGH | `T-034` | Google Calendar two-way sync audit & fix | `IN_PROGRESS` | Sub-tasks: `T-034-b` DONE, `T-034-c` IN_PROGRESS — see below |
 || HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
 || MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 || MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
@@ -86,7 +86,7 @@
 - **This repo lives on this local Linux machine.** GitHub is the **backup mirror** — always push commits there after every change.
 - **One task per cycle.** Read the task file before starting. Update this board after finishing.
 - **Backup rule:** Every commit must be pushed to GitHub immediately. Do not let local and remote drift.
-- **T-034 sub-tasks:** `T-034-a` DONE (OAuth token flow). `T-034-b` DONE (Outbound sync engine: insert/patch/delete + offline queue). Next: `T-034-c` (Conflict resolution visual diff + auto-flush UI improvements).
+- **T-034 sub-tasks:** `T-034-a` DONE (OAuth token flow). `T-034-b` DONE (Outbound sync engine: insert/patch/delete + offline queue). `T-034-c` IN_PROGRESS — sub-task `T-034-c-1` DONE (conflict detection + amber badges + timestamps). Next: `T-034-c-2` (offline queue retry limits + two-phase sync status gating).
 
 ---
 

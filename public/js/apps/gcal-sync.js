@@ -63,14 +63,23 @@ export function initGoogleSync() {
       if (g.end?.dateTime) endTime = (g.end?.dateTime || '').slice(11, 16);
       const existing = stored.find(e => e.gcalId === gcalId);
       if (existing) {
-        let dirty = false;
-        if (existing.title !== title) { existing.title = title; dirty = true; }
-        if (existing.date !== dateStr) { existing.date = dateStr; dirty = true; }
-        if (existing.start !== startTime) { existing.start = startTime; dirty = true; }
-        if (existing.end !== endTime) { existing.end = endTime; dirty = true; }
-        if (existing.description !== description) { existing.description = description; dirty = true; }
+        const googleUpdated = new Date(g.updated || g.created || Date.now()).getTime();
+        const lastSync = existing.lastSyncedAt || 0;
+        const localModified = existing.lastModifiedAt || existing.updatedAt || 0;
+        if (lastSync && googleUpdated > lastSync && localModified > lastSync) {
+          existing.conflict = true;
+        } else {
+          existing.conflict = false;
+          let dirty = false;
+          if (existing.title !== title) { existing.title = title; dirty = true; }
+          if (existing.date !== dateStr) { existing.date = dateStr; dirty = true; }
+          if (existing.start !== startTime) { existing.start = startTime; dirty = true; }
+          if (existing.end !== endTime) { existing.end = endTime; dirty = true; }
+          if (existing.description !== description) { existing.description = description; dirty = true; }
+          if (dirty) updated++;
+        }
+        existing.lastSyncedAt = Date.now();
         existing.updatedAt = Date.now();
-        if (dirty) updated++;
       } else {
         stored.push({
           id: 'evt_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9),
@@ -85,6 +94,7 @@ export function initGoogleSync() {
           source: 'google',
           importedAt: now,
           updatedAt: now,
+          lastSyncedAt: Date.now(),
         });
         created++;
       }

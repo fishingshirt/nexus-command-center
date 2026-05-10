@@ -695,3 +695,23 @@
   .calendar-week-header { display: none; }
   .calendar-week .day-column { min-height: auto; border-bottom: 1px solid var(--border); }
 }
+/* Conflict badge */
+.conflict-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  margin-right: 3px;
+  vertical-align: middle;
+  line-height: 1;
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.25);
+}
+
+.calendar-conflict-count {
+  font-size: 10px;
+  color: #f59e0b;
+  font-weight: 600;
+  margin-left: 6px;
+  white-space: nowrap;
+}
