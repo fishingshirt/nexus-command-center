@@ -8,10 +8,10 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 14:30 UTC
+- **Last updated:** 2026-05-10 15:05 UTC
 - **Active tasks:** 15
 - **Completed tasks:** 25 shown below
-- **Quality system:** QC/QA pipeline (T-060) in progress — T-060-a DONE, baseline passing
+- **Quality system:** QC/QA pipeline (T-060) in progress — T-060-a DONE, T-060-b DONE
 ---
 
 ## 🎯 Active Tasks
@@ -19,7 +19,7 @@
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
 | CRITICAL | `T-060` | Quality Check Pipeline + Quality Approval Gate | `IN_PROGRESS` | [`tasks/T-060.md`](tasks/T-060.md) |
-| CRITICAL | `T-060-b` | QA Agent Review Checklist & Sign-Off | `PENDING` | [`tasks/T-060-b.md`](tasks/T-060-b.md) |
+| CRITICAL | `T-060-b` | QA Agent Review Checklist & Sign-Off | `DONE` | [`tasks/T-060-b.md`](tasks/T-060-b.md) |
 | CRITICAL | `T-060-c` | Backlog Audit: all legacy files queued | `PENDING` | [`tasks/T-060-c.md`](tasks/T-060-c.md) |
 | HIGH | `T-060-d` | Dashboard Quality Status Panel | `PENDING` | [`tasks/T-060-d.md`](tasks/T-060-d.md) |
 | MEDIUM | `T-060-e` | Fast-Track & Merge Gate Rules | `PENDING` | [`tasks/T-060-e.md`](tasks/T-060-e.md) |
@@ -80,6 +80,7 @@
 | `T-013` | Data persistence layer (all sub-tasks complete: adapter, migration, per-app audit, settings bridge, offline badge + retry queue, integrity guard) |
 | `T-056` | Fix Weather app layout centering (hero + forecast off-center) |
 | `T-060-a` | QC Auto Gate: syntax & cross-ref validator |
+| `T-060-b` | QA Agent Review Checklist & Sign-Off |
 
 ---
 
