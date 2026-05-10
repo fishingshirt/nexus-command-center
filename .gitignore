@@ -5,3 +5,9 @@ node_modules/
 scripts/__pycache__/
 __pycache__/
 public/assets/audio/*.mp3
+public/pixel-agents/
+server/
+CREATED
+END
+STOP
+TOOL

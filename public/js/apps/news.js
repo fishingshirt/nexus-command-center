@@ -226,8 +226,9 @@ async function loadYouTubeSuggestions() {
   const strip = document.getElementById('youtube-strip');
   if (!strip) return;
   strip.innerHTML = '<div class="youtube-skeleton">Loading suggestions…</div>';
-  try {
-    const res = await fetch('/api/youtube/daily');
+    try {
+    const seed = Math.floor(Math.random() * 1000);
+    const res = await fetch(`/api/youtube/daily?seed=${seed}`);
     const data = await res.json();
     newsState.videos = data.videos || [];
     if (!newsState.videos.length) {

@@ -39,7 +39,7 @@
 | MEDIUM | `T-062` | Recipe App (recipes, ratings, cook notes, shopping list) | `PENDING` | [`tasks/T-062.md`](tasks/T-062.md) |
 | ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
-| MEDIUM | `T-053` | News & Media Hub | `IN_PROGRESS` | `T-053-a` shell registered, `T-053-b` DONE, `T-053-c` next
+| MEDIUM | `T-053` | News & Media Hub | `IN_PROGRESS` | `T-053-a` DONE, `T-053-b` DONE, `T-053-c` DONE, `T-053-d` next
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
 | HIGH | `T-055` | Feedback System Overhaul — Agent-Integrated Pipeline | `PENDING` | [`tasks/T-055.md`](tasks/T-055.md) |
 | HIGH | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |

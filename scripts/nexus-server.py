@@ -1623,6 +1623,29 @@ def _api_news(handler, path):
     _json(handler, 200, {'articles': paged, 'totalResults': total})
     return True
 
+_YOUTUBE_POOL = [
+    {'title':'The Future of AI in 2025','channel':'Tech Insider','thumbnail':'https://picsum.photos/seed/ai2025/320/180.jpg','url':'https://www.youtube.com/results?search_query=ai+2025','category':'technology'},
+    {'title':'Top Gear: Electric Road Trip','channel':'BBC Top Gear','thumbnail':'https://picsum.photos/seed/evroad/320/180.jpg','url':'https://www.youtube.com/results?search_query=top+gear+electric','category':'entertainment'},
+    {'title':'How to Stay Productive','channel':'Better Humans','thumbnail':'https://picsum.photos/seed/productive/320/180.jpg','url':'https://www.youtube.com/results?search_query=stay+productive','category':'lifestyle'},
+    {'title':'SpaceX Starship Launch','channel':'NASA','thumbnail':'https://picsum.photos/seed/starship/320/180.jpg','url':'https://www.youtube.com/results?search_query=spacex+starship','category':'science'},
+    {'title':'Premier League Highlights','channel':'Sky Sports','thumbnail':'https://picsum.photos/seed/epl/320/180.jpg','url':'https://www.youtube.com/results?search_query=premier+league+highlights','category':'sports'},
+    {'title':'Healthy Morning Routine','channel':'Wellness Weekly','thumbnail':'https://picsum.photos/seed/health morning/320/180.jpg','url':'https://www.youtube.com/results?search_query=healthy+morning+routine','category':'health'},
+    {'title':'Crypto Market Weekly','channel':'Coin Bureau','thumbnail':'https://picsum.photos/seed/crypto weekly/320/180.jpg','url':'https://www.youtube.com/results?search_query=crypto+weekly','category':'technology'},
+    {'title':'Behind the Scenes: Dune 3','channel':'Warner Bros','thumbnail':'https://picsum.photos/seed/dune3/320/180.jpg','url':'https://www.youtube.com/results?search_query=dune+3+behind+the+scenes','category':'entertainment'},
+    {'title':'Minimalist Desk Setup 2025','channel':'Setup Wars','thumbnail':'https://picsum.photos/seed/desksetup/320/180.jpg','url':'https://www.youtube.com/results?search_query=minimalist+desk+setup+2025','category':'technology'},
+    {'title':'Championship Final Recap','channel':'ESPN','thumbnail':'https://picsum.photos/seed/champ final/320/180.jpg','url':'https://www.youtube.com/results?search_query=championship+final','category':'sports'},
+    {'title':'Deep Sea Exploration','channel':'Nat Geo','thumbnail':'https://picsum.photos/seed/deepsea/320/180.jpg','url':'https://www.youtube.com/results?search_query=deep+sea+exploration','category':'science'},
+    {'title':'Mindful Meditation Guide','channel':'Headspace','thumbnail':'https://picsum.photos/seed/meditate/320/180.jpg','url':'https://www.youtube.com/results?search_query=mindful+meditation+guide','category':'health'},
+]
+
+def _get_youtube_batch(seed=0, size=6):
+    n = len(_YOUTUBE_POOL)
+    s = int(seed) % max(n, 1)
+    out = []
+    for i in range(size):
+        out.append(_YOUTUBE_POOL[(s + i) % n])
+    return out
+
 class SPAHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         self.args_dir = k.pop('args_dir')
@@ -1759,14 +1782,11 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             _json(self, 200, ['world','politics','technology','business','sports','entertainment','science','health'])
             return True
         if path == '/api/youtube/daily':
-            _json(self, 200, {'videos': [
-                {'title':'The Future of AI in 2025','channel':'Tech Insider','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'technology'},
-                {'title':'Top Gear: Electric Road Trip','channel':'BBC Top Gear','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'entertainment'},
-                {'title':'How to Stay Productive','channel':'Better Humans','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'lifestyle'},
-                {'title':'SpaceX Starship Launch','channel':'NASA','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'science'},
-                {'title':'Premier League Highlights','channel':'Sky Sports','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'sports'},
-                {'title':'Healthy Morning Routine','channel':'Wellness Weekly','thumbnail':'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg','url':'https://www.youtube.com/watch?v=dQw4w9WgXcQ','category':'health'},
-            ]})
+            import urllib.parse
+            parsed = urllib.parse.urlparse(self.path)
+            qs = urllib.parse.parse_qs(parsed.query)
+            seed = int(qs.get('seed', ['0'])[0])
+            _json(self, 200, {'videos': _get_youtube_batch(seed)})
             return True
         if path.startswith('/api/news/digest/'):
             _json(self, 200, {'ready': False, 'content': None})
