@@ -1074,6 +1074,21 @@ button.nav-link {
   max-width: 700px;
 }
 
+.chat-bridge-banner {
+  flex-shrink: 0;
+  padding: 0 var(--space-4);
+}
+
+.bridge-banner-alert {
+  background: rgba(196, 68, 68, 0.15);
+  color: #c44;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin: 6px 0;
+  text-align: center;
+}
+
 .chat-history {
   flex: 1;
   overflow-y: auto;

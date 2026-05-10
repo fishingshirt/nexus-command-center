@@ -642,33 +642,101 @@ async function hermesSend(text) {
       body: JSON.stringify({ text })
     });
     const data = await res.json();
-    return data.ok;
+    if (data.ok && data.chat_id) {
+      // Remember numeric chat id so our own polls match
+      const set = new Set(JSON.parse(localStorage.getItem('ncc-hermes-chat-ids') || '[]'));
+      set.add(String(data.chat_id));
+      localStorage.setItem('ncc-hermes-chat-ids', JSON.stringify(Array.from(set)));
+    }
+    return { ok: data.ok, message_id: data.message_id, error: data.error };
   } catch (e) {
-    console.warn('Hermes send failed', e);
-    return false;
+    return { ok: false, error: 'network' };
   }
 }
 
 let _pollTimer = null;
+let _pollFailCount = 0;
+
+function getSeenIds() {
+  try { return new Set(JSON.parse(localStorage.getItem('ncc-hermes-seen') || '[]')); }
+  catch { return new Set(); }
+}
+function addSeenId(id) {
+  if (!id) return;
+  const s = getSeenIds();
+  s.add(String(id));
+  localStorage.setItem('ncc-hermes-seen', JSON.stringify(Array.from(s).slice(-500)));
+}
+
+function updateBridgeBanner(status, message) {
+  const banners = [
+    document.getElementById('chat-bridge-banner'),
+    document.querySelector('.chat-widget-window .chat-widget-header')
+  ];
+  banners.forEach((target) => {
+    if (!target) return;
+    const existing = target.querySelector('.bridge-banner-alert');
+    if (status === 'ok') {
+      if (existing) existing.remove();
+      return;
+    }
+    if (existing) { existing.textContent = message; return; }
+    const div = document.createElement('div');
+    div.className = 'bridge-banner-alert';
+    div.textContent = message;
+    div.style.cssText = 'background:rgba(196,68,68,.15);color:#c44;font-size:.8rem;padding:4px 8px;border-radius:6px;margin:6px 0;text-align:center;';
+    target.appendChild(div);
+  });
+}
 
 function startHermesPolling(container) {
   stopHermesPolling();
-  let lastSeenId = null;
+  const seen = getSeenIds();
+  _pollFailCount = 0;
+
+  const warnSlow = () => {
+    const msg = container.querySelector('.chat-msg-bot:last-child');
+    if (msg && msg.textContent.includes('Waiting for a reply')) {
+      msg.textContent = '⏳ Hermes may be busy, check Telegram if this persists';
+    }
+  };
+
   _pollTimer = setInterval(async () => {
     try {
       const res = await fetch('/api/hermes/poll');
       const data = await res.json();
-      if (!data.ok || !Array.isArray(data.messages)) return;
+      if (!res.ok || !data.ok) {
+        _pollFailCount++;
+        if (_pollFailCount >= 3) {
+          updateBridgeBanner('error', data.error ? '⚠️ Bridge error: ' + data.error : '⚠️ Bridge offline');
+        }
+        return;
+      }
+      _pollFailCount = 0;
+      updateBridgeBanner('ok');
+      if (!Array.isArray(data.messages)) return;
+
       for (const m of data.messages) {
         const key = m.message_id || m.time;
-        if (key === lastSeenId) continue;
-        lastSeenId = key;
+        if (seen.has(String(key))) continue;
+        addSeenId(key);
+        // Remove placeholder waiting messages when a real reply arrives
+        const waiting = container.querySelector('.chat-msg-bot:last-child');
+        if (waiting && waiting.textContent.includes('Waiting for a reply')) {
+          waiting.remove();
+        }
         addMessage(container, m.text, 'bot');
       }
     } catch (e) {
-      // silent fail
+      _pollFailCount++;
+      if (_pollFailCount >= 3) {
+        updateBridgeBanner('error', '⚠️ Bridge offline - check connection');
+      }
     }
   }, 4000);
+
+  // Warn user after 12s if no reply received yet
+  setTimeout(warnSlow, 12000);
 }
 
 function stopHermesPolling() {
@@ -682,6 +750,8 @@ function handleCommand(text, container) {
   const lower = text.toLowerCase().trim();
   if (lower === '/new') {
     localStorage.removeItem('ncc-chat-history');
+    localStorage.removeItem('ncc-hermes-seen');
+    localStorage.removeItem('ncc-hermes-chat-ids');
     container.innerHTML = '';
     stopHermesPolling();
     setTimeout(() => {
@@ -702,13 +772,15 @@ function handleCommand(text, container) {
   container.appendChild(thinkingDiv);
   container.scrollTop = container.scrollHeight;
 
-  hermesSend(text).then(ok => {
+  hermesSend(text).then(result => {
     const t = document.getElementById(thinkingId);
     if (t) t.remove();
-    if (!ok) {
+    if (!result.ok) {
       addMessage(container, "Couldn't reach Hermes. Bridge may be offline.", 'bot');
+      updateBridgeBanner('error', result.error === 'network' ? '⚠️ Bridge offline' : '⚠️ Bridge error');
       return;
     }
+    if (result.message_id) addSeenId(result.message_id);
     addMessage(container, 'Sent to Hermes. Waiting for a reply…', 'bot');
     startHermesPolling(container);
   });

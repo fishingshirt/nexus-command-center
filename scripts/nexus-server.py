@@ -292,6 +292,24 @@ def _tg_api(method, params=None):
         return {'ok': False, 'error': str(e)}
 
 def _api_hermes(handler, path):
+    if path == '/api/hermes/status':
+        st = _load_hermes_state()
+        token_ok = bool(_tg_token())
+        chat_cfg = bool(_tg_chat_id())
+        resolved = bool(st.get('resolved_chat_ids'))
+        last_poll = st.get('last_poll_ts', 0)
+        poll_age = int(time.time() - last_poll) if last_poll else None
+        _json(handler, 200, {
+            'ok': True,
+            'bridge': 'ready' if (token_ok and chat_cfg and resolved) else 'partial',
+            'token_ok': token_ok,
+            'chat_configured': chat_cfg,
+            'chat_resolved': resolved,
+            'last_poll_seconds_ago': poll_age,
+            'resolved_chat_ids': st.get('resolved_chat_ids', [])
+        })
+        return True
+
     if path == '/api/hermes/message':
         try:
             length = int(handler.headers.get('Content-Length', 0))
@@ -314,8 +332,16 @@ def _api_hermes(handler, path):
             st = _load_hermes_state()
             st.setdefault('sent', []).append({'text': text, 'time': time.time()})
             st['sent'] = st['sent'][-200:]
+            # Capture numeric chat.id from Telegram response so we know the real target chat
+            result = res.get('result', {})
+            numeric_cid = result.get('chat', {}).get('id')
+            if numeric_cid:
+                resolved = set(st.get('resolved_chat_ids', []))
+                resolved.add(str(numeric_cid))
+                st['resolved_chat_ids'] = list(resolved)
+            st['last_poll_ts'] = time.time()
             _save_hermes_state(st)
-            _json(handler, 200, {'ok': True, 'message_id': res['result'].get('message_id')})
+            _json(handler, 200, {'ok': True, 'message_id': result.get('message_id'), 'chat_id': numeric_cid})
         else:
             _json(handler, 502, {'ok': False, 'error': res.get('error', 'Telegram API failed'), 'description': res.get('description')})
         return True
@@ -329,23 +355,40 @@ def _api_hermes(handler, path):
         offset = st.get('offset', 0)
         res = _tg_api('getUpdates', {'offset': offset + 1, 'limit': 20})
         messages = []
+        # Accept from the configured chat id OR previously resolved numeric ids
+        allowed_ids = set()
+        if chat_id:
+            allowed_ids.add(str(chat_id))
+        allowed_ids.update(str(x) for x in st.get('resolved_chat_ids', []))
+        # Deduplication: track message_ids we have already delivered
+        seen = set(str(x) for x in st.get('last_seen_ids', []))
         if res.get('ok') and isinstance(res.get('result'), list):
             for upd in res['result']:
                 msg = upd.get('message') or upd.get('channel_post')
                 if not msg:
                     continue
-                # Track highest update_id
                 if upd.get('update_id', 0) > offset:
                     offset = upd['update_id']
-                # Only capture text messages from our chat
                 cid = str(msg.get('chat', {}).get('id', ''))
-                if cid != str(chat_id):
+                if cid not in allowed_ids:
                     continue
                 txt = msg.get('text') or msg.get('caption', '')
+                mid = str(msg.get('message_id', ''))
+                # Skip previously seen messages
+                if mid and mid in seen:
+                    continue
+                if mid:
+                    seen.add(mid)
                 if txt:
-                    messages.append({'text': txt, 'from': msg.get('from', {}).get('first_name', 'Hermes'),
-                                     'time': msg.get('date'), 'message_id': msg.get('message_id')})
+                    # Do NOT echo the user's own messages back
+                    sender = msg.get('from', {})
+                    is_me = bool(sender.get('is_bot') or sender.get('id') == cid)
+                    if not is_me:
+                        messages.append({'text': txt, 'from': sender.get('first_name', 'Hermes'),
+                                         'time': msg.get('date'), 'message_id': msg.get('message_id')})
         st['offset'] = offset
+        st['last_seen_ids'] = list(seen)[-500:]
+        st['last_poll_ts'] = time.time()
         _save_hermes_state(st)
         _json(handler, 200, {'ok': True, 'messages': messages})
         return True
