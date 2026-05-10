@@ -223,6 +223,7 @@ function initNavigation() {
 export function initTheme() {
   const saved = loadSettings();
   applyTheme(saved.theme || 'jarvis');
+  applyThemeMode(saved.themeMode ?? 'dark');
 }
 
 export function applyTheme(themeName) {
@@ -231,7 +232,6 @@ export function applyTheme(themeName) {
     link.href = `css/themes/${themeName}.css`;
   }
   // Update meta theme-color
-  const computed = getComputedStyle(document.documentElement);
   // Wait for CSS to load then update
   setTimeout(() => {
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
@@ -240,9 +240,20 @@ export function applyTheme(themeName) {
   }, 100);
 }
 
+export function applyThemeMode(mode) {
+  document.body.setAttribute('data-theme-mode', mode);
+  // Update meta theme-color from body-inherited accent
+  setTimeout(() => {
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    const meta = document.getElementById('theme-color');
+    if (meta && accent) meta.content = accent;
+  }, 50);
+}
+
 /* ===== SETTINGS ===== */
 function initSettings() {
   const themeSelect = document.getElementById('theme-select');
+  const darkMode = document.getElementById('dark-mode');
   const reducedMotion = document.getElementById('reduced-motion');
   const showWelcome = document.getElementById('show-welcome');
 
@@ -250,6 +261,7 @@ function initSettings() {
 
   // Apply saved values
   themeSelect.value = settings.theme || 'jarvis';
+  if (darkMode) darkMode.checked = (settings.themeMode ?? 'dark') === 'dark';
   reducedMotion.checked = settings.reducedMotion || false;
   showWelcome.checked = settings.showWelcomeOnBoot || false;
 
@@ -260,6 +272,16 @@ function initSettings() {
     saveSettings({ theme });
     toast('Theme updated');
   });
+
+  // Dark mode toggle
+  if (darkMode) {
+    darkMode.addEventListener('change', () => {
+      const mode = darkMode.checked ? 'dark' : 'light';
+      applyThemeMode(mode);
+      saveSettings({ themeMode: mode });
+      toast(darkMode.checked ? 'Dark mode on' : 'Dark mode off');
+    });
+  }
 
   // Reduced motion
   reducedMotion.addEventListener('change', () => {

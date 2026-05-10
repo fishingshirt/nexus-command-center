@@ -14,3 +14,19 @@
   --backdrop: rgba(74,44,47,0.3);
   --welcome-bg: #2d1215;
 }
+
+body[data-theme-mode="dark"] {
+  --bg: #1c0e11;
+  --surface: #2d1215;
+  --header-bg: rgba(28,14,17,0.9);
+  --text: #ffe4e8;
+  --text-muted: #c48a93;
+  --accent: #fb7185;
+  --accent-secondary: #fda4af;
+  --accent-bg: rgba(225,29,72,0.2);
+  --border: #3d1a1e;
+  --border-subtle: #1c0e11;
+  --hover-bg: #3d1a1e;
+  --backdrop: rgba(12,6,8,0.7);
+  --welcome-bg: #0a0506;
+}

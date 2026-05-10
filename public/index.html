@@ -35,7 +35,7 @@
     #welcome-overlay.active { display: flex !important; }
   </style>
 </head>
-<body>
+<body data-theme-mode="dark">
 
   <!-- ===== WELCOME OVERLAY ===== -->
   <div id="welcome-overlay" class="welcome-overlay" aria-hidden="true">
@@ -920,6 +920,10 @@
                 <option value="ocean-breeze">Ocean Breeze</option>
                 <option value="jarvis">Jarvis</option>
               </select>
+            </div>
+            <div class="settings-row">
+              <label for="dark-mode">Dark mode</label>
+              <input type="checkbox" id="dark-mode" class="toggle" checked>
             </div>
             <div class="settings-row">
               <label for="reduced-motion">Reduce animations</label>
