@@ -86,7 +86,7 @@
 - **This repo lives on this local Linux machine.** GitHub is the **backup mirror** — always push commits there after every change.
 - **One task per cycle.** Read the task file before starting. Update this board after finishing.
 - **Backup rule:** Every commit must be pushed to GitHub immediately. Do not let local and remote drift.
-- **T-034 sub-tasks:** `T-034-a` DONE (OAuth token flow). `T-034-b` DONE (Outbound sync engine: insert/patch/delete + offline queue). `T-034-c` IN_PROGRESS — sub-task `T-034-c-1` DONE (conflict detection + amber badges + timestamps). Next: `T-034-c-2` (offline queue retry limits + two-phase sync status gating).
+- **T-034 sub-tasks:** `T-034-a` DONE (OAuth token flow). `T-034-b` DONE (Outbound sync engine: insert/patch/delete + offline queue). `T-034-c` DONE — `T-034-c-1` DONE (conflict detection + amber badges + timestamps), `T-034-c-2` DONE (offline queue retry limits + two-phase sync status gating). Next: `T-034-d` (agent command: Telegram → calendar API) and `T-034-e` (scope upgrade + re-auth prompt).
 
 ---
 

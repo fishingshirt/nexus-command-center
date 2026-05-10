@@ -557,11 +557,6 @@ export function initCalendar() {
     renderCalendar();
     updateCalendarBadge();
   });
-
-  // Flush any pending outbound syncs when we come back online
-  window.addEventListener('nexusOnline', () => {
-    flushOutboundQueue().catch(() => {});
-  });
 }
 
 function navigate(dir) {

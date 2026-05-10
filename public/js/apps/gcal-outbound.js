@@ -1,7 +1,7 @@
 import { toast } from '../app.js';
 
 const SETTINGS_KEY = 'ncc-settings';
-const QUEUE_KEY = 'ncc-cal-outbound-queue';
+const QUEUE_KEY = 'ncc-calendar-sync-queue';
 
 function loadSettings() {
   try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch { return {}; }
@@ -68,6 +68,7 @@ export async function deleteEventFromGoogle(gcalId) {
 
 function queueMutation(m) {
   const q = loadQueue();
+  m.retryCount = (m.retryCount || 0);
   q.push(m);
   if (q.length > 100) q.shift();
   saveQueue(q);
@@ -75,8 +76,8 @@ function queueMutation(m) {
 
 export async function flushOutboundQueue() {
   const q = loadQueue();
-  if (!q.length) return;
-  let flushed = 0, failed = 0;
+  if (!q.length) return { flushed: 0, dropped: 0, remaining: 0 };
+  let flushed = 0, dropped = 0;
   const remaining = [];
   for (const m of q) {
     let ok = false;
@@ -89,10 +90,22 @@ export async function flushOutboundQueue() {
         ok = r.ok && !r.queued;
       }
     } catch (e) { ok = false; }
-    if (ok) flushed++; else remaining.push(m);
-    if (!ok) failed++;
+    if (ok) {
+      flushed++;
+    } else {
+      m.retryCount = (m.retryCount || 0) + 1;
+      if (m.retryCount >= 3) {
+        dropped++;
+      } else {
+        remaining.push(m);
+      }
+    }
   }
   saveQueue(remaining);
   if (flushed) toast(`${flushed} queued changes synced`);
-  if (failed) toast(`${failed} still queued — offline?`, 'error');
+  if (dropped) toast(`${dropped} queued items permanently failed after 3 retries`, 'error');
+  if (remaining.length) toast(`${remaining.length} items still queued — offline?`, 'warning');
+  const detail = { flushed, dropped, remaining: remaining.length };
+  window.dispatchEvent(new CustomEvent('ncc-calendar-outbound-flushed', { detail }));
+  return detail;
 }

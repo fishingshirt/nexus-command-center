@@ -1,4 +1,5 @@
 import { toast, loadSettings, saveSettings } from '../app.js';
+import { flushOutboundQueue } from './gcal-outbound.js';
 
 /* ===== GOOGLE CALENDAR SYNC ENGINE ===== */
 // Inbound sync via backend proxy (OAuth-based). No API-key logic.
@@ -27,6 +28,7 @@ export function initGoogleSync() {
 
   async function doSync() {
     try {
+      saveStatus('syncing', null, 'inbound');
       const res = await fetch('/api/calendar/sync');
       const data = await res.json();
       if (!data.ok) {
@@ -37,7 +39,16 @@ export function initGoogleSync() {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
       const imported = mergeEvents(data.events || []);
-      saveStatus('synced', imported);
+      // Don't set 'synced' yet — wait for outbound flush to finish
+      saveStatus('syncing', imported, 'inbound');
+
+      // Now flush any pending outbound mutations → when done, show synced
+      const flushRes = await flushOutboundQueue();
+      if (flushRes && flushRes.remaining) {
+        saveStatus('syncing', imported, 'outbound');
+      } else {
+        saveStatus('synced', imported, 'outbound');
+      }
     } catch (err) {
       saveStatus('error', null);
     }
@@ -106,8 +117,14 @@ export function initGoogleSync() {
     return { created, updated };
   }
 
-  function saveStatus(status, importResult) {
+  function saveStatus(status, importResult, phase) {
     const c = loadSettings().calendarSync || {};
+    // Don't downgrade an existing 'error' back to 'syncing'
+    if (c.status === 'error' && status === 'syncing') {
+      c.lastStatusAt = new Date().toISOString();
+      saveSettings({ calendarSync: c });
+      return;
+    }
     c.status = status;
     c.lastStatusAt = new Date().toISOString();
     if (status === 'synced') c.lastSynced = new Date().toISOString();
@@ -118,9 +135,10 @@ export function initGoogleSync() {
     const map = {
       none: { text: 'Not linked', cls: '' },
       linked: { text: 'Linked', cls: 'linked' },
-      syncing: { text: 'Syncing…', cls: 'syncing' },
+      syncing: { text: 'Merging…', cls: 'syncing' },
       synced: { text: importResult ? `Synced (+${importResult.created} / ~${importResult.updated})` : 'Synced', cls: 'synced' },
       error: { text: 'Sync error', cls: 'error' },
+      'paused-offline': { text: 'Paused — offline', cls: '' },
     };
     const m = map[status] || map.none;
     if (badge) {
@@ -133,7 +151,7 @@ export function initGoogleSync() {
       if (m.cls) dot.classList.add(m.cls);
       dot.title = `Google Calendar: ${m.text}`;
     }
-    if (status === 'synced') {
+    if (status === 'synced' && phase === 'outbound') {
       toast(importResult ? `Imported ${importResult.created} new, updated ${importResult.updated} events` : 'Calendar synced');
     } else if (status === 'error') {
       toast('Calendar sync failed', 'error');
@@ -155,6 +173,7 @@ export function initGoogleSync() {
     if (c.status !== 'none') {
       toast('Back online — resuming calendar sync');
       startAutoSync();
+      doSync(); // immediate sync + flush
     }
   });
 }
