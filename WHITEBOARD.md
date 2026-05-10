@@ -8,15 +8,22 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 11:00 UTC
-- **Active tasks:** 12
+- **Last updated:** 2026-05-10 12:00 UTC
+- **Active tasks:** 16
 - **Completed tasks:** 23 shown below
+- **Quality system:** QC/QA pipeline (T-060) registered — backlog audit pending
 ---
 
 ## 🎯 Active Tasks
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
+| CRITICAL | `T-060` | Quality Check Pipeline + Quality Approval Gate | `IN_PROGRESS` | [`tasks/T-060.md`](tasks/T-060.md) |
+| CRITICAL | `T-060-a` | QC Auto Gate: syntax & cross-ref validator | `PENDING` | [`tasks/T-060-a.md`](tasks/T-060-a.md) |
+| CRITICAL | `T-060-b` | QA Agent Review Checklist & Sign-Off | `PENDING` | [`tasks/T-060-b.md`](tasks/T-060-b.md) |
+| CRITICAL | `T-060-c` | Backlog Audit: all legacy files queued | `PENDING` | [`tasks/T-060-c.md`](tasks/T-060-c.md) |
+| HIGH | `T-060-d` | Dashboard Quality Status Panel | `PENDING` | [`tasks/T-060-d.md`](tasks/T-060-d.md) |
+| MEDIUM | `T-060-e` | Fast-Track & Merge Gate Rules | `PENDING` | [`tasks/T-060-e.md`](tasks/T-060-e.md) |
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
@@ -33,7 +40,7 @@
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-| LOW | `T-051` | Post-completion QA & continuous improvement loop | `PENDING` | [`tasks/T-051.md`](tasks/T-051.md) |
+| ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | HIGH | `T-053` | News & Media Hub | `IN_PROGRESS` | `T-053-a` shell registered, `T-053-b` news feed engine next
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
