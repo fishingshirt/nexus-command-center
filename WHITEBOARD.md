@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 07:45 UTC
-- **Active tasks:** 11
-- **Completed tasks:** 21 shown below
+- **Last updated:** 2026-05-10 09:48 UTC
+- **Active tasks:** 10
+- **Completed tasks:** 22 shown below
 
 ---
 
@@ -24,8 +24,7 @@
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
 | HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
-| HIGH | `T-029` | IT Hub / System health | `PENDING` | [`tasks/T-029.md`](tasks/T-029.md) |
-| MEDIUM | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
+| HIGH | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
 | HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
 | MEDIUM | `T-039` | Multi-city weather manager | `PENDING` | [`tasks/T-039.md`](tasks/T-039.md) |
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
@@ -46,6 +45,7 @@
 
 | ID | Task |
 |----|------|
+| `T-029` | IT Hub / System health dashboard (backup view integration, status cards, API endpoints, settings toggle) |
 | `T-034` | Google Calendar two-way sync audit & fix |
 | `T-042` | Unified notifications center |
 | `T-045` | Pomodoro timer / focus mode |
