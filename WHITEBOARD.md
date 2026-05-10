@@ -73,7 +73,7 @@
 - **This repo lives on this local Linux machine.** GitHub is the **backup mirror** — always push commits there after every change.
 - **One task per cycle.** Read the task file before starting. Update this board after finishing.
 - **Backup rule:** Every commit must be pushed to GitHub immediately. Do not let local and remote drift.
-- **T-034 sub-tasks created:** `T-034-a` (OAuth token flow), `T-034-b` (Outbound sync engine), `T-034-c` (Conflict resolution), `T-034-d` (Agent calendar endpoint). These must be completed before T-034 can be marked DONE.
+- **T-034 sub-tasks:** `T-034-a` DONE (OAuth token flow). Next: `T-034-b` (Outbound sync engine).
 
 ---
 
