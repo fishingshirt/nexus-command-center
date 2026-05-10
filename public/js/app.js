@@ -300,6 +300,7 @@ function initCalendarSync() {
   const syncNowBtn = document.getElementById('btn-sync-now');
   const unlinkBtn = document.getElementById('btn-sync-unlink');
   const hint = document.getElementById('sync-hint');
+  const reauthBtn = document.getElementById('btn-sync-reauth');
 
   const settings = loadSettings();
   const sync = settings.calendarSync || {};
@@ -342,8 +343,12 @@ function initCalendarSync() {
       dot.title = `Google Calendar: ${m.text}`;
     }
     if (unlinkBtn) unlinkBtn.style.display = (status !== 'none' && status !== 'error') ? 'inline-flex' : 'none';
+    if (reauthBtn) reauthBtn.style.display = (status === 'linked') ? 'inline-flex' : 'none';
     if (hint) {
-      if (status === 'linked' || status === 'synced') {
+      if (status === 'linked') {
+        hint.textContent = 'Connected with full read/write access via OAuth 2.0.';
+        if (extra === 'read-only') hint.textContent = 'Scope is read-only. Re-authorize for full access.';
+      } else if (status === 'synced') {
         hint.textContent = 'Connected with full read/write access via OAuth 2.0.';
       } else if (status === 'error') {
         hint.textContent = 'Connection failed. Check credentials or re-authorize.';
@@ -416,6 +421,21 @@ function initCalendarSync() {
     updateBadge('none');
     toast('Calendar unlinked');
     document.dispatchEvent(new CustomEvent('calendarSyncChanged'));
+  });
+
+  reauthBtn?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/calendar/oauth/start');
+      const data = await res.json();
+      if (data.ok && data.url) {
+        const popup = window.open(data.url, 'gcal_oauth', 'width=500,height=600');
+        if (!popup) toast('Popup blocked — allow popups for this site', 'error');
+      } else {
+        toast(data.error || 'Failed to start OAuth', 'error');
+      }
+    } catch {
+      toast('Server error — check GOOGLE_CLIENT_ID in ~/.hermes/.env', 'error');
+    }
   });
 
   clientIdEl?.addEventListener('input', persist);

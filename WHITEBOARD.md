@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 06:41 UTC
+- **Last updated:** 2026-05-10 07:21 UTC
 - **Active tasks:** 12
-- **Completed tasks:** 19 shown below
+- **Completed tasks:** 20 shown below
 
 ---
 
@@ -18,7 +18,7 @@
 
 ||| Priority | ID | Task | Status | Details |
 ||----------|----|------|--------|---------|
-|||| HIGH | `T-034` | Google Calendar two-way sync audit & fix | `IN_PROGRESS` | Sub-tasks: `T-034-b` DONE, `T-034-c-1` DONE, `T-034-c-2` DONE, `T-034-c-3` PENDING — see below |
+|||| HIGH | `T-034` | Google Calendar two-way sync audit & fix | `DONE` | Sub-tasks: T-034-a DONE, T-034-b DONE, T-034-c-1 DONE, T-034-c-2 DONE, T-034-c-3 DONE, T-034-d DONE, T-034-e DONE. OAuth scope upgraded to full read/write, conflict resolution panel, offline queue, agent command endpoints, re-authorize prompt all live. |
 || HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
 || MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 || MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
@@ -49,7 +49,8 @@
 
 | ID | Task |
 |----|------|
-| `T-009` | Calendar app (views, CRUD, recurrence, Google sync) |
+|| `T-034` | Google Calendar two-way sync audit & fix |
+|| `T-009` | Calendar app (views, CRUD, recurrence, Google sync) |
 | `T-010` | Notes app (CRUD, search, auto-save) |
 | `T-011` | To-Do app (lists, priorities, recurring, filters) |
 | `T-012` | Hermes API bridge (Telegram Bot API relay + dashboard chat polling) |
@@ -75,7 +76,7 @@
 || ID | Description | Severity | Status |
 ||----|-------------|----------|--------|
 || B-001 | Missing `tasks/*.md` files for T-013, T-016, T-021, T-022, T-023, T-024, T-026, T-030, T-033, T-035, T-036, T-037, T-038. WHITEBOARD points to non-existent files. | LOW | OPEN |
-|| B-002 | Calendar Google sync is one-way read-only via public API key. No OAuth token exchange, no outbound `events.insert/patch/delete`. T-034 addresses this. | HIGH | IN_PROGRESS |
+||| B-002 | Calendar Google sync was one-way read-only via public API key. T-034 implemented OAuth token exchange, outbound events.insert/patch/delete, conflict resolution, offline queue, agent commands, and re-authorize prompt. | HIGH | **FIXED** |
 || B-003 | `calendar.js` event save does not check for overlapping time slots. | LOW | OPEN |
 
 ---

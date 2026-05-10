@@ -782,6 +782,26 @@ button.nav-link {
   background: rgba(239, 68, 68, 0.1);
 }
 
+.btn-warning {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-warning:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #fbbf24;
+}
+
 .settings-about {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
