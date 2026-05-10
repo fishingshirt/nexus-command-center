@@ -17,6 +17,11 @@ export function initGoogleSync() {
   startAutoSync();
   window.addEventListener('beforeunload', stopAutoSync);
 
+  // Poll agent calendar commands on focus
+  window.addEventListener('focus', pollAgentEvents);
+  // Poll once at startup
+  pollAgentEvents();
+
   function startAutoSync() {
     stopAutoSync();
     syncTimer = setInterval(doSync, 30 * 60_000);
@@ -24,6 +29,41 @@ export function initGoogleSync() {
 
   function stopAutoSync() {
     if (syncTimer) { clearInterval(syncTimer); syncTimer = null; }
+  }
+
+  async function pollAgentEvents() {
+    try {
+      const res = await fetch('/api/calendar/agent/poll');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.events || !data.events.length) return;
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      let added = 0, duplicates = 0;
+      for (const ev of data.events) {
+        if (stored.some(e => e.id === ev.id || (e.title === ev.title && e.date === ev.date))) {
+          duplicates++;
+          continue;
+        }
+        // Queue for outbound sync
+        import('./gcal-outbound.js').then(mod => {
+          mod.syncEventToGoogle(ev, 'create').catch(() => {});
+        });
+        stored.push({
+          ...ev,
+          updatedAt: Date.now(),
+          lastModifiedAt: Date.now(),
+          source: 'agent',
+        });
+        added++;
+      }
+      if (added) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        window.dispatchEvent(new CustomEvent('ncc-cal-updated'));
+        toast(`${added} event${added > 1 ? 's' : ''} added from agent`, 'info');
+      }
+    } catch (e) {
+      // silent fail
+    }
   }
 
   async function doSync() {

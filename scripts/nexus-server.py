@@ -535,6 +535,110 @@ def _api_auth(handler, path):
 
     return False
 
+# ── Agent Calendar Queue ──────────────────────
+_AGENT_CALENDAR_QUEUE_PATH = os.path.expanduser('~/.hermes/nexus-agent-calendar-queue.json')
+
+def _load_agent_queue():
+    try:
+        with open(_AGENT_CALENDAR_QUEUE_PATH, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+def _save_agent_queue(q):
+    os.makedirs(os.path.dirname(_AGENT_CALENDAR_QUEUE_PATH), exist_ok=True)
+    with open(_AGENT_CALENDAR_QUEUE_PATH, 'w') as f:
+        json.dump(q, f)
+
+def _parse_agent_event(text):
+    """Lightweight heuristic parser for natural-language event strings.
+    Returns {title, date, start, end} or None if unparseable.
+    """
+    import re, datetime
+    text = text.strip()
+    if not text:
+        return None
+    # Quick date extraction
+    date_expr = re.compile(
+        r'(\b(?:tomorrow|today|next\s+(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*)\b|'
+        r'\b\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:\s+\d{4})?\b|'
+        r'\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?:,\s+\d{4})?\b)',
+        re.IGNORECASE
+    )
+    time_expr = re.compile(
+        r'((?:at|from)\s+)?(\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?|\d{1,2}\s*[ap]\.?m\.?)',
+        re.IGNORECASE
+    )
+    # Find time phrases
+    times = []
+    for m in time_expr.finditer(text):
+        times.append(m.group(2))
+    # Find date phrase
+    date_match = date_expr.search(text)
+    date_phrase = date_match.group(1) if date_match else None
+    now = datetime.datetime.now()
+    parsed_date = None
+    if date_phrase:
+        dp = date_phrase.lower().strip()
+        if dp == 'tomorrow':
+            parsed_date = now.date() + datetime.timedelta(days=1)
+        elif dp == 'today':
+            parsed_date = now.date()
+        elif dp.startswith('next '):
+            weekday_map = {'mon':0,'tue':1,'wed':2,'thu':3,'fri':4,'sat':5,'sun':6}
+            wd = weekday_map.get(dp.split()[1][:3])
+            if wd is not None:
+                d = now.date() + datetime.timedelta(days=1)
+                while d.weekday() != wd:
+                    d += datetime.timedelta(days=1)
+                parsed_date = d
+        else:
+            # Try dateutil if available
+            try:
+                import dateutil.parser
+                parsed_date = dateutil.parser.parse(date_phrase).date()
+            except Exception:
+                pass
+    # If still no date, default to today
+    if not parsed_date:
+        parsed_date = now.date()
+    # Time parsing (naive)
+    start_time = None
+    end_time = None
+    if times:
+        def _parse(t):
+            t = t.strip().upper().replace('.','')
+            try:
+                if 'M' in t and ':' not in t:
+                    return datetime.datetime.strptime(t, '%I%p').strftime('%H:%M')
+                elif 'M' in t:
+                    return datetime.datetime.strptime(t, '%I:%M%p').strftime('%H:%M')
+                else:
+                    return datetime.datetime.strptime(t, '%H:%M').strftime('%H:%M')
+            except Exception:
+                return t
+        start_time = _parse(times[0])
+        end_time = _parse(times[1]) if len(times) > 1 else None
+    # Build title: remove date + time markers, keep remainder
+    title = text
+    if date_match:
+        title = re.sub(re.escape(date_match.group(0)), '', title, flags=re.IGNORECASE, count=1)
+    for t in times:
+        title = re.sub(r'(?:at\s+)?' + re.escape(t), '', title, flags=re.IGNORECASE, count=1)
+    title = re.sub(r'\s+', ' ', title).strip('.,:;!? ')
+    # Remove common prefixes like "add event" or "reminder to"
+    title = re.sub(r'^(add\s+(?:event|appointment|meeting)\s*)', '', title, flags=re.IGNORECASE)
+    title = re.sub(r'^(reminder\s+(?:to|for)\s*)', '', title, flags=re.IGNORECASE)
+    # Fallback title
+    if not title:
+        title = text
+    return {
+        'title': title,
+        'date': parsed_date.strftime('%Y-%m-%d'),
+        'start': start_time,
+        'end': end_time,
+    }
+
 # ── Google Calendar helpers ───────────────────
 _GCAL_TOKEN_PATH = os.path.expanduser('~/.hermes/nexus-gcal-tokens.json')
 
@@ -842,6 +946,82 @@ def _api_calendar(handler, raw_path):
         except Exception as e:
             _json(handler, 502, {'ok': False, 'error': str(e)})
             return True
+
+    # ── Agent Calendar Command endpoints ──
+    if path == '/api/calendar/agent/add':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        text = (req.get('text') or '').strip()
+        if not text:
+            _json(handler, 400, {'ok': False, 'error': 'Missing text'})
+            return True
+        parsed = _parse_agent_event(text)
+        if not parsed or not parsed.get('title'):
+            _json(handler, 400, {'ok': False, 'error': 'Could not parse date/time'})
+            return True
+        event_id = 'evt_' + str(int(time.time() * 1000)) + '_' + __import__('secrets').token_hex(4)
+        event = {
+            'id': event_id,
+            'title': parsed['title'],
+            'date': parsed['date'],
+            'start': parsed.get('start') or '',
+            'end': parsed.get('end') or '',
+            'category': 'other',
+            'recurrence': 'none',
+            'description': '',
+        }
+        if req.get('force'):
+            at = _gcal_access_token()
+            if not at:
+                _json(handler, 503, {'ok': False, 'error': 'Google Calendar not connected'})
+                return True
+            tz = 'UTC'
+            try:
+                tz = __import__('datetime').datetime.now(__import__('zoneinfo').ZoneInfo(__import__('time').tzname[0])).strftime('%z')
+            except Exception:
+                pass
+            gbody = {
+                'summary': event['title'],
+                'description': '',
+                'start': {'dateTime': f"{event['date']}T{event['start'] or '00:00'}:00", 'timeZone': tz} if event['start'] else {'date': event['date']},
+                'end': {'dateTime': f"{event['date']}T{event['end'] or '23:59'}:00", 'timeZone': tz} if event['end'] else {'date': event['date']},
+            }
+            url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'
+            data = json.dumps(gbody).encode('utf-8')
+            hreq = urllib.request.Request(url, data=data, headers={'Authorization': f'Bearer {at}', 'Content-Type': 'application/json'}, method='POST')
+            try:
+                with urllib.request.urlopen(hreq, timeout=15) as resp:
+                    rdata = json.loads(resp.read().decode())
+                    event['gcalId'] = rdata.get('id')
+                    event['lastSyncedAt'] = int(time.time() * 1000)
+            except urllib.error.HTTPError as e:
+                _json(handler, 502, {'ok': False, 'error': f'Google Calendar rejected event: HTTP {e.code}'})
+                return True
+            except Exception as e:
+                _json(handler, 502, {'ok': False, 'error': str(e)})
+                return True
+        else:
+            # Queue for dashboard pick-up
+            q = _load_agent_queue()
+            q.append(event)
+            if len(q) > 100:
+                q = q[-100:]
+            _save_agent_queue(q)
+        _json(handler, 200, {'ok': True, 'event': event})
+        return True
+
+    if path == '/api/calendar/agent/poll':
+        q = _load_agent_queue()
+        # Return events then clear queue (acknowledged)
+        _json(handler, 200, {'events': q, 'count': len(q)})
+        if q:
+            _save_agent_queue([])
+        return True
 
     return False
 
