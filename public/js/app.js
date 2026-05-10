@@ -323,6 +323,62 @@ function initSettings() {
     });
   }
 
+  // News Hub full settings panel wiring
+  (function wireNewsHub() {
+    const defaultCat = document.getElementById('news-default-category');
+    const youtubeToggle = document.getElementById('news-youtube-enabled');
+    const cacheHours = document.getElementById('news-cache-hours');
+    const chipWrap = document.getElementById('news-digest-categories');
+    const hub = settings.newsHub || {};
+
+    if (defaultCat) {
+      defaultCat.value = hub.defaultCategory || 'all';
+      defaultCat.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.newsHub || {}), defaultCategory: defaultCat.value };
+        saveSettings({ newsHub: next });
+      });
+    }
+
+    if (youtubeToggle) {
+      youtubeToggle.checked = hub.youtubeEnabled !== false;
+      youtubeToggle.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.newsHub || {}), youtubeEnabled: youtubeToggle.checked };
+        saveSettings({ newsHub: next });
+        toast(youtubeToggle.checked ? 'YouTube suggestions enabled' : 'YouTube suggestions disabled');
+      });
+    }
+
+    if (cacheHours) {
+      cacheHours.value = String(hub.articleCacheHours ?? 24);
+      cacheHours.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.newsHub || {}), articleCacheHours: Number(cacheHours.value) || 24 };
+        saveSettings({ newsHub: next });
+      });
+    }
+
+    if (chipWrap) {
+      const categories = ['world','politics','technology','business','sports','entertainment','science','health'];
+      const selected = new Set(hub.digestCategories || ['world','politics','technology']);
+      chipWrap.innerHTML = categories.map(c => {
+        const active = selected.has(c);
+        return `<button class="settings-chip ${active ? 'active' : ''}" data-cat="${c}" type="button">${c.charAt(0).toUpperCase() + c.slice(1)}</button>`;
+      }).join('');
+      chipWrap.addEventListener('click', (e) => {
+        const btn = e.target.closest('.settings-chip');
+        if (!btn) return;
+        const cur = loadSettings();
+        const set = new Set(cur.newsHub?.digestCategories || ['world','politics','technology']);
+        if (set.has(btn.dataset.cat)) set.delete(btn.dataset.cat); else set.add(btn.dataset.cat);
+        btn.classList.toggle('active', set.has(btn.dataset.cat));
+        const next = { ...(cur.newsHub || {}), digestCategories: Array.from(set) };
+        saveSettings({ newsHub: next });
+      });
+    }
+  })();
+
   // Notification settings
   const notificationSound = document.getElementById('notification-sound');
   const browserPush = document.getElementById('browser-push');

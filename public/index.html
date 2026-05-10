@@ -1098,6 +1098,32 @@
               <input type="checkbox" id="news-ai-digest" class="toggle">
             </div>
             <p class="settings-hint" style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.25rem;">When enabled, the agent generates a summary of top headlines above the news feed.</p>
+            <div class="settings-row">
+              <label for="news-default-category">Default category</label>
+              <select id="news-default-category">
+                <option value="all">All</option>
+                <option value="world">World</option>
+                <option value="politics">Politics</option>
+                <option value="technology">Technology</option>
+                <option value="business">Business</option>
+                <option value="sports">Sports</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="science">Science</option>
+                <option value="health">Health</option>
+              </select>
+            </div>
+            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:.5rem;">
+              <label style="margin-bottom:.25rem;">Digest categories</label>
+              <div class="settings-chip-group" id="news-digest-categories" style="display:flex;flex-wrap:wrap;gap:.4rem;"></div>
+            </div>
+            <div class="settings-row">
+              <label for="news-youtube-enabled">Enable YouTube suggestions</label>
+              <input type="checkbox" id="news-youtube-enabled" class="toggle" checked>
+            </div>
+            <div class="settings-row">
+              <label for="news-cache-hours">Article cache hours</label>
+              <input type="number" id="news-cache-hours" min="1" max="72" value="24" style="width:5rem;">
+            </div>
           </section>
 
           <section class="settings-section">
