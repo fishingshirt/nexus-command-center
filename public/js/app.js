@@ -311,6 +311,18 @@ function initSettings() {
     });
   }
 
+  // News Hub AI Digest
+  const aiDigestToggle = document.getElementById('news-ai-digest');
+  if (aiDigestToggle) {
+    aiDigestToggle.checked = settings.newsHub?.aiDigestEnabled || false;
+    aiDigestToggle.addEventListener('change', () => {
+      const current = loadSettings();
+      const hub = { ...(current.newsHub || {}), aiDigestEnabled: aiDigestToggle.checked };
+      saveSettings({ newsHub: hub });
+      toast(aiDigestToggle.checked ? 'AI Daily Digest enabled' : 'AI Daily Digest disabled');
+    });
+  }
+
   // Notification settings
   const notificationSound = document.getElementById('notification-sound');
   const browserPush = document.getElementById('browser-push');

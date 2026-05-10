@@ -264,5 +264,48 @@ export function openNews() {
     view.dataset.inited = '1';
     loadNews();
     loadYouTubeSuggestions();
+    loadDigest();
   }
+}
+
+/* ===== AI DAILY DIGEST ===== */
+async function loadDigest() {
+  const settings = (typeof loadSettings === 'function' ? loadSettings() : {}) || {};
+  if (!settings.newsHub?.aiDigestEnabled) return;
+  try {
+    const res = await fetch('/api/news/digest/latest');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.ready || !data.content) return;
+    newsState.digest = data.content;
+    renderDigest(data.content);
+  } catch (_) {}
+}
+
+function renderDigest(content) {
+  const banner = document.getElementById('news-digest-banner');
+  const body = document.getElementById('digest-body');
+  if (!banner || !body) return;
+  const top = content.topStory || {};
+  const groups = content.groups || [];
+  const ts = content.timestamp ? _fmtRel(content.timestamp) : '';
+  body.innerHTML = `
+    ${top.title ? `
+      <div class="digest-top-story">
+        <strong>🔥 Top Story</strong>
+        <p>${escapeHtml(top.title)}</p>
+        <span class="digest-source">${escapeHtml(top.source || '')}</span>
+      </div>
+    ` : ''}
+    ${groups.map(g => `
+      <div class="digest-group">
+        <h5>${escapeHtml(g.category || '')}</h5>
+        <ul>
+          ${(g.items || []).map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+        </ul>
+      </div>
+    `).join('')}
+    ${ts ? `<div class="digest-meta">Updated ${ts}</div>` : ''}
+  `;
+  banner.style.display = '';
 }

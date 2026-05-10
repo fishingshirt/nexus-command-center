@@ -1512,6 +1512,21 @@ def _api_quality(handler, path):
 
     return False
 
+# ── News Hub digest helpers ───────────────────────
+_DIGEST_PATH = os.path.expanduser('~/.hermes/nexus-news-digest.json')
+
+def _load_digest():
+    try:
+        with open(_DIGEST_PATH, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+def _save_digest(content):
+    os.makedirs(os.path.dirname(_DIGEST_PATH), exist_ok=True)
+    with open(_DIGEST_PATH, 'w') as f:
+        json.dump(content, f, default=str)
+
 # ── News Hub helpers ──────────────────────────
 _NEWS_CACHE_PATH = os.path.expanduser('~/.hermes/nexus-news-cache.json')
 _NEWS_CACHE_TTL = 900  # 15 minutes
@@ -1788,8 +1803,20 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             seed = int(qs.get('seed', ['0'])[0])
             _json(self, 200, {'videos': _get_youtube_batch(seed)})
             return True
+        if path == '/api/news/digest/latest':
+            d = _load_digest()
+            if d and d.get('ready'):
+                _json(self, 200, {'ready': True, 'content': d.get('content')})
+            else:
+                _json(self, 200, {'ready': False, 'content': None})
+            return True
         if path.startswith('/api/news/digest/'):
-            _json(self, 200, {'ready': False, 'content': None})
+            # poll for a specific digest (older stub kept for compat)
+            d = _load_digest()
+            if d and d.get('ready'):
+                _json(self, 200, {'ready': True, 'content': d.get('content')})
+            else:
+                _json(self, 200, {'ready': False, 'content': None})
             return True
 
         return False
@@ -1881,7 +1908,49 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                     return
             # -- News Hub POST stubs --
             if path == '/api/news/digest':
-                _json(self, 200, {'digestId': 'digest-' + str(int(time.time())), 'status': 'queued'})
+                try:
+                    length = int(self.headers.get('Content-Length', 0))
+                    body = self.rfile.read(length).decode('utf-8') if length else '{}'
+                    payload = json.loads(body)
+                except Exception:
+                    payload = {}
+                categories = payload.get('categories', ['world','politics','technology'])
+                max_articles = min(int(payload.get('maxArticles', 10)), 20)
+                cache = _load_news_cache()
+                articles = cache.get('articles', [])
+                if not articles:
+                    articles = _fetch_bbc_news()
+                    if articles:
+                        _save_news_cache({'cachedAt': time.time(), 'articles': articles})
+                # build digest
+                top_story = None
+                groups = {}
+                for a in articles:
+                    cat = a.get('category', 'world')
+                    if cat in categories:
+                        if top_story is None:
+                            top_story = a
+                        groups.setdefault(cat, []).append(a)
+                digest = {
+                    'ready': True,
+                    'timestamp': datetime.datetime.now().isoformat() if 'datetime' in globals() else time.strftime('%Y-%m-%dT%H:%M:%S'),
+                    'content': {
+                        'topStory': {
+                            'title': top_story.get('title',''),
+                            'source': top_story.get('source',{}).get('name',''),
+                        } if top_story else None,
+                        'groups': [
+                            {
+                                'category': cat,
+                                'items': [a.get('title','') for a in items[:max_articles]]
+                            }
+                            for cat, items in groups.items() if items
+                        ],
+                    },
+                    'categories': categories,
+                }
+                _save_digest(digest)
+                _json(self, 200, {'digestId': 'digest-' + str(int(time.time())), 'status': 'ready', 'ready': True})
                 return
         self.send_response(405)
         self.end_headers()
