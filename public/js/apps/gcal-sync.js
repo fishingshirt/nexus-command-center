@@ -1,38 +1,24 @@
 import { toast, loadSettings, saveSettings } from '../app.js';
 
 /* ===== GOOGLE CALENDAR SYNC ENGINE ===== */
-// One-way import from Google Calendar into localStorage events.
-// Uses Google Calendar API (read-only) with an API key.
-// Auth via OAuth2 client not yet wired; API key is the quick path.
+// Inbound sync via backend proxy (OAuth-based). No API-key logic.
 
 export function initGoogleSync() {
   const STORAGE_KEY = 'ncc-calendar-events';
-  const cfg = loadSettings().calendarSync || {};
   let syncTimer = null;
 
-  // On init, if autoSync is already on, start the loop
-  if (cfg.autoSync) startAutoSync();
-
-  document.addEventListener('calendarSyncChanged', () => {
-    const c = loadSettings().calendarSync || {};
-    if (c.autoSync) startAutoSync();
-    else stopAutoSync();
-  });
-
-  // Listen for manual sync button
-  const syncNowBtn = document.getElementById('btn-sync-now');
-  syncNowBtn?.addEventListener('click', async () => {
+  // Manual sync button listener
+  document.getElementById('btn-sync-now')?.addEventListener('click', async () => {
     await doSync();
   });
 
+  // Auto-sync every 30 min if linked
+  startAutoSync();
+  window.addEventListener('beforeunload', stopAutoSync);
+
   function startAutoSync() {
     stopAutoSync();
-    const c = loadSettings().calendarSync || {};
-    if (!c.apiKey?.trim()) return; // can't auto without key
-    const ms = (c.intervalMin || 60) * 60_000;
-    syncTimer = setInterval(doSync, ms);
-    // Also run immediately
-    doSync();
+    syncTimer = setInterval(doSync, 30 * 60_000);
   }
 
   function stopAutoSync() {
@@ -40,54 +26,26 @@ export function initGoogleSync() {
   }
 
   async function doSync() {
-    const c = loadSettings().calendarSync || {};
-    const apiKey = c.apiKey?.trim();
-    if (!apiKey) {
-      // If clientId is set but no apiKey, just mark linked
-      if (c.clientId?.trim()) {
-        saveStatus('linked', null);
-          return;
-      }
-      saveStatus('none', null);
-      return;
-    }
-
-    saveStatus('syncing', null);
-
-    const timeMin = new Date();
-    timeMin.setMonth(timeMin.getMonth() - 1);
-    const timeMax = new Date();
-    timeMax.setMonth(timeMax.getMonth() + 3);
-
-    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
-    url.searchParams.set('key', apiKey);
-    url.searchParams.set('singleEvents', 'true');
-    url.searchParams.set('orderBy', 'startTime');
-    url.searchParams.set('timeMin', timeMin.toISOString());
-    url.searchParams.set('timeMax', timeMax.toISOString());
-    url.searchParams.set('maxResults', '250');
-
     try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error?.message || `HTTP ${res.status}`);
-      }
+      const res = await fetch('/api/calendar/sync');
       const data = await res.json();
-      if (!Array.isArray(data.items)) throw new Error('Unexpected response format');
-      const imported = mergeEvents(data.items);
+      if (!data.ok) {
+        if (data.status === 'not_linked') {
+          saveStatus('none', null);
+          return;
+        }
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      const imported = mergeEvents(data.events || []);
       saveStatus('synced', imported);
     } catch (err) {
-      console.error('[CalendarSync]', err);
       saveStatus('error', null);
     }
   }
 
   function mergeEvents(gEvents) {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    let created = 0;
-    let updated = 0;
-
+    let created = 0, updated = 0;
     const now = new Date().toISOString();
 
     for (const g of gEvents) {
@@ -98,17 +56,11 @@ export function initGoogleSync() {
       const start = g.start?.date || g.start?.dateTime;
       const end = g.end?.date || g.end?.dateTime;
       if (!start) continue;
-
-      const dateStr = start.slice(0, 10); // YYYY-MM-DD
+      const dateStr = start.slice(0, 10);
       let startTime = '';
       let endTime = '';
-      if (g.start?.dateTime) {
-        startTime = start.slice(11, 16);
-      }
-      if (g.end?.dateTime) {
-        endTime = (g.end?.dateTime || '').slice(11, 16);
-      }
-
+      if (g.start?.dateTime) startTime = start.slice(11, 16);
+      if (g.end?.dateTime) endTime = (g.end?.dateTime || '').slice(11, 16);
       const existing = stored.find(e => e.gcalId === gcalId);
       if (existing) {
         let dirty = false;
@@ -117,7 +69,6 @@ export function initGoogleSync() {
         if (existing.start !== startTime) { existing.start = startTime; dirty = true; }
         if (existing.end !== endTime) { existing.end = endTime; dirty = true; }
         if (existing.description !== description) { existing.description = description; dirty = true; }
-        // Preserve local overrides (category, recurrence) — Google wins on core fields only
         existing.updatedAt = Date.now();
         if (dirty) updated++;
       } else {
@@ -141,10 +92,7 @@ export function initGoogleSync() {
 
     stored.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-
-    // Notify calendar to re-render if open
     window.dispatchEvent(new CustomEvent('ncc-cal-updated'));
-
     return { created, updated };
   }
 
@@ -152,12 +100,9 @@ export function initGoogleSync() {
     const c = loadSettings().calendarSync || {};
     c.status = status;
     c.lastStatusAt = new Date().toISOString();
-    if (status === 'synced') {
-      c.lastSynced = new Date().toISOString();
-    }
+    if (status === 'synced') c.lastSynced = new Date().toISOString();
     saveSettings({ calendarSync: c });
 
-    // Update UI
     const badge = document.getElementById('sync-status-badge');
     const dot = document.getElementById('calendar-sync-dot');
     const map = {
@@ -178,17 +123,13 @@ export function initGoogleSync() {
       if (m.cls) dot.classList.add(m.cls);
       dot.title = `Google Calendar: ${m.text}`;
     }
-
     if (status === 'synced') {
-      toast(importResult
-        ? `Imported ${importResult.created} new, updated ${importResult.updated} events`
-        : 'Calendar synced');
+      toast(importResult ? `Imported ${importResult.created} new, updated ${importResult.updated} events` : 'Calendar synced');
     } else if (status === 'error') {
-      toast('Calendar sync failed — check API key', 'error');
+      toast('Calendar sync failed', 'error');
     }
   }
 
-  // Pause sync while offline
   window.addEventListener('nexusOffline', () => {
     stopAutoSync();
     const c = loadSettings().calendarSync || {};
@@ -201,11 +142,9 @@ export function initGoogleSync() {
 
   window.addEventListener('nexusOnline', () => {
     const c = loadSettings().calendarSync || {};
-    if (c.autoSync && c.apiKey?.trim()) {
+    if (c.status !== 'none') {
       toast('Back online — resuming calendar sync');
       startAutoSync();
     }
   });
-
-  window.addEventListener('beforeunload', stopAutoSync);
 }

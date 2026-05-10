@@ -294,92 +294,142 @@ function initSettings() {
 /* ===== CALENDAR SYNC ===== */
 function initCalendarSync() {
   const clientIdEl = document.getElementById('sync-client-id');
-  const apiKeyEl = document.getElementById('sync-api-key');
-  const autoEl = document.getElementById('sync-auto');
-  const intervalEl = document.getElementById('sync-interval');
+  const clientSecretEl = document.getElementById('sync-client-secret');
   const badge = document.getElementById('sync-status-badge');
+  const connectBtn = document.getElementById('btn-sync-connect');
   const syncNowBtn = document.getElementById('btn-sync-now');
   const unlinkBtn = document.getElementById('btn-sync-unlink');
+  const hint = document.getElementById('sync-hint');
 
-  // Restore saved config
   const settings = loadSettings();
   const sync = settings.calendarSync || {};
   if (clientIdEl) clientIdEl.value = sync.clientId || '';
-  if (apiKeyEl) apiKeyEl.value = sync.apiKey || '';
-  if (autoEl) autoEl.checked = sync.autoSync || false;
-  if (intervalEl) intervalEl.value = String(sync.intervalMin || 60);
-
-  updateSyncBadge(sync.status || 'none');
-  if (unlinkBtn) unlinkBtn.style.display = (sync.status === 'linked' || sync.status === 'synced') ? 'inline-flex' : 'none';
+  if (clientSecretEl) clientSecretEl.value = sync.clientSecret || '';
 
   function persist() {
     const next = {
       clientId: clientIdEl?.value.trim() || '',
-      apiKey: apiKeyEl?.value.trim() || '',
-      autoSync: autoEl?.checked || false,
-      intervalMin: parseInt(intervalEl?.value || '60', 10),
+      clientSecret: clientSecretEl?.value.trim() || '',
       status: (loadSettings().calendarSync || {}).status || 'none'
     };
     saveSettings({ calendarSync: next });
+    toggleConnect();
   }
 
-  clientIdEl?.addEventListener('input', () => {
-    persist();
-    if (clientIdEl.value.trim()) updateSyncBadge('linked');
-    else updateSyncBadge('none');
-    if (unlinkBtn) unlinkBtn.style.display = clientIdEl.value.trim() ? 'inline-flex' : 'none';
-  });
+  function toggleConnect() {
+    const hasId = clientIdEl?.value.trim();
+    const hasSecret = clientSecretEl?.value.trim();
+    if (connectBtn) connectBtn.style.display = (hasId && hasSecret) ? 'inline-flex' : 'none';
+  }
 
-  apiKeyEl?.addEventListener('input', () => { persist(); document.dispatchEvent(new CustomEvent('calendarSyncChanged')); });
-  autoEl?.addEventListener('change', () => { persist(); document.dispatchEvent(new CustomEvent('calendarSyncChanged')); toast(autoEl.checked ? 'Auto-sync enabled' : 'Auto-sync disabled'); });
-  intervalEl?.addEventListener('change', () => { persist(); document.dispatchEvent(new CustomEvent('calendarSyncChanged')); });
-
-  syncNowBtn?.addEventListener('click', () => {
-    if (!clientIdEl?.value.trim() && !apiKeyEl?.value.trim()) {
-      toast('Enter an API key or OAuth client ID first', 'error');
-      return;
-    }
-    // Actual sync logic lives in js/apps/gcal-sync.js — it listens to the same button
-  });
-
-  unlinkBtn?.addEventListener('click', () => {
-    if (!confirm('Unlink Google Calendar?')) return;
-    if (clientIdEl) clientIdEl.value = '';
-    if (apiKeyEl) apiKeyEl.value = '';
-    const cfg2 = loadSettings().calendarSync || {};
-    cfg2.clientId = '';
-    cfg2.apiKey = '';
-    cfg2.status = 'none';
-    cfg2.autoSync = false;
-    saveSettings({ calendarSync: cfg2 });
-    updateSyncBadge('none');
-    unlinkBtn.style.display = 'none';
-    toast('Calendar unlinked');
-    document.dispatchEvent(new CustomEvent('calendarSyncChanged'));
-  });
-
-  function updateSyncBadge(status) {
+  function updateBadge(status, extra) {
     if (!badge) return;
     badge.className = 'sync-status-badge';
     const map = {
       none: { text: 'Not linked', cls: '' },
       linked: { text: 'Linked', cls: 'linked' },
       syncing: { text: 'Syncing…', cls: 'syncing' },
-      synced: { text: 'Synced', cls: 'synced' },
+      synced: { text: extra ? `Synced (${extra})` : 'Synced', cls: 'synced' },
       error: { text: 'Error', cls: 'error' }
     };
     const m = map[status] || map.none;
     badge.textContent = m.text;
     if (m.cls) badge.classList.add(m.cls);
-
-    // Update toolbar dot in Calendar app
     const dot = document.getElementById('calendar-sync-dot');
     if (dot) {
       dot.className = 'calendar-sync-dot';
       if (m.cls) dot.classList.add(m.cls);
       dot.title = `Google Calendar: ${m.text}`;
     }
+    if (unlinkBtn) unlinkBtn.style.display = (status !== 'none' && status !== 'error') ? 'inline-flex' : 'none';
+    if (hint) {
+      if (status === 'linked' || status === 'synced') {
+        hint.textContent = 'Connected with full read/write access via OAuth 2.0.';
+      } else if (status === 'error') {
+        hint.textContent = 'Connection failed. Check credentials or re-authorize.';
+      } else {
+        hint.textContent = 'Enter your Client ID and Client Secret, then click Connect.';
+      }
+    }
   }
+
+  async function checkStatus() {
+    try {
+      const res = await fetch('/api/calendar/status');
+      const data = await res.json();
+      if (data.linked) {
+        updateBadge(data.readOnly ? 'linked' : 'synced', data.readOnly ? 'read-only' : 'read/write');
+        if (data.readOnly && hint) hint.textContent = 'Scope is read-only. Re-authorize for full access.';
+      } else {
+        updateBadge('none');
+      }
+    } catch {
+      updateBadge('none');
+    }
+  }
+
+  connectBtn?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/calendar/oauth/start');
+      const data = await res.json();
+      if (data.ok && data.url) {
+        const popup = window.open(data.url, 'gcal_oauth', 'width=500,height=600');
+        if (!popup) toast('Popup blocked — allow popups for this site', 'error');
+      } else {
+        toast(data.error || 'Failed to start OAuth', 'error');
+      }
+    } catch {
+      toast('Server error — check GOOGLE_CLIENT_ID in ~/.hermes/.env', 'error');
+    }
+  });
+
+  syncNowBtn?.addEventListener('click', async () => {
+    updateBadge('syncing');
+    try {
+      const res = await fetch('/api/calendar/sync');
+      const data = await res.json();
+      if (data.ok) {
+        updateBadge('synced', `${data.events?.length || 0} events`);
+        // Merge into local calendar via gcal-sync engine
+        document.dispatchEvent(new CustomEvent('calendarSyncChanged'));
+        toast(`Calendar synced — ${data.events?.length || 0} events fetched`);
+      } else {
+        updateBadge('error');
+        toast(data.error || 'Sync failed', 'error');
+      }
+    } catch {
+      updateBadge('error');
+      toast('Sync failed — server offline?', 'error');
+    }
+  });
+
+  unlinkBtn?.addEventListener('click', async () => {
+    if (!confirm('Unlink Google Calendar?')) return;
+    try { await fetch('/api/calendar/unlink'); } catch {}
+    if (clientIdEl) clientIdEl.value = '';
+    if (clientSecretEl) clientSecretEl.value = '';
+    const cfg2 = loadSettings().calendarSync || {};
+    cfg2.clientId = '';
+    cfg2.clientSecret = '';
+    cfg2.status = 'none';
+    saveSettings({ calendarSync: cfg2 });
+    updateBadge('none');
+    toast('Calendar unlinked');
+    document.dispatchEvent(new CustomEvent('calendarSyncChanged'));
+  });
+
+  clientIdEl?.addEventListener('input', persist);
+  clientSecretEl?.addEventListener('input', persist);
+
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'nexus-gcal-connected') {
+      checkStatus();
+      toast('Google Calendar connected');
+    }
+  });
+
+  checkStatus();
+  toggleConnect();
 }
 
 /* ===== WELCOME ===== */

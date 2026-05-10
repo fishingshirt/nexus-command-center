@@ -779,34 +779,25 @@
               <span class="sync-status-badge" id="sync-status-badge">Not linked</span>
             </div>
             <div class="settings-row">
-              <label for="sync-client-id">OAuth Client ID</label>
+              <label for="sync-client-id">Client ID</label>
               <input type="text" id="sync-client-id" placeholder="From Google Cloud Console" autocomplete="off">
             </div>
             <div class="settings-row">
-              <label for="sync-api-key">API Key (read-only)</label>
-              <input type="text" id="sync-api-key" placeholder="Optional — for read-only sync" autocomplete="off">
-            </div>
-            <div class="settings-row">
-              <label for="sync-auto">Auto-sync</label>
-              <input type="checkbox" id="sync-auto" class="toggle">
-            </div>
-            <div class="settings-row">
-              <label for="sync-interval">Sync interval</label>
-              <select id="sync-interval">
-                <option value="15">Every 15 minutes</option>
-                <option value="30">Every 30 minutes</option>
-                <option value="60" selected>Every hour</option>
-                <option value="360">Every 6 hours</option>
-              </select>
+              <label for="sync-client-secret">Client Secret</label>
+              <input type="text" id="sync-client-secret" placeholder="From Google Cloud Console" autocomplete="off">
             </div>
             <div class="settings-row sync-actions">
+              <button class="btn-primary" id="btn-sync-connect" style="display:none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                Connect Google Calendar
+              </button>
               <button class="btn-secondary" id="btn-sync-now">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                 Sync Now
               </button>
               <button class="btn-secondary" id="btn-sync-unlink" style="display:none;">Unlink</button>
             </div>
-            <p class="settings-hint">Google Calendar sync is a one-way import for now. Events merge into your local calendar.</p>
+            <p class="settings-hint" id="sync-hint">Google Calendar sync uses OAuth 2.0 for full read/write access. Enter your Client ID and Client Secret, then click Connect.</p>
           </section>
 
           <section class="settings-section">

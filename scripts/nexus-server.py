@@ -535,6 +535,217 @@ def _api_auth(handler, path):
 
     return False
 
+# ── Google Calendar helpers ───────────────────
+_GCAL_TOKEN_PATH = os.path.expanduser('~/.hermes/nexus-gcal-tokens.json')
+
+def _load_gcal_tokens():
+    try:
+        with open(_GCAL_TOKEN_PATH, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _save_gcal_tokens(tokens):
+    os.makedirs(os.path.dirname(_GCAL_TOKEN_PATH), exist_ok=True)
+    with open(_GCAL_TOKEN_PATH, 'w') as f:
+        json.dump(tokens, f)
+
+def _refresh_gcal_token():
+    tokens = _load_gcal_tokens()
+    rt = tokens.get('refresh_token')
+    if not rt:
+        return None
+    import urllib.request, urllib.parse
+    cid = os.environ.get('GOOGLE_CLIENT_ID', '')
+    csec = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+    if not cid or not csec:
+        env_path = os.path.expanduser('~/.hermes/.env')
+        try:
+            with open(env_path) as f:
+                for line in f:
+                    if line.startswith('GOOGLE_CLIENT_ID='):
+                        cid = line.split('=',1)[1].strip()
+                    if line.startswith('GOOGLE_CLIENT_SECRET='):
+                        csec = line.split('=',1)[1].strip()
+        except Exception:
+            pass
+    if not cid or not csec:
+        return None
+    data = urllib.parse.urlencode({
+        'client_id': cid, 'client_secret': csec,
+        'refresh_token': rt, 'grant_type': 'refresh_token'
+    }).encode()
+    req = urllib.request.Request('https://oauth2.googleapis.com/token', data=data,
+                                 headers={'Content-Type': 'application/x-www-form-urlencoded'})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            j = json.loads(resp.read().decode())
+            tokens['access_token'] = j.get('access_token')
+            if 'expires_in' in j:
+                tokens['expires_at'] = time.time() + j['expires_in']
+            _save_gcal_tokens(tokens)
+            return tokens['access_token']
+    except Exception:
+        return None
+
+def _gcal_access_token():
+    tokens = _load_gcal_tokens()
+    at = tokens.get('access_token')
+    exp = tokens.get('expires_at', 0)
+    if at and time.time() < exp - 60:
+        return at
+    return _refresh_gcal_token()
+
+def _api_calendar(handler, raw_path):
+    import urllib.parse, urllib.request, datetime
+    path = raw_path.split('?')[0]
+    if path == '/api/calendar/oauth/start':
+        cid = os.environ.get('GOOGLE_CLIENT_ID', '')
+        if not cid:
+            env_path = os.path.expanduser('~/.hermes/.env')
+            try:
+                with open(env_path) as f:
+                    for line in f:
+                        if line.startswith('GOOGLE_CLIENT_ID='):
+                            cid = line.split('=',1)[1].strip()
+            except Exception:
+                pass
+        if not cid:
+            _json(handler, 503, {'ok': False, 'error': 'GOOGLE_CLIENT_ID not configured'})
+            return True
+        redirect_uri = f'http://localhost:{handler.server.server_address[1]}/api/calendar/oauth/callback'
+        url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urllib.parse.urlencode({
+            'client_id': cid,
+            'redirect_uri': redirect_uri,
+            'response_type': 'code',
+            'scope': 'https://www.googleapis.com/auth/calendar',
+            'access_type': 'offline',
+            'prompt': 'consent'
+        })
+        _json(handler, 200, {'ok': True, 'url': url})
+        return True
+
+    if path == '/api/calendar/oauth/callback':
+        parsed = urllib.parse.urlparse(raw_path)
+        qs = urllib.parse.parse_qs(parsed.query)
+        code = qs.get('code', [''])[0]
+        if not code:
+            _json(handler, 400, {'ok': False, 'error': 'Missing authorization code'})
+            return True
+        cid = os.environ.get('GOOGLE_CLIENT_ID', '')
+        csec = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+        if not cid or not csec:
+            env_path = os.path.expanduser('~/.hermes/.env')
+            try:
+                with open(env_path) as f:
+                    for line in f:
+                        if line.startswith('GOOGLE_CLIENT_ID='):
+                            cid = line.split('=',1)[1].strip()
+                        if line.startswith('GOOGLE_CLIENT_SECRET='):
+                            csec = line.split('=',1)[1].strip()
+            except Exception:
+                pass
+        if not cid or not csec:
+            _json(handler, 503, {'ok': False, 'error': 'Client credentials not configured'})
+            return True
+        redirect_uri = f'http://localhost:{handler.server.server_address[1]}/api/calendar/oauth/callback'
+        data = urllib.parse.urlencode({
+            'code': code, 'client_id': cid, 'client_secret': csec,
+            'redirect_uri': redirect_uri, 'grant_type': 'authorization_code'
+        }).encode()
+        req = urllib.request.Request('https://oauth2.googleapis.com/token', data=data,
+                                       headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                j = json.loads(resp.read().decode())
+                tokens = {
+                    'access_token': j.get('access_token'),
+                    'refresh_token': j.get('refresh_token'),
+                    'expires_at': time.time() + j.get('expires_in', 3600),
+                    'scope': j.get('scope', ''),
+                    'token_type': j.get('token_type', 'Bearer')
+                }
+                _save_gcal_tokens(tokens)
+                html = b'''<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Calendar Connected</title>
+<style>
+  body { background: #0a0a0f; color: #10b981; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  .gate { text-align: center; }
+  h2 { margin-bottom: 0.5rem; }
+  p { color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="gate"><h2>Calendar connected!</h2><p>You can close this window.</p></div>
+<script>
+  if (window.opener) { window.opener.postMessage({ type: 'nexus-gcal-connected' }, '*'); }
+  setTimeout(function() { window.close(); }, 2500);
+</script>
+</body>
+</html>'''
+                handler.send_response(200)
+                handler.send_header('Content-Type', 'text/html')
+                _cors(handler)
+                handler.end_headers()
+                handler.wfile.write(html)
+                return True
+        except urllib.error.HTTPError as e:
+            body = e.read().decode()
+            _json(handler, 502, {'ok': False, 'error': f'Token exchange failed: {body}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
+    if path == '/api/calendar/sync':
+        at = _gcal_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        timeMin = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).isoformat() + 'Z'
+        timeMax = (datetime.datetime.utcnow() + datetime.timedelta(days=90)).isoformat() + 'Z'
+        url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?' + urllib.parse.urlencode({
+            'singleEvents': 'true', 'orderBy': 'startTime',
+            'timeMin': timeMin, 'timeMax': timeMax, 'maxResults': '250'
+        })
+        req = urllib.request.Request(url, headers={'Authorization': f'Bearer {at}'})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode())
+                _json(handler, 200, {'ok': True, 'events': data.get('items', []), 'status': 'synced'})
+                return True
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                _json(handler, 401, {'ok': False, 'error': 'Token expired or revoked', 'status': 'error'})
+            else:
+                _json(handler, 502, {'ok': False, 'error': f'Google API error {e.code}', 'status': 'error'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e), 'status': 'error'})
+            return True
+
+    if path == '/api/calendar/status':
+        tokens = _load_gcal_tokens()
+        at = _gcal_access_token()
+        scope = tokens.get('scope', '')
+        _json(handler, 200, {
+            'linked': bool(at),
+            'scope': scope,
+            'readOnly': 'readonly' in scope and 'auth/calendar' not in scope
+        })
+        return True
+
+    if path == '/api/calendar/unlink':
+        try:
+            os.remove(_GCAL_TOKEN_PATH)
+        except FileNotFoundError:
+            pass
+        _json(handler, 200, {'ok': True})
+        return True
+
+    return False
+
 # ── ADB Bridge helpers ──────────────────────
 def _api_adb(handler, path):
     import json, os, subprocess, sys
@@ -955,6 +1166,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         if path.startswith('/api/hermes/'):
             return _api_hermes(self, path)
+
+        if path.startswith('/api/calendar/'):
+            return _api_calendar(self, self.path)
 
         return False
 
