@@ -16,17 +16,18 @@
 
 ## 🎯 Active Tasks
 
-| Priority | ID | Task | Status | Details |
-|----------|----|------|--------|---------|
-| HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
-| MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
-| MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
-| MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
-| MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
-| HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
-| HIGH | `T-029` | IT Hub / System health | `PENDING` | [`tasks/T-029.md`](tasks/T-029.md) |
-| MEDIUM | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
-| HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
+|| Priority | ID | Task | Status | Details |
+||----------|----|------|--------|---------|
+|| HIGH | `T-034` | Google Calendar two-way sync audit & fix | `PENDING` | [`tasks/T-034.md`](tasks/T-034.md) |
+|| HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
+|| MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
+|| MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
+|| MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
+|| MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
+|| HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
+|| HIGH | `T-029` | IT Hub / System health | `PENDING` | [`tasks/T-029.md`](tasks/T-029.md) |
+|| MEDIUM | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
+|| HIGH | `T-032` | Email Agent / Smart Inbox | `PENDING` | [`tasks/T-032.md`](tasks/T-032.md) |
 
 ---
 
