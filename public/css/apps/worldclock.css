@@ -1,0 +1,180 @@
+/* ===== WORLDCLOCK APP ===== */
+.worldclock-view-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Dashboard pill row */
+.clock-pill-row {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  scrollbar-width: none;
+}
+.clock-pill-row::-webkit-scrollbar { display: none; }
+
+.clock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.clock-pill-icon { font-size: 0.9rem; }
+.clock-pill-time { font-weight: 600; font-variant-numeric: tabular-nums; }
+.clock-pill-name { color: var(--text-muted); font-size: 0.75rem; }
+
+/* Search */
+.clock-search-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+}
+.clock-search-wrap input {
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  font-size: clamp(16px, 1rem, 18px);
+  outline: none;
+}
+.clock-search-wrap input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.clock-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 50;
+  display: none;
+}
+.clock-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.9rem;
+}
+.clock-result-item:hover, .clock-result-item:focus {
+  background: var(--hover-bg);
+  outline: none;
+}
+.clock-result-name { font-weight: 500; }
+.clock-result-country { color: var(--text-muted); font-size: 0.8rem; }
+
+/* Settings row */
+.clock-settings-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.clock-settings-row button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.clock-settings-row button:hover { border-color: var(--accent); }
+
+/* Grid */
+.clock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-4);
+}
+
+.clock-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  position: relative;
+}
+
+.clock-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.clock-card-icon { font-size: 1.2rem; }
+.clock-del {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--radius-sm);
+}
+.clock-del:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+.clock-card-time {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1.1;
+}
+.clock-card-name {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.clock-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.clock-card-offset {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Dashboard widget card */
+.clock-dash-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 480px) {
+  .clock-grid { grid-template-columns: repeat(2, 1fr); }
+  .clock-card-time { font-size: 1.3rem; }
+}

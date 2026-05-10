@@ -31,7 +31,7 @@
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 | MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
-| LOW | `T-044` | World clock widget | `PENDING` | [`tasks/T-044.md`](tasks/T-044.md) |
+|| LOW | `T-044` | World clock widget | **`DONE`** | [`tasks/T-044.md`](tasks/T-044.md) |
 | LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
