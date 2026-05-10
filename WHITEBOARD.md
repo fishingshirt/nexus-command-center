@@ -8,17 +8,16 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-10 09:48 UTC
+- **Last updated:** 2026-05-10 10:00 UTC
 - **Active tasks:** 10
 - **Completed tasks:** 22 shown below
-
 ---
 
 ## 🎯 Active Tasks
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| HIGH | `T-013` | Data persistence layer | `PENDING` | [`tasks/T-013.md`](tasks/T-013.md) |
+| HIGH | `T-013` | Data persistence layer | `IN_PROGRESS` | [`tasks/T-013.md`](tasks/T-013.md) — Sub-tasks: T-013-a (StorageAdapter + server endpoints), T-013-b (legacy migration), T-013-c (per-app audit), T-013-d (settings bridge), T-013-e (offline badge), T-013-f (integrity guard) |
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
@@ -30,8 +29,7 @@
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 | MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
-|| LOW | `T-044` | World clock widget | **`DONE`** | [`tasks/T-044.md`](tasks/T-044.md) |
-| LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
+|| LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
@@ -74,7 +72,7 @@
 
 || ID | Description | Severity | Status |
 ||----|-------------|----------|--------|
-|| B-001 | Missing `tasks/*.md` files for T-013, T-016, T-021, T-022, T-023, T-024, T-026, T-030, T-033, T-035, T-036, T-037, T-038. WHITEBOARD points to non-existent files. | LOW | OPEN |
+||| B-001 | Missing `tasks/*.md` files for T-016, T-021, T-022, T-023, T-024, T-026, T-030, T-033, T-035, T-036, T-037, T-038. WHITEBOARD points to non-existent files. | LOW | OPEN |
 ||| B-002 | Calendar Google sync was one-way read-only via public API key. T-034 implemented OAuth token exchange, outbound events.insert/patch/delete, conflict resolution, offline queue, agent commands, and re-authorize prompt. | HIGH | **FIXED** |
 || B-003 | `calendar.js` event save does not check for overlapping time slots. | LOW | OPEN |
 
