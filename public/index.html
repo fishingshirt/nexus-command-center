@@ -1191,14 +1191,15 @@
           </svg>
         </button>
         <h2>Email</h2>
+        <button class="view-action" id="email-compose-btn" aria-label="Compose">+ Compose</button>
       </div>
       <div class="view-body email-view-body">
-        <div class="email-tabs">
+        <div class="email-tabs" id="email-tabs">
           <button class="email-tab-btn active" data-tab="inbox" aria-label="Inbox">Inbox</button>
           <button class="email-tab-btn" data-tab="sent" aria-label="Sent">Sent</button>
           <button class="email-tab-btn" data-tab="settings" aria-label="Settings">Settings</button>
         </div>
-        <div class="email-panels">
+        <div class="email-panels" id="email-panels">
           <div id="email-panel-inbox" class="email-panel active">
             <div class="email-empty" id="email-inbox-empty">
               <p>Connect Gmail to see your inbox.</p>
@@ -1207,9 +1208,10 @@
             <div class="email-list" id="email-inbox-list" style="display:none;"></div>
           </div>
           <div id="email-panel-sent" class="email-panel">
-            <div class="email-empty">
-              <p>Sent items appear here.</p>
+            <div class="email-empty" id="email-sent-empty">
+              <p>No sent items yet.</p>
             </div>
+            <div class="email-list" id="email-sent-list" style="display:none;"></div>
           </div>
           <div id="email-panel-settings" class="email-panel">
             <div class="email-settings-card">
@@ -1217,6 +1219,19 @@
               <button class="btn-primary" id="email-oauth-btn">Connect Gmail</button>
               <button class="btn-secondary" id="email-unlink-btn" style="display:none;margin-top:0.5rem;">Unlink</button>
             </div>
+          </div>
+        </div>
+        <div class="email-compose" id="email-compose" style="display:none;">
+          <div class="email-compose-header">
+            <span id="email-compose-title">New Message</span>
+            <button class="email-compose-close" id="email-compose-close" aria-label="Close compose">✕</button>
+          </div>
+          <input type="text" id="email-compose-to" class="email-compose-input" placeholder="To" aria-label="To">
+          <input type="text" id="email-compose-subject" class="email-compose-input" placeholder="Subject" aria-label="Subject">
+          <textarea id="email-compose-body" class="email-compose-textarea" rows="6" placeholder="Write your message…" aria-label="Body"></textarea>
+          <div class="email-compose-actions">
+            <button class="btn-secondary" id="email-compose-cancel">Cancel</button>
+            <button class="btn-primary" id="email-compose-send">Send</button>
           </div>
         </div>
       </div>

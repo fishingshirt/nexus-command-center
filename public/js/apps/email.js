@@ -4,6 +4,7 @@ function saveData(p) { localStorage.setItem(LS, JSON.stringify({ ...loadData(), 
 function el(id) { return document.getElementById(id); }
 function on(sel, ev, fn) { document.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn)); }
 let currentThreads = [];
+let composeThreadId = null;
 
 export function initEmail() {
   bindTabs();
@@ -14,11 +15,16 @@ export function initEmail() {
 function bindTabs() {
   on('.email-tab-btn', 'click', e => {
     const tab = e.target.closest('.email-tab-btn').dataset.tab;
-    document.querySelectorAll('.email-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-    document.querySelectorAll('.email-panel').forEach(p => p.classList.toggle('active', p.id === `email-panel-${tab}`));
-    if (tab === 'inbox') loadInbox();
-    if (tab === 'settings') updateStatus();
+    switchTab(tab);
   });
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.email-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.email-panel').forEach(p => p.classList.toggle('active', p.id === `email-panel-${tab}`));
+  if (tab === 'inbox') loadInbox();
+  if (tab === 'sent') loadSent();
+  if (tab === 'settings') updateStatus();
 }
 
 function bindActions() {
@@ -30,6 +36,10 @@ function bindActions() {
     const list = el('email-inbox-list');
     if (list) list.innerHTML = '';
   });
+  el('email-compose-btn')?.addEventListener('click', () => showCompose({}));
+  el('email-compose-close')?.addEventListener('click', hideCompose);
+  el('email-compose-cancel')?.addEventListener('click', hideCompose);
+  el('email-compose-send')?.addEventListener('click', sendEmail);
 }
 
 async function updateStatus() {
@@ -88,7 +98,7 @@ async function loadInbox() {
       list.style.display = 'flex';
       list.innerHTML = d.threads.map(t => `
         <div class="email-thread" data-id="${t.id}" role="button" tabindex="0" aria-label="${t.subject || 'Thread'}">
-          <div class="email-thread-subject">${escapeHtml(t.subject || 'No subject')}</div>
+          <div class="email-thread-subject">${escapeHtml(t.subject || 'No subject')}${getPriority(t.subject)}</div>
           <div class="email-thread-from">${escapeHtml(t.from || '')}</div>
           <div class="email-thread-snippet">${escapeHtml(t.snippet || '')}</div>
           <div class="email-thread-meta">${t.messageCount || 1} msg(s)</div>
@@ -105,6 +115,38 @@ async function loadInbox() {
   }
 }
 
+async function loadSent() {
+  const empty = el('email-sent-empty');
+  const list = el('email-sent-list');
+  try {
+    const r = await fetch('/api/email/threads?label=SENT');
+    const d = await r.json();
+    if (!d.ok || !d.threads || !d.threads.length) {
+      if (empty) empty.style.display = 'block';
+      if (list) list.style.display = 'none';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    if (list) {
+      list.style.display = 'flex';
+      list.innerHTML = d.threads.map(t => `
+        <div class="email-thread" data-id="${t.id}" role="button" tabindex="0" aria-label="${t.subject || 'Thread'}">
+          <div class="email-thread-subject">${escapeHtml(t.subject || 'No subject')}</div>
+          <div class="email-thread-from">${escapeHtml(t.from || '')}</div>
+          <div class="email-thread-snippet">${escapeHtml(t.snippet || '')}</div>
+          <div class="email-thread-meta">${t.messageCount || 1} msg(s)</div>
+        </div>
+      `).join('');
+      list.querySelectorAll('.email-thread').forEach(row => {
+        row.addEventListener('click', () => openThread(row.dataset.id));
+      });
+    }
+  } catch {
+    if (empty) empty.style.display = 'block';
+    if (list) list.style.display = 'none';
+  }
+}
+
 async function openThread(id) {
   const panel = document.getElementById('email-panel-inbox');
   try {
@@ -112,6 +154,7 @@ async function openThread(id) {
     const d = await r.json();
     if (!d.ok) return;
     const messages = d.messages || [];
+    const last = messages[messages.length - 1] || {};
     const threadHtml = messages.map(m => `
       <div class="email-msg">
         <div class="email-msg-header">
@@ -119,15 +162,82 @@ async function openThread(id) {
           <span class="email-msg-date">${escapeHtml(m.date || '')}</span>
         </div>
         <div class="email-msg-subject">${escapeHtml(m.subject || '')}</div>
-        <div class="email-msg-body">${escapeHtml(m.body || '').replace(/\\n/g, '\u003cbr\u003e')}</div>
+        <div class="email-msg-body">${escapeHtml(m.body || '').replace(/\n/g, '<br>')}</div>
       </div>
     `).join('');
-    const backBtn = `<button class="email-back" id="email-thread-back" aria-label="Back"\u003e← Back to Inbox</button>`;
-    panel.innerHTML = backBtn + threadHtml;
+    const replyBtn = `<button class="email-reply-btn" id="email-reply-btn" aria-label="Reply">↩ Reply</button>`;
+    const backBtn = `<button class="email-back" id="email-thread-back" aria-label="Back">← Back to Inbox</button>`;
+    panel.innerHTML = backBtn + threadHtml + replyBtn;
     el('email-thread-back')?.addEventListener('click', () => { panel.innerHTML = ''; loadInbox(); bindTabs(); });
+    el('email-reply-btn')?.addEventListener('click', () => {
+      const to = (last.from || '').replace(/<.*?>/, '').trim() || last.from || '';
+      const subj = (last.subject || '').startsWith('Re:') ? (last.subject || '') : `Re: ${last.subject || ''}`;
+      showCompose({ to, subject: subj, threadId: id });
+    });
   } catch {
     toast('Failed to load thread');
   }
+}
+
+function showCompose({ to = '', subject = '', threadId = null } = {}) {
+  composeThreadId = threadId || null;
+  const compose = el('email-compose');
+  const panels = el('email-panels');
+  const tabs = el('email-tabs');
+  if (compose) compose.style.display = 'flex';
+  if (panels) panels.style.display = 'none';
+  if (tabs) tabs.style.display = 'none';
+  el('email-compose-to').value = to;
+  el('email-compose-subject').value = subject;
+  el('email-compose-body').value = '';
+  el('email-compose-title').textContent = threadId ? 'Reply' : 'New Message';
+  el('email-compose-body')?.focus();
+}
+
+function hideCompose() {
+  composeThreadId = null;
+  const compose = el('email-compose');
+  const panels = el('email-panels');
+  const tabs = el('email-tabs');
+  if (compose) compose.style.display = 'none';
+  if (panels) panels.style.display = 'flex';
+  if (tabs) tabs.style.display = 'flex';
+  el('email-compose-to').value = '';
+  el('email-compose-subject').value = '';
+  el('email-compose-body').value = '';
+}
+
+async function sendEmail() {
+  const to = el('email-compose-to').value.trim();
+  const subject = el('email-compose-subject').value.trim();
+  const body = el('email-compose-body').value.trim();
+  if (!to || !subject) { toast('To and Subject are required'); return; }
+  try {
+    const r = await fetch('/api/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, body, threadId: composeThreadId })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('Message sent');
+      hideCompose();
+      if (el('email-panel-sent')?.classList.contains('active')) loadSent();
+      else switchTab('sent');
+    } else {
+      toast(d.error || 'Failed to send');
+    }
+  } catch {
+    toast('Failed to send');
+  }
+}
+
+function getPriority(subject) {
+  const s = (subject || '').toLowerCase();
+  if (/\b(urgent|asap|deadline|critical)\b/.test(s)) return `<span class="email-priority email-priority-urgent">Urgent</span>`;
+  if (/\b(action required|confirm|todo|task|please review|approval needed)\b/.test(s)) return `<span class="email-priority email-priority-action">Action</span>`;
+  if (/\b(fyi|newsletter|digest|update|report|weekly|monthly)\b/.test(s)) return `<span class="email-priority email-priority-fyi">FYI</span>`;
+  return '';
 }
 
 function escapeHtml(s) {

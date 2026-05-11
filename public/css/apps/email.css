@@ -150,6 +150,97 @@
   padding: .25rem 0;
 }
 
+.email-reply-btn {
+  align-self: flex-start;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: .55rem 1rem;
+  font-size: .9rem;
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: var(--space-3);
+}
+
+/* Priority badges */
+.email-priority {
+  display: inline-block;
+  font-size: .65rem;
+  font-weight: 600;
+  padding: .15rem .45rem;
+  border-radius: var(--radius-sm);
+  margin-left: .5rem;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.email-priority-urgent { background: var(--danger, #ef4444); color: #fff; }
+.email-priority-action { background: var(--warning, #f59e0b); color: #000; }
+.email-priority-fyi    { background: var(--success, #10b981); color: #fff; }
+
+/* Compose panel */
+.email-compose {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
+
+.email-compose-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .5rem;
+}
+
+.email-compose-header span {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.email-compose-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: .25rem .5rem;
+}
+
+.email-compose-input,
+.email-compose-textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.15);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: .55rem .75rem;
+  color: var(--text);
+  font-size: .95rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.email-compose-input::placeholder,
+.email-compose-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.email-compose-textarea {
+  resize: vertical;
+  line-height: 1.5;
+  min-height: 120px;
+}
+
+.email-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+}
+
 .email-settings-card {
   background: var(--surface);
   border: 1px solid var(--border);
