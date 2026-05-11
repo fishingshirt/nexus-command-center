@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-11 03:59 UTC
-- **Active tasks:** 22
-- **Completed tasks:** 31 shown below
+- **Last updated:** 2026-05-11 06:20 UTC
+- **Active tasks:** 21
+- **Completed tasks:** 32 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 ---
 
@@ -27,7 +27,6 @@
 | HIGH | `T-032` | Email Agent / Smart Inbox | `IN_PROGRESS` | T-032-a,b,c,d,g,e DONE → [`tasks/T-032.md`](tasks/T-032.md) |
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
-| MEDIUM | `T-041` | Global search bar | `PENDING` | [`tasks/T-041.md`](tasks/T-041.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
 | LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |

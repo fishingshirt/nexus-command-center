@@ -76,6 +76,7 @@ export function initApp() {
   renderFeedbackList(true);
   updateFeedbackBadge();
   registerServiceWorker();
+  initSearch();
 
   // EMERGENCY_REVEAL: if welcome.js fails to reveal app, force it after 2s
   setTimeout(() => {
@@ -1551,3 +1552,219 @@ function initQualityPanel() {
   const timer = setInterval(refresh, 60000);
   window.addEventListener('beforeunload', () => clearInterval(timer));
 }
+
+
+/* ===== GLOBAL SEARCH ===== */
+const SEARCH_REGISTRY = [
+  { id: 'calendar', name: 'Calendar', icon: '📅', getter: () => (window.__calendarEvents || []) },
+  { id: 'notes',    name: 'Notes',    icon: '📝', getter: () => (window.__notes || []) },
+  { id: 'todo',     name: 'To-Do',    icon: '✅', getter: () => (window.__todos || []) },
+  { id: 'app',      name: 'Apps',     icon: '◈', getter: () => APP_REGISTRY.map(a => ({ id: a.id, title: a.name, body: '', app: 'app', path: a.path })) }
+];
+
+function _lsParse(key) {
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : []; } catch { return []; }
+}
+function _normalize(arr, source) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(item => {
+    const title = item.title || item.summary || item.name || item.text || '';
+    const body  = item.body || item.description || item.content || item.notes || '';
+    const id    = item.id || item._id || String(Math.random()).slice(2,8);
+    const ts    = item.updatedAt || item.createdAt || item.date || item.start || item.ts || '';
+    return { source, id, title: String(title), body: String(body), ts };
+  });
+}
+
+let __searchIndex = [];
+let __searchTimer = null;
+let __searchActive = false;
+let __searchSelected = -1;
+
+function buildSearchIndex() {
+  const idx = [];
+  for (const s of SEARCH_REGISTRY) {
+    let data = s.getter();
+    if (!data || !data.length) {
+      if (s.id === 'calendar') data = _lsParse('ncc-calendar-events');
+      if (s.id === 'notes')    data = _lsParse('ncc-notes');
+      if (s.id === 'todo')     data = _lsParse('ncc-todo');
+    }
+    idx.push(..._normalize(data, s));
+  }
+  __searchIndex = idx;
+}
+
+function initSearch() {
+  const overlay = document.getElementById('search-overlay');
+  const input   = document.getElementById('search-input');
+  const results = document.getElementById('search-results');
+  const backdrop = document.getElementById('search-overlay-backdrop');
+  if (!overlay || !input || !results) return;
+
+  document.getElementById('header-search-btn')?.addEventListener('click', openSearch);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      openSearch();
+    }
+    if (e.key === 'Escape' && __searchActive) closeSearch();
+  });
+
+  backdrop?.addEventListener('click', closeSearch);
+
+  input.addEventListener('input', () => {
+    clearTimeout(__searchTimer);
+    __searchTimer = setTimeout(() => runSearch(input.value.trim()), 150);
+  });
+
+  input.addEventListener('keydown', e => {
+    const rows = results.querySelectorAll('.search-result');
+    if (e.key === 'ArrowDown') { e.preventDefault(); __searchSelected = Math.min(__searchSelected + 1, rows.length - 1); updateSelection(rows); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); __searchSelected = Math.max(__searchSelected - 1, 0); updateSelection(rows); }
+    else if (e.key === 'Enter') { e.preventDefault(); const sel = rows[__searchSelected]; if (sel) activateResult(sel); }
+  });
+
+  results.addEventListener('click', e => {
+    const row = e.target.closest('.search-result');
+    if (row) activateResult(row);
+  });
+
+  if ('requestIdleCallback' in window) requestIdleCallback(buildSearchIndex, { timeout: 2000 });
+  else setTimeout(buildSearchIndex, 500);
+}
+
+function openSearch() {
+  const overlay = document.getElementById('search-overlay');
+  const input   = document.getElementById('search-input');
+  if (!overlay) return;
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+  __searchActive = true;
+  __searchSelected = -1;
+  setTimeout(() => input?.focus(), 50);
+  buildSearchIndex();
+}
+
+function closeSearch() {
+  const overlay = document.getElementById('search-overlay');
+  const input   = document.getElementById('search-input');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  overlay.setAttribute('aria-hidden', 'true');
+  __searchActive = false;
+  __searchSelected = -1;
+  if (input) input.value = '';
+  const results = document.getElementById('search-results');
+  if (results) results.innerHTML = '<div class="search-empty" id="search-empty">Type to search across notes, todos, calendar, and apps…</div>';
+}
+
+function _score(q, text) {
+  const t = text.toLowerCase();
+  const queries = q.toLowerCase().split(/\s+/).filter(Boolean);
+  let score = 0;
+  for (const word of queries) {
+    if (t === word) score += 5;
+    else if (t.startsWith(word)) score += 3;
+    else if (t.includes(word)) score += 1;
+  }
+  return score;
+}
+function _highlight(q, text) {
+  const queries = q.toLowerCase().split(/\s+/).filter(Boolean).filter(w => w.length > 0);
+  let out = escapeHtml(text);
+  for (const word of queries) {
+    try {
+      const re = new RegExp('(' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      out = out.replace(re, '<mark>$1</mark>');
+    } catch { /* ignore bad regex */ }
+  }
+  return out;
+}
+
+function runSearch(q) {
+  const resultsEl = document.getElementById('search-results');
+  if (!resultsEl) return;
+  if (!q) {
+    resultsEl.innerHTML = '<div class="search-empty">Type to search across notes, todos, calendar, and apps…</div>';
+    __searchSelected = -1;
+    return;
+  }
+  const scored = __searchIndex.map(item => {
+    const sTitle = _score(q, item.title);
+    const sBody  = _score(q, item.body);
+    return { item, score: sTitle + sBody * 0.5 };
+  }).filter(r => r.score > 0).sort((a, b) => b.score - a.score).slice(0, 40);
+
+  if (!scored.length) {
+    resultsEl.innerHTML = `<div class="search-empty">No results for "${escapeHtml(q)}"</div>`;
+    __searchSelected = -1;
+    return;
+  }
+  const grouped = {};
+  for (const { item } of scored) {
+    const g = item.source?.name || item.source || 'Other';
+    (grouped[g] ||= []).push(item);
+  }
+  const icons = { Calendar:'📅', Notes:'📝', 'To-Do':'✅', Apps:'◈', Other:'◈' };
+  const frag = document.createElement('div');
+  for (const [group, items] of Object.entries(grouped).slice(0, 4)) {
+    const label = document.createElement('div');
+    label.className = 'search-group-label';
+    label.textContent = group;
+    frag.appendChild(label);
+    for (const item of items.slice(0, 6)) {
+      const row = document.createElement('div');
+      row.className = 'search-result';
+      row.setAttribute('role', 'option');
+      row.setAttribute('tabindex', '-1');
+      row.dataset.view = item.source?.id || (item.path ? item.id : group.toLowerCase());
+      row.dataset.id = typeof item.id !== 'undefined' ? item.id : '';
+      const icon = icons[group] || '◈';
+      const snippet = item.body ? item.body.slice(0, 90) : '';
+      row.innerHTML = `
+        <span class="search-result-icon">${icon}</span>
+        <div class="search-result-meta">
+          <div class="search-result-title">${_highlight(q, item.title || '(Untitled)')}</div>
+          ${snippet ? `<div class="search-result-snippet">${_highlight(q, snippet)}</div>` : ''}
+        </div>
+        ${item.ts ? `<span class="search-result-chip">${new Date(item.ts).toLocaleDateString()}</span>` : ''}
+      `;
+      frag.appendChild(row);
+    }
+  }
+  resultsEl.innerHTML = '';
+  resultsEl.appendChild(frag);
+  __searchSelected = 0;
+  updateSelection(resultsEl.querySelectorAll('.search-result'));
+}
+
+function updateSelection(rows) {
+  rows.forEach((r, i) => r.setAttribute('aria-selected', i === __searchSelected ? 'true' : 'false'));
+  const sel = rows[__searchSelected];
+  if (sel) sel.scrollIntoView({ block: 'nearest' });
+}
+
+function activateResult(row) {
+  const view = row.dataset.view;
+  const id   = row.dataset.id;
+  closeSearch();
+  if (view) location.hash = view;
+  if (id) {
+    setTimeout(() => {
+      const el = document.querySelector(`[data-id="${CSS.escape(String(id))}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.classList?.add('highlight-pulse');
+      setTimeout(() => el?.classList?.remove('highlight-pulse'), 1500);
+    }, 120);
+  }
+}
+
+/* ===== EXPORTS ===== */
+window.APP_REGISTRY = APP_REGISTRY;
+window.initApp = initApp;
+window.openSearch = openSearch;
+window.closeSearch = closeSearch;
