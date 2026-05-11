@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="css/apps/wishlist.css">
     <link rel="stylesheet" href="css/apps/email.css">
     <link rel="stylesheet" href="css/apps/rss.css">
+    <link rel="stylesheet" href="css/apps/pdf-editor.css">
     <link rel="stylesheet" href="css/apps/shortcuts.css">
   <style>
     /* CRITICAL: hide app before any CSS/JS loads. Zero flash. */
@@ -152,6 +153,10 @@
           RSS Reader
         </a>
         <div class="nav-divider"></div>
+        <a href="#pdf" class="nav-link" data-app="pdf">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          PDF Editor
+        </a>
         <button class="nav-link nav-settings-link" id="nav-settings-link" data-app="settings" aria-label="Open Settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           Settings
@@ -368,6 +373,18 @@
             <p>Save items to buy</p>
           </div>
           <div class="app-card-badge" style="background:#ec489912;color:#ec4899;font-size:0.7rem;">NEW</div>
+        </div>
+
+        <!-- PDF Editor Card -->
+        <div class="app-card" data-app="pdf" tabindex="0" role="button" aria-label="Open PDF Editor">
+          <div class="app-card-icon" style="--card-accent: #ef4444;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <div class="app-card-info">
+            <h3>PDF Editor</h3>
+            <p>Edit PDFs smartly</p>
+          </div>
+          <div class="app-card-badge" style="background:#ef444412;color:#ef4444;font-size:0.7rem;">NEW</div>
         </div>
 
         <!-- Weather mini-view (horizontal scroll row) -->
@@ -982,6 +999,57 @@
       </div>
 
       <!-- Settings View -->
+      <!-- PDF Editor View -->
+      <div id="view-pdf" class="view">
+        <div class="view-header">
+          <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2>PDF Editor</h2>
+          <div class="pdf-status-badge" id="pdf-status-badge">Ready</div>
+        </div>
+        <div class="view-body pdf-editor-shell">
+          <div class="pdf-editor-grid">
+            <div class="pdf-main">
+              <!-- Drop zone -->
+              <div id="pdf-drop-zone">
+                <h3>Drop PDF here</h3>
+                <p>or click to browse</p>
+                <input type="file" id="pdf-upload-input" accept=".pdf" hidden>
+                <button class="btn-secondary" id="pdf-browse-btn" style="margin-top:0.6rem;">Browse</button>
+              </div>
+              <!-- Preview -->
+              <div class="pdf-preview-wrap" id="pdf-preview">
+                <div class="pdf-empty-preview">Upload a PDF to preview it here</div>
+              </div>
+              <!-- Command bar -->
+              <div class="pdf-command-bar">
+                <input type="text" id="pdf-command-input" placeholder="Try: extract text — extract pages 3-5 — merge — split" aria-label="Natural language command">
+                <button class="btn-primary" id="pdf-command-go">Run</button>
+              </div>
+              <!-- Text output -->
+              <div id="pdf-text-output">
+                <h4>Extracted Text</h4>
+                <pre class="pdf-text-content"></pre>
+              </div>
+              <!-- Log -->
+              <div id="pdf-log"></div>
+              <!-- Actions -->
+              <div class="pdf-toolbar">
+                <button class="btn-secondary" id="pdf-download-btn">Download</button>
+                <button class="btn-secondary" id="pdf-clear-btn">Clear</button>
+              </div>
+            </div>
+            <aside class="pdf-sidebar">
+              <h4>History</h4>
+              <div class="pdf-history-list" id="pdf-history-list">
+                <p class="pdf-empty">No uploads yet.</p>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+
       <div id="view-settings" class="view">
         <div class="view-header">
           <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">

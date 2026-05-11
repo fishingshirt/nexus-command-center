@@ -15,6 +15,7 @@ import { initPomodoro } from './apps/pomodoro.js';
 import { initWorldClock } from './apps/worldclock.js';
 import { initNews, openNews } from './apps/news.js';
 import { initRss } from './apps/rss.js';
+import { initPdfEditor } from './apps/pdf.js';
 import { initWishlist } from './apps/wishlist.js';
 import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
@@ -36,7 +37,8 @@ const APP_REGISTRY = [
   { id: 'news', name: 'News Hub', icon: '📰', path: 'news' },
   { id: 'wishlist', name: 'Wishlist', icon: '❤️', path: 'wishlist' },
   { id: 'email', name: 'Email', icon: '✉️', path: 'email' },
-  { id: 'rss', name: 'RSS Reader', icon: '📡', path: 'rss' }
+  { id: 'rss', name: 'RSS Reader', icon: '📡', path: 'rss' },
+  { id: 'pdf', name: 'PDF Editor', icon: '📄', path: 'pdf' }
 ];
 
 export function initApp() {
@@ -63,6 +65,7 @@ export function initApp() {
   initNews();
   initRss();
   initWishlist();
+  initPdfEditor();
   initEmail();
   initWeather();
   initCalendar();
@@ -163,6 +166,10 @@ function switchView(viewId) {
       if (typeof ensureAuthEnabled === 'function') {
         ensureAuthEnabled(viewId);
       }
+    }
+    if (viewId === 'pdf') {
+      // refresh any PDF-specific state on open
+      if (typeof initPdfEditor === 'function') initPdfEditor();
     }
   } else {
     document.getElementById('view-dashboard').classList.add('active');

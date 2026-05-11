@@ -11,6 +11,10 @@ PIDFILE = os.path.expanduser('~/.hermes/nexus-server.pid')
 START_TIME = time.time()
 TEMP_PIN = "fullroot88"
 
+# -- PDF storage root --
+PDF_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'pdfs')
+os.makedirs(PDF_DIR, exist_ok=True)
+
 def get_args():
     p = argparse.ArgumentParser()
     p.add_argument('--port', type=int, default=8080)
@@ -97,6 +101,123 @@ def _tail(path, lines=20):
             return [l.rstrip('\n') for l in buf[-lines:]]
     except Exception:
         return []
+
+def _api_pdf_upload(handler):
+    import cgi, shutil, time, hashlib
+    ctype, pdict = cgi.parse_header(handler.headers.get('Content-Type', ''))
+    if ctype != 'multipart/form-data':
+        _json(handler, 400, {'ok': False, 'error': 'Expected multipart/form-data'})
+        return True
+    pdict['boundary'] = pdict['boundary'].encode('latin-1') if isinstance(pdict.get('boundary'), str) else pdict.get('boundary')
+    fs = cgi.FieldStorage(fp=handler.rfile, headers=handler.headers, environ={'REQUEST_METHOD':'POST', 'CONTENT_TYPE':handler.headers.get('Content-Type')})
+    upfile = fs.get('file')
+    if not upfile or not upfile.file or not upfile.filename:
+        _json(handler, 400, {'ok': False, 'error': 'No file uploaded'})
+        return True
+    ext = os.path.splitext(upfile.filename)[1].lower()
+    if ext != '.pdf':
+        _json(handler, 400, {'ok': False, 'error': 'Only PDF files accepted'})
+        return True
+    safe = hashlib.sha256((upfile.filename + str(time.time())).encode()).hexdigest()[:16] + '.pdf'
+    dest = os.path.join(PDF_DIR, safe)
+    with open(dest, 'wb') as f:
+        shutil.copyfileobj(upfile.file, f)
+    pages = 0
+    try:
+        import fitz
+        pages = fitz.open(dest).page_count
+    except Exception:
+        pass
+    _json(handler, 200, {'ok': True, 'filename': safe, 'pages': pages, 'size': os.path.getsize(dest)})
+    return True
+
+def _api_pdf_nlp(handler):
+    length = int(handler.headers.get('Content-Length', 0))
+    body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+    try:
+        req = json.loads(body)
+    except Exception:
+        _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+        return True
+    filename = req.get('filename', '')
+    cmd = req.get('command', '').lower().strip()
+    if not filename or not cmd:
+        _json(handler, 400, {'ok': False, 'error': 'filename and command required'})
+        return True
+    fp = os.path.join(PDF_DIR, filename.replace('/', '').replace('\\', ''))
+    if not os.path.isfile(fp):
+        _json(handler, 404, {'ok': False, 'error': 'File not found'})
+        return True
+    try:
+        import fitz
+        doc = fitz.open(fp)
+    except Exception as e:
+        _json(handler, 500, {'ok': False, 'error': f'Cannot open PDF: {e}'})
+        return True
+    if 'extract text' in cmd or 'ocr' in cmd or 'text' in cmd:
+        text = ''
+        for page in doc:
+            text += page.get_text() + '\n'
+        doc.close()
+        _json(handler, 200, {'ok': True, 'action': 'extract_text', 'textLength': len(text), 'text': text})
+        return True
+    if 'extract pages' in cmd or 'pages' in cmd:
+        import re
+        m = re.search(r'(\d+)\s*-\s*(\d+)', cmd)
+        if m:
+            s, e = int(m.group(1)) - 1, int(m.group(2))
+        else:
+            m2 = re.search(r'\b(\d+)\b', cmd)
+            s = int(m2.group(1)) - 1 if m2 else 0
+            e = s + 1
+        s = max(0, min(s, doc.page_count - 1))
+        e = max(s + 1, min(e, doc.page_count))
+        new_doc = fitz.open()
+        new_doc.insert_pdf(doc, from_page=s, to_page=e-1)
+        safe = hashlib.sha256((filename + str(time.time())).encode()).hexdigest()[:16] + '.pdf'
+        out = os.path.join(PDF_DIR, safe)
+        new_doc.save(out)
+        new_doc.close(); doc.close()
+        _json(handler, 200, {'ok': True, 'action': 'extract_pages', 'newFilename': safe, 'newPages': e - s})
+        return True
+    if 'merge' in cmd:
+        doc.close()
+        _json(handler, 200, {'ok': True, 'action': 'merge_pdf', 'newFilename': filename, 'note': 'Merging needs another PDF file selected'})
+        return True
+    if 'split' in cmd:
+        doc.close()
+        _json(handler, 200, {'ok': True, 'action': 'split_pdf', 'pages': doc.page_count, 'note': 'Splitting into per-page PDFs not yet implemented'})
+        return True
+    meta = {'pageCount': doc.page_count, 'title': doc.metadata.get('title',''), 'author': doc.metadata.get('author','')}
+    doc.close()
+    _json(handler, 200, {'ok': True, 'action': 'metadata', 'metadata': meta})
+    return True
+
+def _api_pdf_file(handler, path):
+    filename = path.split('/')[-1].replace('/', '').replace('\\', '')
+    fp = os.path.join(PDF_DIR, filename)
+    if not os.path.isfile(fp):
+        handler.send_response(404)
+        handler.end_headers()
+        return True
+    handler.send_response(200)
+    handler.send_header('Content-Type', 'application/pdf')
+    handler.send_header('Content-Disposition', f'inline; filename="{filename}"')
+    handler.end_headers()
+    with open(fp, 'rb') as f:
+        handler.wfile.write(f.read())
+    return True
+
+def _api_pdf(handler, path, raw_path):
+    if path == '/api/pdf/upload' and handler.command == 'POST':
+        return _api_pdf_upload(handler)
+    if path == '/api/pdf/nlp' and handler.command == 'POST':
+        return _api_pdf_nlp(handler)
+    if path.startswith('/api/pdf/file/'):
+        return _api_pdf_file(handler, path)
+    _json(handler, 405, {'ok': False, 'error': 'Method not allowed'})
+    return True
+
 
 def _deps():
     services = []
@@ -2326,6 +2447,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/email/'):
             return _api_email(self, self.path)
 
+        if path.startswith('/api/pdf/'):
+            return _api_pdf(self, path, self.path)
+
         if path.startswith('/api/store/'):
             if self.command == 'GET':
                 return _api_store_get(self, self.path)
@@ -2370,6 +2494,10 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 _json(self, 200, {'ready': False, 'content': None})
             return True
+
+        if path.startswith('/api/pdf/'):
+            if _api_pdf(self, path, self.path):
+                return True
 
         return False
 

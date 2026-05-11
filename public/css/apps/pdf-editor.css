@@ -1,0 +1,166 @@
+/** Nexus Smart PDF Editor (T-025) */
+
+/* Shell */
+#view-pdf { max-width: none; }
+
+.pdf-editor-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: calc(100vh - 160px);
+}
+
+.pdf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0;
+}
+
+.pdf-status-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: auto;
+}
+.badge-ready   { background: rgba(57,208,242,.15); color: #39d0f2; }
+.badge-busy    { background: rgba(245,158,11,.15); color: #f59e0b; }
+.badge-done    { background: rgba(34,197,94,.15); color: #22c55e; }
+.badge-error   { background: rgba(239,68,68,.15); color: #ef4444; }
+
+/* Drop zone */
+#pdf-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  color: var(--text-secondary);
+}
+#pdf-drop-zone:hover,
+#pdf-drop-zone.drag-active {
+  border-color: var(--accent);
+  background: rgba(57,208,242,.05);
+}
+#pdf-drop-zone h3 { margin: 0.5rem 0 0.25rem; color: var(--text); font-size: 1rem; }
+#pdf-drop-zone p  { margin: 0; font-size: 0.85rem; }
+
+/* Preview */
+.pdf-preview-wrap {
+  flex: 1;
+  min-height: 200px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-2);
+  position: relative;
+}
+.pdf-preview-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+.pdf-empty-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Command bar */
+.pdf-command-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.pdf-command-bar input {
+  flex: 1;
+  min-width: 120px;
+}
+.pdf-command-bar button { white-space: nowrap; }
+
+/* Log */
+#pdf-log {
+  max-height: 140px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+}
+.pdf-log-line { padding: 0.1rem 0; }
+.pdf-log-info  { color: var(--text-secondary); }
+.pdf-log-warn  { color: #f59e0b; }
+.pdf-log-error { color: #ef4444; }
+.pdf-log-done  { color: #22c55e; }
+
+/* Text result */
+#pdf-text-output {
+  display: none;
+}
+.pdf-text-content {
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow: auto;
+  background: var(--surface-2);
+  padding: 0.6rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+/* History sidebar / list */
+.pdf-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.pdf-history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.pdf-history-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-history-action {
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+  opacity: 0.8;
+}
+
+/* Grid inside view */
+.pdf-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 1rem;
+}
+@media (max-width: 768px) {
+  .pdf-editor-grid { grid-template-columns: 1fr; }
+}
+
+/* Buttons */
+.pdf-toolbar .btn-primary,
+.pdf-toolbar .btn-secondary,
+.pdf-command-bar .btn-primary,
+.pdf-command-bar .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+}

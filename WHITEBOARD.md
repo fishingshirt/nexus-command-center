@@ -22,7 +22,6 @@
 | MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
-| HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
 | HIGH | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
 | HIGH | `T-032` | Email Agent / Smart Inbox | `IN_PROGRESS` | T-032-a,b,c,d,e,f,g DONE → [`tasks/T-032.md`](tasks/T-032.md) |
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
@@ -48,6 +47,7 @@
 
 | ID | Task |
 |----|------|
+| `T-025` | Smart PDF Editor |
 | `T-041` | Global search bar — keyboard /, fuzzy search, grouped results, mobile full-screen, highlight pulse |
 | `T-061` | Wishlist App (links, notes, priority, status) |
 | `T-044` | World Clock Widget |
