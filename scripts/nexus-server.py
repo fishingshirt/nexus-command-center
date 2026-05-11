@@ -743,6 +743,319 @@ def _gcal_access_token():
         return at
     return _refresh_gcal_token()
 
+
+# ── Gmail helpers ─────────────────────────────
+_GMAIL_TOKEN_PATH = os.path.expanduser('~/.hermes/nexus-gmail-tokens.json')
+
+def _load_gmail_tokens():
+    try:
+        with open(_GMAIL_TOKEN_PATH, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _save_gmail_tokens(tokens):
+    os.makedirs(os.path.dirname(_GMAIL_TOKEN_PATH), exist_ok=True)
+    with open(_GMAIL_TOKEN_PATH, 'w') as f:
+        json.dump(tokens, f)
+
+def _refresh_gmail_token():
+    tokens = _load_gmail_tokens()
+    rt = tokens.get('refresh_token')
+    if not rt:
+        return None
+    import urllib.request, urllib.parse
+    cid = os.environ.get('GOOGLE_CLIENT_ID', '')
+    csec = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+    if not cid or not csec:
+        env_path = os.path.expanduser('~/.hermes/.env')
+        try:
+            with open(env_path) as f:
+                for line in f:
+                    if line.startswith('GOOGLE_CLIENT_ID='):
+                        cid = line.split('=',1)[1].strip()
+                    if line.startswith('GOOGLE_CLIENT_SECRET='):
+                        csec = line.split('=',1)[1].strip()
+        except Exception:
+            pass
+    if not cid or not csec:
+        return None
+    data = urllib.parse.urlencode({
+        'client_id': cid, 'client_secret': csec,
+        'refresh_token': rt, 'grant_type': 'refresh_token'
+    }).encode()
+    req = urllib.request.Request('https://oauth2.googleapis.com/token', data=data,
+                                 headers={'Content-Type': 'application/x-www-form-urlencoded'})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            j = json.loads(resp.read().decode())
+            tokens['access_token'] = j.get('access_token')
+            if 'expires_in' in j:
+                tokens['expires_at'] = time.time() + j['expires_in']
+            _save_gmail_tokens(tokens)
+            return tokens['access_token']
+    except Exception:
+        return None
+
+def _gmail_access_token():
+    tokens = _load_gmail_tokens()
+    at = tokens.get('access_token')
+    exp = tokens.get('expires_at', 0)
+    if at and time.time() < exp - 60:
+        return at
+    return _refresh_gmail_token()
+
+def _api_email(handler, raw_path):
+    import urllib.parse, urllib.request, base64
+    path = raw_path.split('?')[0]
+
+    if path == '/api/email/oauth/start':
+        cid = os.environ.get('GOOGLE_CLIENT_ID', '')
+        if not cid:
+            env_path = os.path.expanduser('~/.hermes/.env')
+            try:
+                with open(env_path) as f:
+                    for line in f:
+                        if line.startswith('GOOGLE_CLIENT_ID='):
+                            cid = line.split('=',1)[1].strip()
+            except Exception:
+                pass
+        if not cid:
+            _json(handler, 503, {'ok': False, 'error': 'GOOGLE_CLIENT_ID not configured'})
+            return True
+        redirect_uri = f'http://localhost:{handler.server.server_address[1]}/api/email/oauth/callback'
+        url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urllib.parse.urlencode({
+            'client_id': cid,
+            'redirect_uri': redirect_uri,
+            'response_type': 'code',
+            'scope': 'https://www.googleapis.com/auth/gmail.modify',
+            'access_type': 'offline',
+            'prompt': 'consent'
+        })
+        _json(handler, 200, {'ok': True, 'url': url})
+        return True
+
+    if path == '/api/email/oauth/callback':
+        parsed = urllib.parse.urlparse(raw_path)
+        qs = urllib.parse.parse_qs(parsed.query)
+        code = qs.get('code', [''])[0]
+        if not code:
+            _json(handler, 400, {'ok': False, 'error': 'Missing authorization code'})
+            return True
+        cid = os.environ.get('GOOGLE_CLIENT_ID', '')
+        csec = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+        if not cid or not csec:
+            env_path = os.path.expanduser('~/.hermes/.env')
+            try:
+                with open(env_path) as f:
+                    for line in f:
+                        if line.startswith('GOOGLE_CLIENT_ID='):
+                            cid = line.split('=',1)[1].strip()
+                        if line.startswith('GOOGLE_CLIENT_SECRET='):
+                            csec = line.split('=',1)[1].strip()
+            except Exception:
+                pass
+        if not cid or not csec:
+            _json(handler, 503, {'ok': False, 'error': 'Client credentials not configured'})
+            return True
+        redirect_uri = f'http://localhost:{handler.server.server_address[1]}/api/email/oauth/callback'
+        data = urllib.parse.urlencode({
+            'code': code, 'client_id': cid, 'client_secret': csec,
+            'redirect_uri': redirect_uri, 'grant_type': 'authorization_code'
+        }).encode()
+        req = urllib.request.Request('https://oauth2.googleapis.com/token', data=data,
+                                       headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                j = json.loads(resp.read().decode())
+                tokens = {
+                    'access_token': j.get('access_token'),
+                    'refresh_token': j.get('refresh_token'),
+                    'expires_at': time.time() + j.get('expires_in', 3600),
+                    'scope': j.get('scope', ''),
+                    'token_type': j.get('token_type', 'Bearer')
+                }
+                _save_gmail_tokens(tokens)
+                _json(handler, 200, {'ok': True, 'status': 'connected'})
+                return True
+        except urllib.error.HTTPError as e:
+            body = e.read().decode()
+            _json(handler, 502, {'ok': False, 'error': f'Token exchange failed: {body}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
+    if path == '/api/email/status':
+        tokens = _load_gmail_tokens()
+        at = _gmail_access_token()
+        email = None
+        if at:
+            try:
+                r = urllib.request.Request('https://www.googleapis.com/gmail/v1/users/me/profile',
+                                           headers={'Authorization': f'Bearer {at}'})
+                with urllib.request.urlopen(r, timeout=10) as resp:
+                    profile = json.loads(resp.read().decode())
+                    email = profile.get('emailAddress')
+            except Exception:
+                pass
+        _json(handler, 200, {'linked': bool(at), 'email': email})
+        return True
+
+    if path == '/api/email/unlink':
+        try:
+            os.remove(_GMAIL_TOKEN_PATH)
+        except FileNotFoundError:
+            pass
+        _json(handler, 200, {'ok': True})
+        return True
+
+    if path == '/api/email/threads':
+        at = _gmail_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        parsed = urllib.parse.urlparse(raw_path)
+        qs = urllib.parse.parse_qs(parsed.query)
+        max_results = int(qs.get('maxResults', ['25'])[0])
+        label = qs.get('label', ['INBOX'])[0]
+        page_token = qs.get('pageToken', [''])[0]
+        api_qs = {'maxResults': max_results, 'labelIds': label}
+        if page_token:
+            api_qs['pageToken'] = page_token
+        url = 'https://www.googleapis.com/gmail/v1/users/me/threads?' + urllib.parse.urlencode(api_qs)
+        req = urllib.request.Request(url, headers={'Authorization': f'Bearer {at}'})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode())
+                threads = data.get('threads', [])
+                threads_out = []
+                for t in threads:
+                    tid = t.get('id')
+                    if not tid:
+                        continue
+                    # fetch minimal thread snippet
+                    turl = f'https://www.googleapis.com/gmail/v1/users/me/threads/{urllib.parse.quote(tid)}?format=metadata&metadataHeaders=Subject&metadataHeaders=From'
+                    treq = urllib.request.Request(turl, headers={'Authorization': f'Bearer {at}'})
+                    try:
+                        with urllib.request.urlopen(treq, timeout=10) as tresp:
+                            td = json.loads(tresp.read().decode())
+                            msgs = td.get('messages', [])
+                            first = msgs[0] if msgs else {}
+                            headers = {h['name']: h['value'] for h in first.get('payload', {}).get('headers', [])}
+                            threads_out.append({
+                                'id': tid,
+                                'snippet': td.get('snippet', ''),
+                                'subject': headers.get('Subject', 'No subject'),
+                                'from': headers.get('From', ''),
+                                'historyId': td.get('historyId'),
+                                'messageCount': len(msgs)
+                            })
+                    except Exception:
+                        threads_out.append({'id': tid, 'snippet': t.get('snippet', ''), 'subject': 'Unknown', 'from': ''})
+                _json(handler, 200, {
+                    'ok': True,
+                    'threads': threads_out,
+                    'nextPageToken': data.get('nextPageToken'),
+                    'status': 'synced'
+                })
+                return True
+        except urllib.error.HTTPError as e:
+            _json(handler, 502, {'ok': False, 'error': f'Gmail API error {e.code}', 'status': 'error'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e), 'status': 'error'})
+            return True
+
+    m = __import__('re').match(r'^/api/email/threads/([^/]+)$', path)
+    if m and handler.command == 'GET':
+        at = _gmail_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        tid = urllib.parse.unquote(m.group(1))
+        url = f'https://www.googleapis.com/gmail/v1/users/me/threads/{urllib.parse.quote(tid)}?format=full'
+        req = urllib.request.Request(url, headers={'Authorization': f'Bearer {at}'})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode())
+                messages = []
+                for msg in data.get('messages', []):
+                    payload = msg.get('payload', {})
+                    headers = {h['name']: h['value'] for h in payload.get('headers', [])}
+                    parts = payload.get('parts', [])
+                    body_text = ''
+                    for part in parts:
+                        if part.get('mimeType') == 'text/plain':
+                            bd = part.get('body', {}).get('data', '')
+                            if bd:
+                                body_text += base64.urlsafe_b64decode(bd).decode('utf-8', errors='replace')
+                        elif part.get('mimeType') == 'text/html' and not body_text:
+                            bd = part.get('body', {}).get('data', '')
+                            if bd:
+                                body_text = base64.urlsafe_b64decode(bd).decode('utf-8', errors='replace')
+                    if not body_text and payload.get('body', {}).get('data'):
+                        body_text = base64.urlsafe_b64decode(payload['body']['data']).decode('utf-8', errors='replace')
+                    messages.append({
+                        'id': msg.get('id'),
+                        'threadId': msg.get('threadId'),
+                        'labelIds': msg.get('labelIds', []),
+                        'snippet': msg.get('snippet', ''),
+                        'subject': headers.get('Subject', ''),
+                        'from': headers.get('From', ''),
+                        'to': headers.get('To', ''),
+                        'date': headers.get('Date', ''),
+                        'body': body_text
+                    })
+                _json(handler, 200, {'ok': True, 'id': tid, 'messages': messages})
+                return True
+        except urllib.error.HTTPError as e:
+            _json(handler, 502, {'ok': False, 'error': f'Gmail API error {e.code}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
+    if path == '/api/email/send':
+        at = _gmail_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        to = req.get('to', '')
+        subject = req.get('subject', '')
+        msg_body = req.get('body', '')
+        thread_id = req.get('threadId')
+        if not to or not subject:
+            _json(handler, 400, {'ok': False, 'error': 'Missing to or subject'})
+            return True
+        raw_msg = f"To: {to}\nSubject: {subject}\n\n{msg_body}"
+        encoded = base64.urlsafe_b64encode(raw_msg.encode('utf-8')).decode('ascii')
+        payload = {'raw': encoded}
+        if thread_id:
+            payload['threadId'] = thread_id
+        data = json.dumps(payload).encode('utf-8')
+        url = 'https://www.googleapis.com/gmail/v1/users/me/messages/send'
+        hreq = urllib.request.Request(url, data=data, headers={'Authorization': f'Bearer {at}', 'Content-Type': 'application/json'}, method='POST')
+        try:
+            with urllib.request.urlopen(hreq, timeout=15) as resp:
+                rdata = json.loads(resp.read().decode())
+                _json(handler, 200, {'ok': True, 'id': rdata.get('id'), 'threadId': rdata.get('threadId')})
+                return True
+        except urllib.error.HTTPError as e:
+            _json(handler, 502, {'ok': False, 'error': f'Gmail API error {e.code}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
+    return False
 def _api_calendar(handler, raw_path):
     import urllib.parse, urllib.request, datetime
     path = raw_path.split('?')[0]
@@ -1846,6 +2159,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/calendar/'):
             return _api_calendar(self, self.path)
 
+        if path.startswith('/api/email/'):
+            return _api_email(self, self.path)
+
         if path.startswith('/api/store/'):
             if self.command == 'GET':
                 return _api_store_get(self, self.path)
@@ -1938,6 +2254,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                     return
             if path.startswith('/api/calendar/'):
                 if _api_calendar(self, self.path):
+                    return
+            if path.startswith('/api/email/'):
+                if _api_email(self, self.path):
                     return
             if path == '/api/notifications':
                 queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')
