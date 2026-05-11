@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="css/apps/wishlist.css">
     <link rel="stylesheet" href="css/apps/email.css">
     <link rel="stylesheet" href="css/apps/rss.css">
+    <link rel="stylesheet" href="css/apps/shortcuts.css">
   <style>
     /* CRITICAL: hide app before any CSS/JS loads. Zero flash. */
     #app { display: none !important; }
@@ -1493,6 +1494,31 @@
         <span class="search-footer-item"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
         <span class="search-footer-item"><kbd>Enter</kbd> Open</span>
         <span class="search-footer-item"><kbd>Esc</kbd> Close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Overlay -->
+  <div id="shortcuts-overlay" class="shortcuts-overlay" aria-hidden="true" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="shortcuts-backdrop" id="shortcuts-backdrop"></div>
+    <div class="shortcuts-sheet">
+      <div class="shortcuts-header">
+        <h2>Keyboard Shortcuts</h2>
+        <button class="shortcuts-close" id="shortcuts-close" aria-label="Close shortcuts">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="shortcuts-body" id="shortcuts-body">
+        <!-- Injected by JS -->
+      </div>
+      <div class="shortcuts-footer">
+        <label class="shortcuts-toggle">
+          <input type="checkbox" id="shortcuts-toggle-enabled" checked>
+          <span>Shortcuts enabled</span>
+        </label>
+        <span>Press <kbd>?</kbd> to toggle any time</span>
       </div>
     </div>
   </div>

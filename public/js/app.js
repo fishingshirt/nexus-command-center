@@ -16,6 +16,7 @@ import { initWorldClock } from './apps/worldclock.js';
 import { initNews, openNews } from './apps/news.js';
 import { initRss } from './apps/rss.js';
 import { initWishlist } from './apps/wishlist.js';
+import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
 import { initWelcome } from './welcome.js';
 import { initNotifications, notify } from './notifications.js';
@@ -77,6 +78,7 @@ export function initApp() {
   updateFeedbackBadge();
   registerServiceWorker();
   initSearch();
+  initShortcuts();
 
   // EMERGENCY_REVEAL: if welcome.js fails to reveal app, force it after 2s
   setTimeout(() => {

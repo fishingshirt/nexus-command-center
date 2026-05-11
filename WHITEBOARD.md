@@ -29,7 +29,7 @@
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
 | LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
-| MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `PENDING` | [`tasks/T-047.md`](tasks/T-047.md) |
+| MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `DONE` | [`tasks/T-047.md`](tasks/T-047.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
@@ -48,6 +48,7 @@
 
 | ID | Task |
 |----|------|
+| `T-041` | Global search bar — keyboard /, fuzzy search, grouped results, mobile full-screen, highlight pulse |
 | `T-061` | Wishlist App (links, notes, priority, status) |
 | `T-044` | World Clock Widget |
 | `T-053` | News & Media Hub |
