@@ -20,14 +20,21 @@
 |----------|----|------|--------|---------|
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
 | MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
-| MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
+| MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `IN_PROGRESS` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
+| MEDIUM | `T-019-b` | Finance tracker CSS module | `PENDING` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
+| LOW    | `T-019-c` | Finance tracker server backup API | `PENDING` | [`tasks/T-019-c.md`](tasks/T-019-c.md) |
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
-| HIGH | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
+| HIGH | `T-031-a` | Cloud Vault JS app + wiring | `PENDING` | [`tasks/T-031-a.md`](tasks/T-031-a.md) |
+| HIGH | `T-031-b` | Cloud Vault CSS module | `PENDING` | [`tasks/T-031-b.md`](tasks/T-031-b.md) |
+| MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `PENDING` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
 | HIGH | `T-032` | Email Agent / Smart Inbox | `IN_PROGRESS` | T-032-a,b,c,d,e,f,g DONE → [`tasks/T-032.md`](tasks/T-032.md) |
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
-| MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
+| MEDIUM | `T-040-a` | Widget Grid core engine + default layout | `PENDING` | [`tasks/T-040-a.md`](tasks/T-040-a.md) |
+| MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
+| LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
-| LOW | `T-046` | Auto dark mode + system theme sync | `PENDING` | [`tasks/T-046.md`](tasks/T-046.md) |
+| LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `PENDING` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
+| LOW    | `T-046-b` | Auto dark mode settings panel + per-app override | `PENDING` | [`tasks/T-046-b.md`](tasks/T-046-b.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `DONE` | [`tasks/T-047.md`](tasks/T-047.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
