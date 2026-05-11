@@ -2041,6 +2041,80 @@ def _api_news(handler, path):
     _json(handler, 200, {'articles': paged, 'totalResults': total})
     return True
 
+def _api_rss_fetch(handler, path):
+    import urllib.parse
+    parsed = urllib.parse.urlparse(path)
+    qs = urllib.parse.parse_qs(parsed.query)
+    url = qs.get('url', [''])[0].strip()
+    if not url:
+        _json(handler, 400, {'ok': False, 'error': 'url required'})
+        return True
+    if not url.startswith('http://') and not url.startswith('https://'):
+        _json(handler, 400, {'ok': False, 'error': 'invalid url scheme'})
+        return True
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) Chrome/120.0.0.0'})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read()
+        root = ET.fromstring(data)
+        ns = ''
+        if root.tag.startswith('{'):
+            ns = root.tag.split('}')[0] + '}'
+        channel = root.find('.//{0}channel'.format(ns.replace('}', '') + '}') if ns else 'channel')
+        if channel is None:
+            channel = root
+        feed_title = ''
+        if channel is not None:
+            t = channel.find('{0}title'.format(ns) if ns else 'title')
+            if t is not None:
+                feed_title = _html_mod.unescape(t.text or '')
+        items = root.findall('.//{0}item'.format(ns) if ns else 'item')
+        if not items:
+            atom_ns = ''
+            if root.tag.startswith('{'):
+                atom_ns = root.tag.split('}')[0] + '}'
+            items = root.findall('.//{0}entry'.format(atom_ns) if atom_ns else 'entry')
+            feed_title = feed_title or 'Atom Feed'
+        parsed_items = []
+        for item in items[:30]:
+            title_el = item.find('{0}title'.format(ns) if ns else 'title')
+            link_el = item.find('{0}link'.format(ns) if ns else 'link')
+            desc_el = item.find('{0}description'.format(ns) if ns else 'description') or item.find('{0}summary'.format(ns) if ns else 'summary')
+            pub_el = item.find('{0}pubDate'.format(ns) if ns else 'pubDate') or item.find('{0}published'.format(ns) if ns else 'published') or item.find('{0}updated'.format(ns) if ns else 'updated')
+            enclosure = item.find('{0}enclosure'.format(ns) if ns else 'enclosure')
+            thumb = item.find('{http://search.yahoo.com/mrss/}thumbnail')
+            title_str = _html_mod.unescape(title_el.text or '') if title_el is not None else ''
+            if link_el is not None:
+                link_str = link_el.text or link_el.get('href') or ''
+            else:
+                link_str = ''
+            desc_str = ''
+            if desc_el is not None:
+                desc_str = _html_mod.unescape(desc_el.text or '')
+            pub_str = ''
+            if pub_el is not None:
+                pub_str = pub_el.text or ''
+            img = None
+            if thumb is not None:
+                img = thumb.get('url') or None
+            if not img and enclosure is not None:
+                img = enclosure.get('url') or None
+            if not img and desc_str:
+                m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', desc_str, re.I)
+                if m:
+                    img = m.group(1)
+            parsed_items.append({
+                'title': title_str,
+                'link': link_str,
+                'description': desc_str,
+                'published': pub_str,
+                'image': img,
+            })
+        _json(handler, 200, {'ok': True, 'feed': {'title': feed_title, 'items': parsed_items}})
+    except Exception as e:
+        _json(handler, 200, {'ok': False, 'error': str(e)[:200]})
+    return True
+
 def _api_fetch_link(handler, path):
     import urllib.parse, re, html as _html_mod
     parsed = urllib.parse.urlparse(path)
@@ -2261,6 +2335,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         if path.startswith('/api/quality/'):
             return _api_quality(self, path)
+
+        if path.startswith('/api/rss/fetch'):
+            return _api_rss_fetch(self, self.path)
 
         if path == '/api/fetch-link':
             return _api_fetch_link(self, self.path)

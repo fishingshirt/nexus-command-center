@@ -19,7 +19,7 @@
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
 | MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
-| MEDIUM | `T-018` | RSS feed reader | `PENDING` | [`tasks/T-018.md`](tasks/T-018.md) |
+| MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019` | Finance tracker | `PENDING` | [`tasks/T-019.md`](tasks/T-019.md) |
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
 | HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |

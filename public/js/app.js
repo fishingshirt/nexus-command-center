@@ -14,6 +14,7 @@ import { initFinance } from './apps/finance.js';
 import { initPomodoro } from './apps/pomodoro.js';
 import { initWorldClock } from './apps/worldclock.js';
 import { initNews, openNews } from './apps/news.js';
+import { initRss } from './apps/rss.js';
 import { initWishlist } from './apps/wishlist.js';
 import { initEmail } from './apps/email.js';
 import { initWelcome } from './welcome.js';
@@ -33,7 +34,8 @@ const APP_REGISTRY = [
   { id: 'pomodoro', name: 'Focus', icon: '🍅', path: 'pomodoro' },
   { id: 'news', name: 'News Hub', icon: '📰', path: 'news' },
   { id: 'wishlist', name: 'Wishlist', icon: '❤️', path: 'wishlist' },
-  { id: 'email', name: 'Email', icon: '✉️', path: 'email' }
+  { id: 'email', name: 'Email', icon: '✉️', path: 'email' },
+  { id: 'rss', name: 'RSS Reader', icon: '📡', path: 'rss' }
 ];
 
 export function initApp() {
@@ -58,6 +60,7 @@ export function initApp() {
   initPomodoro();
   initWorldClock();
   initNews();
+  initRss();
   initWishlist();
   initEmail();
   initWeather();
