@@ -32,7 +32,10 @@
 | MEDIUM | `T-040-a` | Widget Grid core engine + default layout | `PENDING` | [`tasks/T-040-a.md`](tasks/T-040-a.md) |
 | MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
 | LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
-| MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
+| MEDIUM | `T-043-a` | Quick Capture FAB + radial menu + modal shell | `IN_PROGRESS` | [`tasks/T-043-a.md`](tasks/T-043-a.md) |
+| MEDIUM | `T-043-b` | Quick Capture note/event/todo save logic | `PENDING` | [`tasks/T-043-b.md`](tasks/T-043-b.md) |
+| LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
+| LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
 | LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `PENDING` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
 | LOW    | `T-046-b` | Auto dark mode settings panel + per-app override | `PENDING` | [`tasks/T-046-b.md`](tasks/T-046-b.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `DONE` | [`tasks/T-047.md`](tasks/T-047.md) |
