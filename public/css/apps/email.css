@@ -178,6 +178,27 @@
 .email-priority-urgent { background: var(--danger, #ef4444); color: #fff; }
 .email-priority-action { background: var(--warning, #f59e0b); color: #000; }
 .email-priority-fyi    { background: var(--success, #10b981); color: #fff; }
+.email-priority-rest   { background: var(--surface-hover, #334155); color: var(--text-secondary, #94a3b8); }
+
+/* Priority groups */
+.email-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.email-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: var(--space-1);
+}
+.email-group-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.email-group:first-of-type { margin-top: 0; }
 
 /* Compose panel */
 .email-compose {

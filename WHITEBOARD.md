@@ -24,7 +24,7 @@
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
 | HIGH | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
 | HIGH | `T-031` | Cloud Vault | `PENDING` | [`tasks/T-031.md`](tasks/T-031.md) |
-| HIGH | `T-032` | Email Agent / Smart Inbox | `IN_PROGRESS` | T-032-a,b,c,d,g,e DONE → [`tasks/T-032.md`](tasks/T-032.md) |
+| HIGH | `T-032` | Email Agent / Smart Inbox | `IN_PROGRESS` | T-032-a,b,c,d,e,f,g DONE → [`tasks/T-032.md`](tasks/T-032.md) |
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
 | MEDIUM | `T-040` | Customizable dashboard widget grid | `PENDING` | [`tasks/T-040.md`](tasks/T-040.md) |
 | MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |

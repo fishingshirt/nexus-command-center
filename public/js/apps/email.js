@@ -97,14 +97,12 @@ async function loadInbox() {
     if (empty) empty.style.display = 'none';
     if (list) {
       list.style.display = 'flex';
-      list.innerHTML = d.threads.map(t => `
-        <div class="email-thread" data-id="${t.id}" role="button" tabindex="0" aria-label="${t.subject || 'Thread'}">
-          <div class="email-thread-subject">${escapeHtml(t.subject || 'No subject')}${getPriority(t.subject)}</div>
-          <div class="email-thread-from">${escapeHtml(t.from || '')}</div>
-          <div class="email-thread-snippet">${escapeHtml(t.snippet || '')}</div>
-          <div class="email-thread-meta">${t.messageCount || 1} msg(s)</div>
-        </div>
-      `).join('');
+      const { urgent, action, fyi, rest } = sortByPriority(d.threads);
+      list.innerHTML = '';
+      if (urgent.length) list.innerHTML += renderThreadGroup('Urgent', urgent);
+      if (action.length) list.innerHTML += renderThreadGroup('Action Required', action);
+      if (fyi.length) list.innerHTML += renderThreadGroup('FYI', fyi);
+      if (rest.length) list.innerHTML += renderThreadGroup('Other', rest);
       list.querySelectorAll('.email-thread').forEach(row => {
         row.addEventListener('click', () => openThread(row.dataset.id));
       });
@@ -240,6 +238,46 @@ function getPriority(subject) {
   if (/\b(action required|confirm|todo|task|please review|approval needed)\b/.test(s)) return `<span class="email-priority email-priority-action">Action</span>`;
   if (/\b(fyi|newsletter|digest|update|report|weekly|monthly)\b/.test(s)) return `<span class="email-priority email-priority-fyi">FYI</span>`;
   return '';
+}
+
+function classifyPriority(subject) {
+  const s = (subject || '').toLowerCase();
+  if (/\b(urgent|asap|deadline|critical)\b/.test(s)) return 'urgent';
+  if (/\b(action required|confirm|todo|task|please review|approval needed)\b/.test(s)) return 'action';
+  if (/\b(fyi|newsletter|digest|update|report|weekly|monthly)\b/.test(s)) return 'fyi';
+  return 'rest';
+}
+
+function sortByPriority(threads) {
+  const urgent = [], action = [], fyi = [], rest = [];
+  (threads || []).forEach(t => {
+    const p = classifyPriority(t.subject);
+    if (p === 'urgent') urgent.push(t);
+    else if (p === 'action') action.push(t);
+    else if (p === 'fyi') fyi.push(t);
+    else rest.push(t);
+  });
+  // Sort each group by most recent internalDate descending
+  const byDate = (a, b) => (+(b.internalDate || 0)) - (+(a.internalDate || 0));
+  urgent.sort(byDate); action.sort(byDate); fyi.sort(byDate); rest.sort(byDate);
+  return { urgent, action, fyi, rest };
+}
+
+function renderThreadGroup(label, threads) {
+  const rows = threads.map(t => `
+    <div class="email-thread" data-id="${t.id}" role="button" tabindex="0" aria-label="${t.subject || 'Thread'}">
+      <div class="email-thread-subject">${escapeHtml(t.subject || 'No subject')}${getPriority(t.subject)}</div>
+      <div class="email-thread-from">${escapeHtml(t.from || '')}</div>
+      <div class="email-thread-snippet">${escapeHtml(t.snippet || '')}</div>
+      <div class="email-thread-meta">${t.messageCount || 1} msg(s)</div>
+    </div>
+  `).join('');
+  const chip = label === 'Urgent' ? 'urgent' : label === 'Action Required' ? 'action' : label === 'FYI' ? 'fyi' : 'rest';
+  return `
+    <div class="email-group" data-group="${label.toLowerCase().replace(/\s+/g, '-')}">
+      <div class="email-group-header"><span class="email-priority email-priority-${chip}">${label}</span></div>
+      <div class="email-group-rows">${rows}</div>
+    </div>`;
 }
 
 function escapeHtml(s) {
