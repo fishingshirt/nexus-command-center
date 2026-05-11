@@ -16,6 +16,7 @@ import { initWorldClock } from './apps/worldclock.js';
 import { initNews, openNews } from './apps/news.js';
 import { initRss } from './apps/rss.js';
 import { initPdfEditor } from './apps/pdf.js';
+import { initVault } from './apps/vault.js';
 import { initWishlist } from './apps/wishlist.js';
 import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
@@ -38,7 +39,8 @@ const APP_REGISTRY = [
   { id: 'wishlist', name: 'Wishlist', icon: '❤️', path: 'wishlist' },
   { id: 'email', name: 'Email', icon: '✉️', path: 'email' },
   { id: 'rss', name: 'RSS Reader', icon: '📡', path: 'rss' },
-  { id: 'pdf', name: 'PDF Editor', icon: '📄', path: 'pdf' }
+  { id: 'pdf', name: 'PDF Editor', icon: '📄', path: 'pdf' },
+  { id: 'vault', name: 'Vault', icon: '🔐', path: 'vault' }
 ];
 
 export function initApp() {
@@ -66,6 +68,7 @@ export function initApp() {
   initRss();
   initWishlist();
   initPdfEditor();
+  initVault();
   initEmail();
   initWeather();
   initCalendar();
