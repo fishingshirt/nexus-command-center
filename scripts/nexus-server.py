@@ -1055,7 +1055,47 @@ def _api_email(handler, raw_path):
             _json(handler, 502, {'ok': False, 'error': str(e)})
             return True
 
+    if path == '/api/email/draft':
+        at = _gmail_access_token()
+        if not at:
+            _json(handler, 503, {'ok': False, 'error': 'Not authenticated', 'status': 'not_linked'})
+            return True
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        to = req.get('to', '')
+        subject = req.get('subject', '')
+        msg_body = req.get('body', '')
+        thread_id = req.get('threadId')
+        if not to or not subject:
+            _json(handler, 400, {'ok': False, 'error': 'Missing to or subject'})
+            return True
+        raw_msg = f"To: {to}\nSubject: {subject}\n\n{msg_body}"
+        encoded = base64.urlsafe_b64encode(raw_msg.encode('utf-8')).decode('ascii')
+        draft_data = {'message': {'raw': encoded}}
+        if thread_id:
+            draft_data['message']['threadId'] = thread_id
+        data = json.dumps(draft_data).encode('utf-8')
+        url = 'https://www.googleapis.com/gmail/v1/users/me/drafts'
+        hreq = urllib.request.Request(url, data=data, headers={'Authorization': f'Bearer {at}', 'Content-Type': 'application/json'}, method='POST')
+        try:
+            with urllib.request.urlopen(hreq, timeout=15) as resp:
+                rdata = json.loads(resp.read().decode())
+                _json(handler, 200, {'ok': True, 'id': rdata.get('id'), 'message': rdata.get('message')})
+                return True
+        except urllib.error.HTTPError as e:
+            _json(handler, 502, {'ok': False, 'error': f'Gmail API error {e.code}'})
+            return True
+        except Exception as e:
+            _json(handler, 502, {'ok': False, 'error': str(e)})
+            return True
+
     return False
+
 def _api_calendar(handler, raw_path):
     import urllib.parse, urllib.request, datetime
     path = raw_path.split('?')[0]

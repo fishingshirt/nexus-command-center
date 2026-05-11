@@ -8,7 +8,7 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-11 01:10 UTC
+- **Last updated:** 2026-05-11 01:35 UTC
 - **Active tasks:** 22
 - **Completed tasks:** 31 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
@@ -89,11 +89,12 @@
 
 ## 🐛 Bug Tracker
 
-|| ID | Description | Severity | Status |
-||----|-------------|----------|--------|
+||| ID | Description | Severity | Status |
+|||----|-------------|----------|--------|
 |||| B-001 | Missing `tasks/*.md` files for T-016, T-021, T-022, T-023, T-024, T-026, T-030, T-033, T-035, T-036, T-037, T-038. WHITEBOARD points to non-existent files. | LOW | OPEN |
-|||| B-002 | Calendar Google sync was one-way read-only via public API key. T-034 implemented OAuth token exchange, outbound events.insert/patch/delete, conflict resolution, offline queue, agent commands, and re-authorize prompt. | HIGH | **FIXED** |
-||| B-003 | `calendar.js` event save does not check for overlapping time slots. | LOW | OPEN |
+||||| B-002 | Calendar Google sync was one-way read-only via public API key. T-034 implemented OAuth token exchange, outbound events.insert/patch/delete, conflict resolution, offline queue, agent commands, and re-authorize prompt. | HIGH | **FIXED** |
+|||| B-003 | `calendar.js` event save does not check for overlapping time slots. | LOW | OPEN |
+|||| B-004 | Broken HTML structure after T-032-b merge — malformed wishlist nav, email view outside dashboard grid, extra unclosed div. | HIGH | **FIXED** |
 
 ---
 
