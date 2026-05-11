@@ -21,6 +21,7 @@ import { initWishlist } from './apps/wishlist.js';
 import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
 import { initFinanceTracker } from './apps/finance-tracker.js';
+import { initQuickCapture } from './apps/quick-capture.js';
 import { initWelcome } from './welcome.js';
 import { initNotifications, notify } from './notifications.js';
 
@@ -88,6 +89,7 @@ export function initApp() {
   registerServiceWorker();
   initSearch();
   initShortcuts();
+  initQuickCapture();
 
   // EMERGENCY_REVEAL: if welcome.js fails to reveal app, force it after 2s
   setTimeout(() => {

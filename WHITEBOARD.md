@@ -32,7 +32,7 @@
 | MEDIUM | `T-040-a` | Widget Grid core engine + default layout | `PENDING` | [`tasks/T-040-a.md`](tasks/T-040-a.md) |
 | MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
 | LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
-| MEDIUM | `T-043-a` | Quick Capture FAB + radial menu + modal shell | `IN_PROGRESS` | [`tasks/T-043-a.md`](tasks/T-043-a.md) |
+| MEDIUM | `T-043-a` | Quick Capture FAB + radial menu + modal shell | `DONE` | [`tasks/T-043-a.md`](tasks/T-043-a.md) |
 | MEDIUM | `T-043-b` | Quick Capture note/event/todo save logic | `PENDING` | [`tasks/T-043-b.md`](tasks/T-043-b.md) |
 | LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
 | LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
@@ -60,6 +60,7 @@
 
 | ID | Task |
 |----|------|
+| `T-043-a` | Quick Capture FAB + radial menu + modal shell |
 | `T-055-b` | Feedback Pipeline dashboard UI + tracker |
 | `T-032` | Email Agent / Smart Inbox |
 | `T-055-a` | Feedback Pipeline backend queue API |
