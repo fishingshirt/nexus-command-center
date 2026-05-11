@@ -1357,6 +1357,7 @@ button.nav-link {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   transition: border-color var(--transition-fast);
+  cursor: pointer;
 }
 
 .feedback-item:hover {
@@ -1436,6 +1437,47 @@ button.nav-link {
   padding: var(--space-8);
   color: var(--text-muted);
   font-size: var(--font-size-sm);
+}
+
+/* Status chips */
+.chip-pending { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.chip-review  { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.chip-tasked  { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+.chip-closed  { background: rgba(16,185,129,0.15); color: #10b981; }
+.feedback-tracker-status {
+  font-size: var(--font-size-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Tracker detail expand */
+.feedback-tracker-detail {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  display: none;
+}
+.feedback-tracker-detail-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.feedback-tracker-answer {
+  font-size: var(--font-size-sm);
+  color: var(--text);
+}
+.feedback-tracker-answer-text {
+  color: var(--text-muted);
+  margin-top: 2px;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--border);
+}
+.feedback-tracker-empty-detail {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 /* Agent wake indicator */

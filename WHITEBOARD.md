@@ -27,7 +27,7 @@
 | HIGH | `T-031-a` | Cloud Vault JS app + wiring | `DONE` | [`tasks/T-031-a.md`](tasks/T-031-a.md) |
 | HIGH | `T-031-b` | Cloud Vault CSS module | `DONE` | [`tasks/T-031-b.md`](tasks/T-031-b.md) |
 | MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `PENDING` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
-| HIGH | `T-032` | Email Agent / Smart Inbox | `IN_PROGRESS` | T-032-a,b,c,d,e,f,g DONE → [`tasks/T-032.md`](tasks/T-032.md) |
+
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
 | MEDIUM | `T-040-a` | Widget Grid core engine + default layout | `PENDING` | [`tasks/T-040-a.md`](tasks/T-040-a.md) |
 | MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
@@ -57,6 +57,7 @@
 
 | ID | Task |
 |----|------|
+| `T-032` | Email Agent / Smart Inbox |
 | `T-055-a` | Feedback Pipeline backend queue API |
 | `T-031-b` | Cloud Vault CSS module |
 | `T-031-a` | Cloud Vault JS app + wiring |

@@ -982,9 +982,11 @@ function initFeedback() {
   let currentQIndex = 0;
   let answers = [];
 
-  // Load existing
-  renderFeedbackList();
-  updateFeedbackBadge();
+  // Load existing from server
+  (async () => {
+    await renderFeedbackList();
+    await updateFeedbackBadge();
+  })();
 
   const questionSets = {
     feature: [
@@ -1152,21 +1154,32 @@ function initFeedback() {
     }
   }
 
-  finalSubmit.addEventListener('click', () => {
+  finalSubmit.addEventListener('click', async () => {
     const qs = questionSets[draft.type] || questionSets.other;
     const entry = {
-      id: 'fb-' + Date.now(),
       type: draft.type,
       title: draft.title,
-      desc: draft.desc,
+      description: draft.desc,
       priority: draft.priority,
       answers: qs.map((q, i) => ({ question: q.text, answer: answers[i] || '' })),
-      status: 'submitted',
-      createdAt: new Date().toISOString()
+      userId: localStorage.getItem('ncc-user-id')
     };
-    const stored = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
-    stored.unshift(entry);
-    localStorage.setItem('ncc-feedback', JSON.stringify(stored));
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        toast(data.error || 'Failed to submit feedback', 'error');
+        return;
+      }
+      toast('Feedback submitted to agent board');
+    } catch (err) {
+      toast('Network error — feedback not sent', 'error');
+      return;
+    }
 
     // Reset UI
     form.reset();
@@ -1175,9 +1188,8 @@ function initFeedback() {
     previewBox.style.display = 'none';
     draft = null;
 
-    renderFeedbackList();
+    await renderFeedbackList();
     updateFeedbackBadge();
-    toast('Feedback submitted to agent board');
   });
 
   editBtn.addEventListener('click', () => {
@@ -1187,47 +1199,76 @@ function initFeedback() {
     renderQuestion();
   });
 
-  function renderFeedbackList() {
+  async function renderFeedbackList() {
     if (!list) return;
-    const items = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
+    let items = [];
+    try {
+      const res = await fetch('/api/feedback/list');
+      if (res.ok) {
+        const data = await res.json();
+        items = data.items || [];
+      }
+    } catch {
+      // fallback silent
+    }
     if (items.length === 0) {
-      list.innerHTML = '<div class="feedback-empty">No submissions yet. Be the first to shape the Nexus!</div>';
+      list.innerHTML = '<div class="feedback-empty">No submissions yet. Shape the Nexus above. 💡</div>';
       return;
     }
-    list.innerHTML = items.map(item => `
-      <div class="feedback-item" data-id="${escapeHtml(item.id)}">
+    list.innerHTML = items.map((item, idx) => {
+      const status = item.status || 'pending';
+      const chipClass = 'chip-' + status;
+      const typeIcon = { bug: '🐛', feature: '✨', improvement: '🔧', theme: '🎨', other: '💬' }[item.type] || '💬';
+      return `
+      <div class="feedback-item" data-id="${escapeHtml(item.id)}" data-idx="${idx}">
         <div class="feedback-item-header">
           <span class="feedback-item-title">${escapeHtml(item.title)}</span>
-          <span class="feedback-item-type ${item.type}">${item.type}</span>
+          <span class="feedback-item-type ${escapeHtml(item.type)}">${typeIcon} ${item.type}</span>
         </div>
-        <div class="feedback-item-desc">${escapeHtml(item.desc)}</div>
+        <div class="feedback-item-desc">${escapeHtml(item.description || item.desc || '')}</div>
         <div class="feedback-item-meta">
-          <span>${fmtDate(item.createdAt)}</span>
-          <span class="feedback-item-priority">${item.priority}</span>
+          <span>${fmtDate(item.timestamp || item.createdAt)}</span>
+          <span class="feedback-tracker-status ${chipClass}">${status}</span>
         </div>
-        <div class="feedback-item-actions">
-          <button type="button" class="feedback-gen-btn btn-secondary" data-id="${escapeHtml(item.id)}">📋 Generate Task</button>
+        <div class="feedback-tracker-detail" id="fb-detail-${idx}">
+          <div class="feedback-tracker-detail-inner">
+            ${(item.answers || []).length ? item.answers.map((a, i) => `
+              <div class="feedback-tracker-answer">
+                <b>Q${i + 1}:</b> ${escapeHtml(a.question)}
+                <div class="feedback-tracker-answer-text">${escapeHtml(a.answer || '(no answer)')}</div>
+              </div>
+            `).join('') : '<div class="feedback-tracker-empty-detail">No answers recorded.</div>'}
+          </div>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
 
-    // Wire gen-task buttons
-    list.querySelectorAll('.feedback-gen-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
-        const items = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
-        const entry = items.find(it => it.id === id);
-        if (entry) showGeneratedTask(entry);
+    // wire expand
+    list.querySelectorAll('.feedback-item').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        const idx = row.dataset.idx;
+        const detail = document.getElementById('fb-detail-' + idx);
+        if (detail) detail.style.display = detail.style.display === 'block' ? 'none' : 'block';
       });
     });
   }
 
-  function updateFeedbackBadge() {
+  async function updateFeedbackBadge() {
     const badge = document.getElementById('feedback-badge');
     if (!badge) return;
-    const items = JSON.parse(localStorage.getItem('ncc-feedback') || '[]');
-    badge.textContent = items.length;
-    badge.style.display = items.length > 0 ? 'flex' : 'none';
+    let count = 0;
+    try {
+      const res = await fetch('/api/feedback/list');
+      if (res.ok) {
+        const data = await res.json();
+        count = (data.items || []).filter(it => (it.status === 'pending' || it.status === 'review')).length;
+      }
+    } catch {
+      // silent
+    }
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'flex' : 'none';
   }
 
   /* ── Whiteboard Task Generator ────────────────── */
@@ -1271,7 +1312,6 @@ function initFeedback() {
     genBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  /* Wire up copy + close */
   const genClose = document.getElementById('feedback-close-gen');
   const genCopy = document.getElementById('feedback-copy-gen');
   if (genClose) {
