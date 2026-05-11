@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-11 14:44 UTC
+- **Last updated:** 2026-05-11 22:24 UTC
 - **Active tasks:** 21
-- **Completed tasks:** 32 shown below
+- **Completed tasks:** 33 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 ---
 
@@ -33,7 +33,7 @@
 | MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
 | LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
 | MEDIUM | `T-043-a` | Quick Capture FAB + radial menu + modal shell | `DONE` | [`tasks/T-043-a.md`](tasks/T-043-a.md) |
-| MEDIUM | `T-043-b` | Quick Capture note/event/todo save logic | `PENDING` | [`tasks/T-043-b.md`](tasks/T-043-b.md) |
+| MEDIUM | `T-043-b` | Quick Capture note/event/todo save logic | `DONE` | [`tasks/T-043-b.md`](tasks/T-043-b.md) |
 | LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
 | LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
 | LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `PENDING` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
@@ -60,6 +60,7 @@
 
 | ID | Task |
 |----|------|
+| `T-043-b` | Quick Capture note/event/todo save logic |
 | `T-043-a` | Quick Capture FAB + radial menu + modal shell |
 | `T-055-b` | Feedback Pipeline dashboard UI + tracker |
 | `T-032` | Email Agent / Smart Inbox |
