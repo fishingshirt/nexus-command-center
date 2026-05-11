@@ -20,6 +20,7 @@ import { initVault } from './apps/vault.js';
 import { initWishlist } from './apps/wishlist.js';
 import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
+import { initFinanceTracker } from './apps/finance-tracker.js';
 import { initWelcome } from './welcome.js';
 import { initNotifications, notify } from './notifications.js';
 
@@ -33,6 +34,7 @@ const APP_REGISTRY = [
   { id: 'feedback', name: 'Feedback', icon: '💬', path: 'feedback' },
   { id: 'arcade', name: 'Arcade', icon: '🎮', path: 'arcade' },
   { id: 'finance', name: 'Finance', icon: '💰', path: 'finance' },
+  { id: 'finance-tracker', name: 'Budget', icon: '📒', path: 'finance-tracker' },
   { id: 'worldclock', name: 'World Clock', icon: '🌍', path: 'worldclock' },
   { id: 'pomodoro', name: 'Focus', icon: '🍅', path: 'pomodoro' },
   { id: 'news', name: 'News Hub', icon: '📰', path: 'news' },
@@ -62,6 +64,7 @@ export function initApp() {
   initPhoneBridge();
   initArcade();
   initFinance();
+  initFinanceTracker();
   initPomodoro();
   initWorldClock();
   initNews();

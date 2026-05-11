@@ -8,7 +8,7 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-11 06:20 UTC
+- **Last updated:** 2026-05-11 12:05 UTC
 - **Active tasks:** 21
 - **Completed tasks:** 32 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
@@ -20,7 +20,7 @@
 |----------|----|------|--------|---------|
 | MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `PENDING` | [`tasks/T-017-a.md`](tasks/T-017-a.md) |
 | MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
-| MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `IN_PROGRESS` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
+| MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `DONE` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
 | MEDIUM | `T-019-b` | Finance tracker CSS module | `PENDING` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
 | LOW    | `T-019-c` | Finance tracker server backup API | `PENDING` | [`tasks/T-019-c.md`](tasks/T-019-c.md) |
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |

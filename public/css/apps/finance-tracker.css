@@ -1,0 +1,263 @@
+/* ===== FINANCE TRACKER (T-019-b) ===== */
+
+/* -- Layout -- */
+.ft-view-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* -- Summary -- */
+.ft-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+.ft-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  text-align: center;
+}
+.ft-card-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+.ft-card-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.ft-card-value.positive { color: var(--success); }
+.ft-card-value.negative { color: var(--danger); }
+
+/* -- Form -- */
+.ft-form {
+  display: grid;
+  gap: var(--space-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+.ft-form-row {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr 1fr;
+}
+.ft-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.ft-field label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.ft-field input,
+.ft-field select,
+.ft-field textarea {
+  font-size: clamp(16px, 1rem, 18px);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  outline: none;
+}
+.ft-field input:focus,
+.ft-field select:focus,
+.ft-field textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-alpha, rgba(99,102,241,0.25));
+}
+.ft-field textarea { resize: vertical; min-height: 60px; }
+
+/* type toggle chips */
+.ft-type-group {
+  display: flex;
+  gap: var(--space-2);
+}
+.ft-type-option {
+  flex: 1;
+  cursor: pointer;
+}
+.ft-type-option input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.ft-type-option .chip {
+  display: block;
+  text-align: center;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-body);
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ft-type-option input:checked + .chip.income {
+  border-color: var(--success, #10b981);
+  background: rgba(16,185,129,0.10);
+  color: var(--success, #10b981);
+}
+.ft-type-option input:checked + .chip.expense {
+  border-color: var(--danger, #ef4444);
+  background: rgba(239,68,68,0.10);
+  color: var(--danger, #ef4444);
+}
+
+.ft-btn-primary {
+  justify-self: start;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.ft-btn-primary:hover { filter: brightness(1.1); }
+
+/* -- Category bar -- */
+.ft-cat-wrap { }
+.ft-cat-title {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ft-cat-bar {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+}
+.ft-cat-segment { height: 100%; transition: width 0.25s ease; }
+.ft-cat-empty { width: 100%; height: 100%; display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--text-secondary); }
+.ft-cat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+}
+.ft-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.ft-legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* -- List -- */
+.ft-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.ft-empty {
+  color: var(--text-secondary);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  font-size: 0.9rem;
+}
+.ft-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.ft-row-meta { display: flex; flex-direction: column; gap: 2px; }
+.ft-row-cat {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+.ft-row-note {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.ft-row-amount {
+  font-weight: 700;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.95rem;
+}
+.ft-row-amount.positive { color: var(--success, #10b981); }
+.ft-row-amount.negative { color: var(--danger, #ef4444); }
+.ft-row-del {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+.ft-row-del:hover { color: var(--danger, #ef4444); background: rgba(239,68,68,0.06); }
+
+/* -- CSV Export -- */
+.ft-export {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.83rem;
+  cursor: pointer;
+}
+.ft-export:hover { color: var(--text-primary); border-color: var(--primary); }
+
+/* -- Toast -- */
+#ft-toast-container {
+  position: fixed;
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+.ft-toast {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+}
+.ft-toast.show { opacity: 1; transform: translateY(0); }
+
+/* -- Mobile -- */
+@media (max-width: 480px) {
+  .ft-summary { grid-template-columns: 1fr; }
+  .ft-form-row { grid-template-columns: 1fr; }
+  .ft-row { grid-template-columns: 1fr auto; }
+}
