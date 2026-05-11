@@ -1,7 +1,22 @@
 const LS_KEY = 'ncc-weather';
 const LOC_KEY = 'ncc-weather-locations';
+const SETTINGS_KEY = 'ncc-weather-settings';
 const MAX_LOCS = 10;
-const REFRESH_MS = 15 * 60 * 1000;
+const DEFAULT_REFRESH = 15;
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch { return {}; }
+}
+function saveSettings(p) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...loadSettings(), ...p }));
+}
+function getUnit() { return loadSettings().units || 'c'; }
+function getRefreshMinutes() { return loadSettings().refresh || DEFAULT_REFRESH; }
+function convertTemp(c) {
+  return getUnit() === 'f' ? (c * 9 / 5) + 32 : c;
+}
+function formatTemp(c) { return `${Math.round(convertTemp(c))}°${getUnit().toUpperCase()}`; }
+function formatVal(v) { return Math.round(convertTemp(v)); }
 
 const ICONS = {
   clear: '\u2600\uFE0F', partly: '\u26C5', cloudy: '\u2601\uFE0F', fog: '\uD83C\uDF2B\uFE0F',
@@ -39,8 +54,7 @@ function loadData() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
 }
 function saveData(patch) {
-  const d = loadData();
-  localStorage.setItem(LS_KEY, JSON.stringify({ ...d, ...patch }));
+  localStorage.setItem(LS_KEY, JSON.stringify({ ...loadData(), ...patch }));
 }
 
 function loadLocations() {
@@ -91,24 +105,24 @@ export function initWeather() {
   // Init from saved locations
   const locs = loadLocations();
   if (locs.length === 0) {
-    // bootstrap with a default
     ensureDefaultLocation();
   } else {
-    // render all
     const home = locs.find(l => l.isHome) || locs[0];
-    if (home) {
-      renderFromStored(home.id);
-    }
+    if (home) renderFromStored(home.id);
     renderLocationsList();
     renderPillRow();
   }
 
-  // auto-refresh every 15m
+  startAutoRefresh();
+
+  // Settings wiring
+  initWeatherSettings();
+}
+
+function startAutoRefresh() {
   if (_refreshTimer) clearInterval(_refreshTimer);
-  _refreshTimer = setInterval(refreshAllLocations, REFRESH_MS);
-  window.addEventListener('beforeunload', () => {
-    if (_refreshTimer) clearInterval(_refreshTimer);
-  });
+  const ms = getRefreshMinutes() * 60 * 1000;
+  _refreshTimer = setInterval(refreshAllLocations, ms);
 }
 
 function ensureDefaultLocation() {
@@ -123,11 +137,28 @@ function ensureDefaultLocation() {
   });
 }
 
+async function tryZipToCity(q) {
+  // Zippopotam.us for US ZIPs (5 digits)
+  if (/^\d{5}$/.test(q)) {
+    try {
+      const res = await fetch(`https://api.zippopotam.us/us/${q}`);
+      if (res.ok) {
+        const data = await res.json();
+        const place = data?.places?.[0];
+        if (place) return `${place['place name']}, ${place['state abbreviation']}`;
+      }
+    } catch { /* fall through */ }
+  }
+  return q;
+}
+
 async function fetchWeather(city, opts = {}) {
   const currentWrap = document.getElementById('weather-current');
   const forecastWrap = document.getElementById('weather-forecast');
   const cardCity = document.getElementById('weather-card-city');
   const cardIcon = document.getElementById('weather-card-icon');
+
+  const resolvedCity = await tryZipToCity(city);
 
   if (!opts.silent && currentWrap) {
     currentWrap.innerHTML = '<div class="weather-loading">Loading…</div>';
@@ -135,7 +166,7 @@ async function fetchWeather(city, opts = {}) {
   }
 
   try {
-    const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`);
+    const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(resolvedCity)}&count=1`);
     const geoJson = await geo.json();
     if (!geoJson.results || !geoJson.results[0]) {
       if (!opts.silent && currentWrap) currentWrap.innerHTML = '<div class="weather-loading">City not found.</div>';
@@ -160,7 +191,6 @@ async function fetchWeather(city, opts = {}) {
       code: json.daily.weathercode[i]
     }));
 
-    // update stored loc entry with fresh data
     const locs = loadLocations();
     const idx = locs.findIndex(l => l.name === name || (Math.abs((l.lat || 0) - latitude) < 0.01 && Math.abs((l.lon || 0) - longitude) < 0.01));
     if (idx >= 0) {
@@ -206,12 +236,12 @@ function render(current, forecast, city) {
   currentWrap.innerHTML = `
     <div class="weather-hero">
       <div class="weather-hero-icon">${wmoIcon(current.code)}</div>
-      <div class="weather-hero-temp">${Math.round(current.temp)}°C</div>
+      <div class="weather-hero-temp">${formatTemp(current.temp)}</div>
       <div class="weather-hero-condition">${wmoText(current.code)}</div>
       <div class="weather-hero-city">${escapeHtml(city)}</div>
     </div>
     <div class="weather-details">
-      <div class="weather-detail"><span>Feels like</span><b>${Math.round(current.feels)}°</b></div>
+      <div class="weather-detail"><span>Feels like</span><b>${formatTemp(current.feels)}</b></div>
       <div class="weather-detail"><span>Humidity</span><b>${current.humidity}%</b></div>
       <div class="weather-detail"><span>Wind</span><b>${current.wind} km/h</b></div>
     </div>`;
@@ -223,7 +253,7 @@ function render(current, forecast, city) {
       <div class="weather-day">
         <span class="weather-day-name">${day}</span>
         <span class="weather-day-icon">${wmoIcon(f.code)}</span>
-        <span class="weather-day-range">${Math.round(f.max)}° / ${Math.round(f.min)}°</span>
+        <span class="weather-day-range">${formatVal(f.max)}° / ${formatVal(f.min)}°</span>
       </div>`;
   }).join('');
 }
@@ -267,6 +297,20 @@ function setHome(id) {
   renderFromStored(id);
 }
 
+function renameLocation(id, newName) {
+  if (!newName.trim()) return;
+  const locs = loadLocations();
+  const idx = locs.findIndex(l => l.id === id);
+  if (idx >= 0) {
+    locs[idx].name = newName.trim();
+    locs[idx].updated = Date.now();
+    saveLocations(locs);
+    renderLocationsList();
+    renderPillRow();
+    if (locs[idx].isHome) renderFromStored(id);
+  }
+}
+
 function renderLocationsList() {
   const container = document.getElementById('weather-locations');
   const countEl = document.getElementById('weather-loc-count');
@@ -286,25 +330,26 @@ function renderLocationsList() {
         ${l.isHome ? '<span class="weather-loc-home">Home</span>' : ''}
       </button>
       <div class="weather-loc-actions">
+        <button class="weather-loc-action" data-action="rename" data-id="${l.id}" title="Rename" aria-label="Rename ${escapeHtml(l.name)}">✎</button>
         <button class="weather-loc-action" data-action="home" data-id="${l.id}" title="Set as home" aria-label="Set ${escapeHtml(l.name)} as home">🏠</button>
         <button class="weather-loc-action" data-action="remove" data-id="${l.id}" title="Remove" aria-label="Remove ${escapeHtml(l.name)}">✕</button>
       </div>
     </div>
   `).join('');
 
-  // click to view
   container.querySelectorAll('.weather-loc-name').forEach(btn => {
     btn.addEventListener('click', () => renderFromStored(btn.dataset.id));
   });
-  // actions
   container.querySelectorAll('.weather-loc-action').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
       if (btn.dataset.action === 'home') setHome(id);
       else if (btn.dataset.action === 'remove') removeLocation(id);
+      else if (btn.dataset.action === 'rename') showRenameModal(id);
     });
   });
-  // drag-and-drop reorder
+
+  // Drag-and-drop reorder
   let dragSrc = null;
   container.querySelectorAll('.weather-loc-item').forEach(item => {
     item.addEventListener('dragstart', e => {
@@ -340,13 +385,61 @@ function renderLocationsList() {
   });
 }
 
+function showRenameModal(id) {
+  const locs = loadLocations();
+  const loc = locs.find(l => l.id === id);
+  if (!loc) return;
+
+  // Inject modal if missing
+  let modal = document.getElementById('weather-rename-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'weather-rename-modal';
+    modal.className = 'weather-modal-overlay';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.innerHTML = `
+      <div class="weather-box" role="document">
+        <h4>Rename location</h4>
+        <input type="text" id="weather-rename-input" placeholder="New display name" autocomplete="off">
+        <div class="weather-box-row">
+          <button class="btn-secondary" id="weather-rename-cancel">Cancel</button>
+          <button class="btn-primary" id="weather-rename-save">Save</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('weather-rename-cancel')?.addEventListener('click', hideRenameModal);
+    document.getElementById('weather-rename-save')?.addEventListener('click', () => {
+      const val = document.getElementById('weather-rename-input')?.value || '';
+      const targetId = modal.dataset.targetId;
+      if (targetId && val.trim()) renameLocation(targetId, val.trim());
+      hideRenameModal();
+    });
+    document.getElementById('weather-rename-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('weather-rename-save')?.click();
+      if (e.key === 'Escape') hideRenameModal();
+    });
+  }
+
+  modal.setAttribute('aria-hidden', 'false');
+  modal.dataset.targetId = id;
+  const input = document.getElementById('weather-rename-input');
+  if (input) { input.value = loc.name; input.focus(); input.select(); }
+}
+
+function hideRenameModal() {
+  const modal = document.getElementById('weather-rename-modal');
+  if (modal) modal.setAttribute('aria-hidden', 'true');
+}
+
 function renderPillRow() {
   const row = document.getElementById('weather-pill-row');
   if (!row) return;
   const locs = loadLocations();
   if (!locs.length) { row.innerHTML = ''; return; }
   row.innerHTML = locs.map(l => {
-    const temp = l.current ? `${Math.round(l.current.temp)}°` : '';
+    const temp = l.current ? `${Math.round(convertTemp(l.current.temp))}°` : '';
     const icon = l.current ? wmoIcon(l.current.code) : '🌡️';
     const active = l.isHome ? 'active' : '';
     return `
@@ -374,6 +467,63 @@ async function refreshAllLocations() {
   const home = locs.find(l => l.isHome) || locs[0];
   const activeView = location.hash.slice(1);
   if (activeView === 'weather' && home) renderFromStored(home.id);
+}
+
+/* ===== SETTINGS INTEGRATION ===== */
+export function initWeatherSettings() {
+  const unitsSel = document.getElementById('weather-units');
+  const refreshSel = document.getElementById('weather-refresh');
+  const wrap = document.getElementById('settings-weather-locs');
+  const countEl = document.getElementById('settings-weather-count');
+
+  const settings = loadSettings();
+  if (unitsSel) unitsSel.value = settings.units || 'c';
+  if (refreshSel) refreshSel.value = String(settings.refresh || DEFAULT_REFRESH);
+
+  unitsSel?.addEventListener('change', () => {
+    saveSettings({ units: unitsSel.value });
+    // Re-render all visible weather UIs with new unit
+    renderPillRow();
+    const home = loadLocations().find(l => l.isHome) || loadLocations()[0];
+    if (home && location.hash === '#weather') renderFromStored(home.id);
+    const container = document.getElementById('weather-locations');
+    if (container) renderLocationsList();
+  });
+
+  refreshSel?.addEventListener('change', () => {
+    saveSettings({ refresh: Number(refreshSel.value) });
+    startAutoRefresh();
+  });
+
+  function renderSettingsLocs() {
+    const locs = loadLocations();
+    if (countEl) countEl.textContent = `${locs.length} / ${MAX_LOCS}`;
+    if (!wrap) return;
+    if (!locs.length) { wrap.innerHTML = '<div class="settings-loc-item" style="color:var(--text-muted);">No saved locations.</div>'; return; }
+    wrap.innerHTML = locs.map(l => `
+      <div class="settings-loc-item">
+        <span class="weather-loc-icon">${l.current ? wmoIcon(l.current.code) : '🌡️'}</span>
+        <span>${escapeHtml(l.name)}${l.isHome ? ' (Home)' : ''}</span>
+        <div class="settings-loc-actions">
+          ${!l.isHome ? `<button data-action="home" data-id="${l.id}" title="Set home">🏠</button>` : '<button disabled style="opacity:.3;" title="Home">🏠</button>'}
+          <button data-action="remove" data-id="${l.id}" title="Remove">✕</button>
+        </div>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.action === 'home') setHome(btn.dataset.id);
+        else if (btn.dataset.action === 'remove') removeLocation(btn.dataset.id);
+        renderSettingsLocs();
+      });
+    });
+  }
+
+  renderSettingsLocs();
+  // Re-render settings locs whenever this section is visible — simpleMutation observer on parent or just on hashchange
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#settings') renderSettingsLocs();
+  });
 }
 
 function escapeHtml(s) {

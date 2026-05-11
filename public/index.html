@@ -1174,6 +1174,29 @@
           </section>
 
           <section class="settings-section">
+            <h3>Weather</h3>
+            <div class="settings-row">
+              <label for="weather-units">Temperature units</label>
+              <select id="weather-units">
+                <option value="c">Celsius (°C)</option>
+                <option value="f">Fahrenheit (°F)</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="weather-refresh">Auto-refresh interval</label>
+              <select id="weather-refresh">
+                <option value="15">15 minutes</option>
+                <option value="30">30 minutes</option>
+                <option value="60">1 hour</option>
+              </select>
+            </div>
+            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:.5rem;">
+              <label style="margin-bottom:.25rem;">Saved locations (<span id="settings-weather-count">0 / 10</span>)</label>
+              <div id="settings-weather-locs" class="settings-loc-list"></div>
+            </div>
+          </section>
+
+          <section class="settings-section">
             <h3>About</h3>
             <p class="settings-about">Nexus Command Center v1.0</p>
             <p class="settings-about">Built by AI, for you.</p>
