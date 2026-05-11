@@ -3,7 +3,7 @@ const LS_KEY = 'ncc-finance-transactions';
 let trackerInit = false;
 
 function escapeHtml(str) {
-  if (str == null) return '';
+  if (str === null || str === undefined) return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -75,7 +75,7 @@ function renderCategoryBar(list) {
 
   wrap.innerHTML = Object.entries(totals).map(([cat, amt]) => {
     const pct = total ? ((amt / total) * 100).toFixed(1) : '0.0';
-    return `<div class="ft-bar-segment" style="width:${pct}%;background:${colors[cat] || colors.Other}" title="${escapeHtml(cat)}: ${fmtMoney(amt)} (${pct}%)"></div>`;
+    return `<div class="ft-cat-segment" style="width:${pct}%;background:${colors[cat] || colors.Other}" title="${escapeHtml(cat)}: ${fmtMoney(amt)} (${pct}%)"></div>`;
   }).join('');
 
   const legend = document.getElementById('ft-category-legend');
@@ -85,6 +85,18 @@ function renderCategoryBar(list) {
       return `<div class="ft-legend-item"><span class="ft-legend-dot" style="background:${colors[cat] || colors.Other}"></span><span class="ft-legend-label">${escapeHtml(cat)}</span><span class="ft-legend-pct">${pct}%</span></div>`;
     }).join('');
   }
+}
+
+function _onFtListClick(e) {
+  const btn = e.target.closest('.ft-row-del');
+  if (!btn) return;
+  const row = btn.closest('.ft-row');
+  const id = row?.dataset.id;
+  if (!id) return;
+  let data = loadTransactions();
+  data = data.filter(t => t.id !== id);
+  saveTransactions(data);
+  renderAll(data);
 }
 
 function renderList(list) {
@@ -107,18 +119,6 @@ function renderList(list) {
       <button class="ft-row-del" aria-label="Delete transaction">✕</button>
     </div>`;
   }).join('');
-
-  wrap.querySelectorAll('.ft-row-del').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const row = e.target.closest('.ft-row');
-      const id = row?.dataset.id;
-      if (!id) return;
-      let data = loadTransactions();
-      data = data.filter(t => t.id !== id);
-      saveTransactions(data);
-      renderAll(data);
-    });
-  });
 }
 
 function renderAll(list) {
@@ -128,51 +128,58 @@ function renderAll(list) {
   renderList(list);
 }
 
-function bindForm() {
+function _onFtSubmit(e) {
+  e.preventDefault();
   const form = document.getElementById('ft-form');
-  if (!form) return;
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const amount = parseFloat(document.getElementById('ft-amount')?.value || 0);
-    const type = document.getElementById('ft-type')?.value || 'expense';
-    const category = document.getElementById('ft-category')?.value || 'Other';
-    const note = document.getElementById('ft-note')?.value || '';
-    const date = document.getElementById('ft-date')?.value || todayStr();
-    if (!amount || amount <= 0) return;
+  const amount = parseFloat(document.getElementById('ft-amount')?.value || 0);
+  const type = document.querySelector('input[name="ft-type"]:checked')?.value || 'expense';
+  const category = document.getElementById('ft-category')?.value || 'Other';
+  const note = document.getElementById('ft-note')?.value || '';
+  const date = document.getElementById('ft-date')?.value || todayStr();
+  if (!amount || amount <= 0) return;
 
-    const data = loadTransactions();
-    data.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2,7)}`, date, amount, type, category, note });
-    saveTransactions(data);
-    renderAll(data);
+  const data = loadTransactions();
+  data.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2,7)}`, date, amount, type, category, note });
+  saveTransactions(data);
+  renderAll(data);
+  if (form) {
     form.reset();
     const dateInput = document.getElementById('ft-date');
     if (dateInput) dateInput.value = todayStr();
+  }
+}
+
+function bindForm() {
+  const form = document.getElementById('ft-form');
+  if (!form) return;
+  form.addEventListener('submit', _onFtSubmit);
+}
+
+function _onFtExport() {
+  const data = loadTransactions();
+  if (!data.length) { showFtToast('No transactions to export'); return; }
+  const header = 'Date,Type,Category,Amount,Note';
+  const rows = data.map(t => {
+    const note = (t.note || '').replace(/"/g, '""');
+    return `${t.date || ''},${t.type || ''},${t.category || ''},${t.amount || 0},"${note}"`;
   });
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'nexus-finance.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showFtToast('CSV exported');
 }
 
 function bindExport() {
   const btn = document.getElementById('ft-export');
   if (!btn) return;
-  btn.addEventListener('click', () => {
-    const data = loadTransactions();
-    if (!data.length) { showFtToast('No transactions to export'); return; }
-    const header = 'Date,Type,Category,Amount,Note';
-    const rows = data.map(t => {
-      const note = (t.note || '').replace(/"/g, '""');
-      return `${t.date || ''},${t.type || ''},${t.category || ''},${t.amount || 0},"${note}"`;
-    });
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'nexus-finance.csv';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    showFtToast('CSV exported');
-  });
+  btn.addEventListener('click', _onFtExport);
 }
 
 function showFtToast(msg) {
@@ -186,10 +193,28 @@ function showFtToast(msg) {
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2500);
 }
 
+function bindListDelete() {
+  const wrap = document.getElementById('ft-transactions');
+  if (!wrap) return;
+  wrap.addEventListener('click', _onFtListClick);
+}
+
+function cleanupAll() {
+  const form = document.getElementById('ft-form');
+  if (form) form.removeEventListener('submit', _onFtSubmit);
+  const btn = document.getElementById('ft-export');
+  if (btn) btn.removeEventListener('click', _onFtExport);
+  const wrap = document.getElementById('ft-transactions');
+  if (wrap) wrap.removeEventListener('click', _onFtListClick);
+  window.removeEventListener('beforeunload', cleanupAll);
+}
+
 export function initFinanceTracker() {
   if (trackerInit) return;
   trackerInit = true;
   bindForm();
   bindExport();
+  bindListDelete();
   renderAll();
+  window.addEventListener('beforeunload', cleanupAll, { once: true });
 }
