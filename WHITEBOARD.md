@@ -18,7 +18,7 @@
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| MEDIUM | `T-017` | Spotify integration | `PENDING` | [`tasks/T-017.md`](tasks/T-017.md) |
+| MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `PENDING` | [`tasks/T-017-a.md`](tasks/T-017-a.md) |
 | MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `IN_PROGRESS` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
 | MEDIUM | `T-019-b` | Finance tracker CSS module | `PENDING` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
@@ -39,11 +39,14 @@
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-| MEDIUM | `T-062` | Recipe App (recipes, ratings, cook notes, shopping list) | `PENDING` | [`tasks/T-062.md`](tasks/T-062.md) |
+| MEDIUM | `T-062-a` | Recipe App JS module + wiring | `PENDING` | [`tasks/T-062-a.md`](tasks/T-062-a.md) |
+| LOW | `T-062-b` | Recipe App CSS module | `PENDING` | [`tasks/T-062-b.md`](tasks/T-062-b.md) |
 | ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
-| HIGH | `T-055` | Feedback System Overhaul — Agent-Integrated Pipeline | `PENDING` | [`tasks/T-055.md`](tasks/T-055.md) |
+| HIGH | `T-055-a` | Feedback Pipeline backend queue API | `PENDING` | [`tasks/T-055-a.md`](tasks/T-055-a.md) |
+| HIGH | `T-055-b` | Feedback Pipeline dashboard UI + tracker | `PENDING` | [`tasks/T-055-b.md`](tasks/T-055-b.md) |
+| MEDIUM | `T-055-c` | Feedback Pipeline agent integration + settings | `PENDING` | [`tasks/T-055-c.md`](tasks/T-055-c.md) |
 | HIGH | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
 | ~~HIGH~~ | ~~`T-057`~~ | ~~Default theme should be dark~~ | ~~`DONE`~~ | ~~2026-05-10 — changed index.html and app.js defaults to jarvis~~ |
 | ~~HIGH~~ | ~~`T-058`~~ | ~~All themes should support dark mode (default on)~~ | ~~`DONE`~~ | ~~2026-05-10 — dark overrides + toggle + app.js wiring~~ |
