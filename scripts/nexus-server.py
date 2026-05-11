@@ -1733,6 +1733,129 @@ def _api_store_post(handler, path):
     _json(handler, 200, {'ok': ok})
     return True
 
+def _api_feedback(handler, raw_path):
+    import urllib.parse, datetime
+    path = raw_path.split('?')[0]
+    repo = os.path.dirname(os.path.abspath(handler.args_dir))
+    fp = os.path.join(repo, 'data', 'feedback-queue.jsonl')
+    os.makedirs(os.path.dirname(fp), exist_ok=True)
+    if not os.path.exists(fp):
+        open(fp, 'w').close()
+
+    def _read_all():
+        items = []
+        try:
+            with open(fp, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        items.append(json.loads(line))
+        except Exception:
+            pass
+        return items
+
+    def _write_all(items):
+        with open(fp, 'w') as f:
+            for it in items:
+                f.write(json.dumps(it, default=str) + '\n')
+
+    def _next_id():
+        return 'fb-' + str(int(time.time() * 1000))
+
+    # GET /api/feedback/list
+    if path == '/api/feedback/list':
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(raw_path).query)
+        status_filter = qs.get('status', [''])[0]
+        items = _read_all()
+        if status_filter:
+            items = [it for it in items if it.get('status') == status_filter]
+        _json(handler, 200, {'items': items, 'total': len(items)})
+        return True
+
+    # GET /api/feedback/:id
+    if path.startswith('/api/feedback/') and handler.command == 'GET':
+        fid = path.split('/')[-1]
+        items = _read_all()
+        for it in items:
+            if it.get('id') == fid:
+                _json(handler, 200, it)
+                return True
+        _json(handler, 404, {'ok': False, 'error': 'Not found'})
+        return True
+
+    # POST /api/feedback
+    if path == '/api/feedback' and handler.command == 'POST':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        title = str(req.get('title', '')).strip()
+        description = str(req.get('description', '')).strip()
+        if not title:
+            _json(handler, 400, {'ok': False, 'error': 'Title is required'})
+            return True
+        if not description:
+            _json(handler, 400, {'ok': False, 'error': 'Description is required'})
+            return True
+        if len(title) > 200:
+            _json(handler, 400, {'ok': False, 'error': 'Title max 200 chars'})
+            return True
+        entry = {
+            'id': _next_id(),
+            'type': req.get('type', 'general'),
+            'title': title,
+            'description': description,
+            'priority': req.get('priority', 'normal'),
+            'answers': req.get('answers', []),
+            'userId': req.get('userId'),
+            'timestamp': datetime.datetime.now().isoformat(),
+            'status': 'pending',
+            'linkedTask': None,
+            'note': None,
+        }
+        items = _read_all()
+        items.append(entry)
+        _write_all(items)
+        _json(handler, 200, {'ok': True, 'id': entry['id']})
+        return True
+
+    # PATCH /api/feedback/:id/status
+    if path.startswith('/api/feedback/') and path.endswith('/status') and handler.command in ('POST', 'PATCH'):
+        fid = path.split('/')[3]
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        new_status = req.get('status')
+        if new_status not in ('pending', 'review', 'tasked', 'closed'):
+            _json(handler, 400, {'ok': False, 'error': 'Invalid status'})
+            return True
+        items = _read_all()
+        found = False
+        for it in items:
+            if it.get('id') == fid:
+                it['status'] = new_status
+                if 'linkedTask' in req:
+                    it['linkedTask'] = req['linkedTask']
+                if 'note' in req:
+                    it['note'] = req['note']
+                found = True
+                break
+        if not found:
+            _json(handler, 404, {'ok': False, 'error': 'Not found'})
+            return True
+        _write_all(items)
+        _json(handler, 200, {'ok': True})
+        return True
+
+    return False
+
 # ── Request Handler ─────────────────────────────
 def _api_backup(handler, path, repo):
     import tempfile, glob, re
@@ -2463,6 +2586,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/rss/fetch'):
             return _api_rss_fetch(self, self.path)
 
+        if path.startswith('/api/feedback/'):
+            return _api_feedback(self, self.path)
+
         if path == '/api/fetch-link':
             return _api_fetch_link(self, self.path)
 
@@ -2552,6 +2678,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                     return
             if path.startswith('/api/email/'):
                 if _api_email(self, self.path):
+                    return
+            if path.startswith('/api/feedback/'):
+                if _api_feedback(self, self.path):
                     return
             if path == '/api/notifications':
                 queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')

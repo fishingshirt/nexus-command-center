@@ -8,7 +8,7 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-11 12:56 UTC
+- **Last updated:** 2026-05-11 14:44 UTC
 - **Active tasks:** 21
 - **Completed tasks:** 32 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
@@ -44,7 +44,7 @@
 | ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
-| HIGH | `T-055-a` | Feedback Pipeline backend queue API | `PENDING` | [`tasks/T-055-a.md`](tasks/T-055-a.md) |
+| HIGH | `T-055-a` | Feedback Pipeline backend queue API | `DONE` | [`tasks/T-055-a.md`](tasks/T-055-a.md) |
 | HIGH | `T-055-b` | Feedback Pipeline dashboard UI + tracker | `PENDING` | [`tasks/T-055-b.md`](tasks/T-055-b.md) |
 | MEDIUM | `T-055-c` | Feedback Pipeline agent integration + settings | `PENDING` | [`tasks/T-055-c.md`](tasks/T-055-c.md) |
 | HIGH | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
@@ -57,6 +57,7 @@
 
 | ID | Task |
 |----|------|
+| `T-055-a` | Feedback Pipeline backend queue API |
 | `T-031-b` | Cloud Vault CSS module |
 | `T-031-a` | Cloud Vault JS app + wiring |
 | `T-041` | Global search bar — keyboard /, fuzzy search, grouped results, mobile full-screen, highlight pulse |
