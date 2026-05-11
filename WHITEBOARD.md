@@ -8,7 +8,7 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-11 12:05 UTC
+- **Last updated:** 2026-05-11 12:56 UTC
 - **Active tasks:** 21
 - **Completed tasks:** 32 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
@@ -24,7 +24,7 @@
 | MEDIUM | `T-019-b` | Finance tracker CSS module | `DONE` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
 | LOW    | `T-019-c` | Finance tracker server backup API | `PENDING` | [`tasks/T-019-c.md`](tasks/T-019-c.md) |
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
-| HIGH | `T-031-a` | Cloud Vault JS app + wiring | `PENDING` | [`tasks/T-031-a.md`](tasks/T-031-a.md) |
+| HIGH | `T-031-a` | Cloud Vault JS app + wiring | `DONE` | [`tasks/T-031-a.md`](tasks/T-031-a.md) |
 | HIGH | `T-031-b` | Cloud Vault CSS module | `PENDING` | [`tasks/T-031-b.md`](tasks/T-031-b.md) |
 | MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `PENDING` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
 | HIGH | `T-032` | Email Agent / Smart Inbox | `IN_PROGRESS` | T-032-a,b,c,d,e,f,g DONE → [`tasks/T-032.md`](tasks/T-032.md) |
@@ -57,7 +57,7 @@
 
 | ID | Task |
 |----|------|
-| `T-025` | Smart PDF Editor |
+| `T-031-a` | Cloud Vault JS app + wiring |
 | `T-041` | Global search bar — keyboard /, fuzzy search, grouped results, mobile full-screen, highlight pulse |
 | `T-061` | Wishlist App (links, notes, priority, status) |
 | `T-044` | World Clock Widget |
