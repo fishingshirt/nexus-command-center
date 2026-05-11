@@ -45,7 +45,7 @@
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
 | HIGH | `T-055-a` | Feedback Pipeline backend queue API | `DONE` | [`tasks/T-055-a.md`](tasks/T-055-a.md) |
-| HIGH | `T-055-b` | Feedback Pipeline dashboard UI + tracker | `PENDING` | [`tasks/T-055-b.md`](tasks/T-055-b.md) |
+| HIGH | `T-055-b` | Feedback Pipeline dashboard UI + tracker | `DONE` | [`tasks/T-055-b.md`](tasks/T-055-b.md) |
 | MEDIUM | `T-055-c` | Feedback Pipeline agent integration + settings | `PENDING` | [`tasks/T-055-c.md`](tasks/T-055-c.md) |
 | HIGH | `T-059` | Hermes Chat: replies never arrive (bridge broken) | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
 | ~~HIGH~~ | ~~`T-057`~~ | ~~Default theme should be dark~~ | ~~`DONE`~~ | ~~2026-05-10 — changed index.html and app.js defaults to jarvis~~ |
@@ -57,6 +57,7 @@
 
 | ID | Task |
 |----|------|
+| `T-055-b` | Feedback Pipeline dashboard UI + tracker |
 | `T-032` | Email Agent / Smart Inbox |
 | `T-055-a` | Feedback Pipeline backend queue API |
 | `T-031-b` | Cloud Vault CSS module |
