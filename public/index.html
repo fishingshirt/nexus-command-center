@@ -33,6 +33,7 @@
     <link rel="stylesheet" href="css/apps/rss.css">
     <link rel="stylesheet" href="css/apps/pdf-editor.css">
     <link rel="stylesheet" href="css/apps/vault.css">
+    <link rel="stylesheet" href="css/apps/recipe.css">
     <link rel="stylesheet" href="css/apps/shortcuts.css">
     <link rel="stylesheet" href="css/quick-capture.css">
   <style>
@@ -423,6 +424,18 @@
             <p>Cloud file storage</p>
           </div>
           <div class="app-card-badge" style="background:#a855f712;color:#a855f7;font-size:0.7rem;">NEW</div>
+        </div>
+
+        <!-- Recipe Card -->
+        <div class="app-card" data-app="recipe" tabindex="0" role="button" aria-label="Open Recipes">
+          <div class="app-card-icon" style="--card-accent: #f59e0b;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 0-4 4v1H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z"></path><line x1="8" y1="14" x2="16" y2="14"></line><line x1="8" y1="18" x2="16" y2="18"></line></svg>
+          </div>
+          <div class="app-card-info">
+            <h3>Recipes</h3>
+            <p>Save &amp; cook your favorites</p>
+          </div>
+          <div class="app-card-badge" style="background:#f59e0b12;color:#f59e0b;font-size:0.7rem;">NEW</div>
         </div>
 
         <!-- Weather mini-view (horizontal scroll row) -->
@@ -1673,6 +1686,43 @@
       </div>
     </div>
 
+    <!-- Recipe View -->
+    <div id="view-recipe" class="view">
+      <div class="view-header">
+        <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <h2>Recipes</h2>
+        <button class="view-action" id="recipe-add-btn" aria-label="Add recipe">+ Add</button>
+      </div>
+      <div class="view-body recipe-view-body">
+        <div class="recipe-toolbar" id="recipe-toolbar">
+          <input type="search" id="recipe-search" class="recipe-search" placeholder="Search recipes…" aria-label="Search recipes">
+          <select id="recipe-filter" class="recipe-select" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Dessert">Dessert</option>
+            <option value="Snack">Snack</option>
+            <option value="Beverage">Beverage</option>
+          </select>
+          <select id="recipe-sort" class="recipe-select" aria-label="Sort by">
+            <option value="created-desc">Newest</option>
+            <option value="created-asc">Oldest</option>
+            <option value="name-asc">Name A → Z</option>
+            <option value="name-desc">Name Z → A</option>
+          </select>
+        </div>
+        <div class="recipe-empty" id="recipe-empty">
+          <div class="recipe-empty-icon">🍳</div>
+          <p>No recipes yet.</p>
+          <span>Tap "+ Add" to save your first recipe.</span>
+        </div>
+        <div class="recipe-grid" id="recipe-grid"></div>
+      </div>
+    </div>
+
     </main>
 
     <!-- Chat Widget (Floating) -->
@@ -1978,6 +2028,7 @@
 
   <!-- Scripts -->
   <script type="module" src="js/apps/vault.js"></script>
+  <script type="module" src="js/apps/recipe.js"></script>
   <script type="module" src="js/apps/finance-tracker.js"></script>
   <script type="module" src="js/apps/quick-capture.js"></script>
   <script type="module">

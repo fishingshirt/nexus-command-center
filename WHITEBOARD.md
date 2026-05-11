@@ -42,8 +42,8 @@
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-| MEDIUM | `T-062-a` | Recipe App JS module + wiring | `PENDING` | [`tasks/T-062-a.md`](tasks/T-062-a.md) |
-| LOW | `T-062-b` | Recipe App CSS module | `PENDING` | [`tasks/T-062-b.md`](tasks/T-062-b.md) |
+| MEDIUM | `T-062-a` | Recipe App JS module + wiring | `DONE` | [`tasks/T-062-a.md`](tasks/T-062-a.md) |
+| LOW | `T-062-b` | Recipe App CSS module | `DONE` | [`tasks/T-062-b.md`](tasks/T-062-b.md) |
 | ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
@@ -60,6 +60,8 @@
 
 | ID | Task |
 |----|------|
+| `T-062-a` | Recipe App JS module + wiring |
+| `T-062-b` | Recipe App CSS module |
 | `T-043-b` | Quick Capture note/event/todo save logic |
 | `T-043-a` | Quick Capture FAB + radial menu + modal shell |
 | `T-055-b` | Feedback Pipeline dashboard UI + tracker |
