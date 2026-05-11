@@ -797,6 +797,34 @@ def _refresh_gmail_token():
     except Exception:
         return None
 
+def _build_email_ai_prompt(messages, to, subject):
+    history = []
+    for m in messages[-6:]:
+        history.append(f"From: {m.get('from','')}\nSubject: {m.get('subject','')}\n{m.get('body','')[:500]}")
+    ctx = '\n---\n'.join(history)
+    prompt = (
+        f"You are a helpful email assistant. Based on the following email thread, "
+        f"draft a concise, polite, professional reply. Do NOT include a subject line or sign-off meta commentary. "
+        f"Write only the body of the reply email.\n\n"
+        f"Recipients: {to}\n"
+        f"Subject: {subject}\n"
+        f"Thread:\n{ctx}\n\n"
+        f"Reply body:"
+    )
+    return prompt
+
+def _ollama_generate(prompt, model='llama3.2', timeout=30):
+    try:
+        data = json.dumps({'model': model, 'prompt': prompt, 'stream': False}).encode('utf-8')
+        req = urllib.request.Request('http://localhost:11434/api/generate',
+                                     data=data,
+                                     headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            r = json.loads(resp.read().decode())
+            return r.get('response', '').strip()
+    except Exception:
+        return None
+
 def _gmail_access_token():
     tokens = _load_gmail_tokens()
     at = tokens.get('access_token')
@@ -1093,6 +1121,28 @@ def _api_email(handler, raw_path):
         except Exception as e:
             _json(handler, 502, {'ok': False, 'error': str(e)})
             return True
+
+    if path == '/api/email/ai-draft':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        messages = req.get('messages', [])
+        to = req.get('to', '')
+        subject = req.get('subject', '')
+        if not messages:
+            _json(handler, 400, {'ok': False, 'error': 'No thread context provided'})
+            return True
+        prompt = _build_email_ai_prompt(messages, to, subject)
+        draft_text = _ollama_generate(prompt)
+        if draft_text:
+            _json(handler, 200, {'ok': True, 'draft': draft_text})
+        else:
+            _json(handler, 503, {'ok': False, 'error': 'AI service unavailable or no models installed. Run `ollama pull llama3.2` locally.'})
+        return True
 
     return False
 

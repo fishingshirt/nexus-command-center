@@ -1218,6 +1218,13 @@
               <p id="email-status">Not connected</p>
               <button class="btn-primary" id="email-oauth-btn">Connect Gmail</button>
               <button class="btn-secondary" id="email-unlink-btn" style="display:none;margin-top:0.5rem;">Unlink</button>
+              <div class="email-ai-toggle" style="margin-top:0.75rem;">
+                <label class="toggle-row" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                  <input type="checkbox" id="email-ai-enabled" checked>
+                  <span>Enable AI Draft Assistant</span>
+                </label>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">Suggests contextual replies from thread context.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -1229,6 +1236,10 @@
           <input type="text" id="email-compose-to" class="email-compose-input" placeholder="To" aria-label="To">
           <input type="text" id="email-compose-subject" class="email-compose-input" placeholder="Subject" aria-label="Subject">
           <textarea id="email-compose-body" class="email-compose-textarea" rows="6" placeholder="Write your message…" aria-label="Body"></textarea>
+          <div class="email-compose-ai" style="display:flex;justify-content:flex-start;">
+            <button class="btn-secondary email-ai-btn" id="email-compose-ai-btn" aria-label="AI Draft" style="font-size:0.85rem;">✨ AI Draft</button>
+            <span id="email-ai-status" style="font-size:0.8rem;color:var(--text-muted);align-self:center;margin-left:0.5rem;display:none;"></span>
+          </div>
           <div class="email-compose-actions">
             <button class="btn-secondary" id="email-compose-cancel">Cancel</button>
             <button class="btn-primary" id="email-compose-send">Send</button>

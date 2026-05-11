@@ -40,6 +40,7 @@ function bindActions() {
   el('email-compose-close')?.addEventListener('click', hideCompose);
   el('email-compose-cancel')?.addEventListener('click', hideCompose);
   el('email-compose-send')?.addEventListener('click', sendEmail);
+  el('email-compose-ai-btn')?.addEventListener('click', generateAiDraft);
 }
 
 async function updateStatus() {
@@ -155,6 +156,7 @@ async function openThread(id) {
     if (!d.ok) return;
     const messages = d.messages || [];
     const last = messages[messages.length - 1] || {};
+    setAiDraftContext(messages);
     const threadHtml = messages.map(m => `
       <div class="email-msg">
         <div class="email-msg-header">
@@ -243,6 +245,46 @@ function getPriority(subject) {
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
+
+let _aiDraftContext = null;
+
+function setAiDraftContext(messages) {
+  _aiDraftContext = messages || null;
+}
+
+async function generateAiDraft() {
+  const aiBtn = el('email-compose-ai-btn');
+  const status = el('email-ai-status');
+  const enabled = el('email-ai-enabled')?.checked ?? true;
+  if (!enabled) { toast('AI Draft is disabled in Settings'); return; }
+  if (!aiBtn || aiBtn.disabled) return;
+  aiBtn.disabled = true;
+  if (status) { status.textContent = 'Drafting…'; status.style.display = 'inline'; }
+  try {
+    const to = el('email-compose-to').value.trim();
+    const subject = el('email-compose-subject').value.trim();
+    const messages = _aiDraftContext || [];
+    const r = await fetch('/api/email/ai-draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, to, subject })
+    });
+    const d = await r.json();
+    if (d.ok && d.draft) {
+      el('email-compose-body').value = d.draft;
+      if (status) status.textContent = 'Draft ready — edit before sending.';
+    } else {
+      toast(d.error || 'AI draft failed');
+      if (status) status.style.display = 'none';
+    }
+  } catch {
+    toast('AI draft failed');
+    if (status) status.style.display = 'none';
+  } finally {
+    aiBtn.disabled = false;
+  }
+}
+
 function toast(msg) {
   const c = document.getElementById('toast-container'); if (!c) return;
   const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg; c.appendChild(d);
