@@ -2674,6 +2674,25 @@ def _api_vault(handler, raw_path):
     _json(handler, 404, {'ok': False, 'error': 'unknown vault endpoint'})
     return True
 
+def _api_ai_suggester(handler, path):
+    if path == '/api/ai/suggest':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            payload = json.loads(body)
+        except Exception:
+            payload = {}
+        suggestions = payload.get('suggestions', [])
+        if not suggestions:
+            suggestions = [
+                {'title': 'Review open tasks', 'reason': 'High-priority items are pending', 'app': 'tasks'},
+                {'title': 'Check calendar', 'reason': 'Upcoming events today', 'app': 'calendar'},
+                {'title': 'Browse news digest', 'reason': 'Top stories are ready', 'app': 'news'},
+            ]
+        _json(handler, 200, {'ok': True, 'suggestions': suggestions})
+        return True
+    return False
+
 class SPAHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         self.args_dir = k.pop('args_dir')
@@ -2920,6 +2939,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                     return
             if path == '/api/finance/write':
                 if _api_finance_tracker_write(self):
+                    return
+            if path.startswith('/api/ai/'):
+                if _api_ai_suggester(self, path):
                     return
             if path == '/api/notifications':
                 queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')

@@ -1,4 +1,4 @@
-import { toast } from '../app.js';
+const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 import { syncEventToGoogle, deleteEventFromGoogle, flushOutboundQueue } from './gcal-outbound.js';
 import { notify } from '../notifications.js';
 

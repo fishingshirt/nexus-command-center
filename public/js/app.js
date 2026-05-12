@@ -19,6 +19,7 @@ import { initPdfEditor } from './apps/pdf.js';
 import { initVault } from './apps/vault.js';
 import { initWishlist } from './apps/wishlist.js';
 import { initRecipe } from './apps/recipe.js';
+import { initSuggester, openSuggester } from './apps/ai-suggester.js';
 import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
 import { initFinanceTracker } from './apps/finance-tracker.js';
@@ -46,7 +47,8 @@ const APP_REGISTRY = [
   { id: 'rss', name: 'RSS Reader', icon: '📡', path: 'rss' },
   { id: 'pdf', name: 'PDF Editor', icon: '📄', path: 'pdf' },
   { id: 'vault', name: 'Vault', icon: '🔐', path: 'vault' },
-  { id: 'recipe', name: 'Recipes', icon: '🍳', path: 'recipe' }
+  { id: 'recipe', name: 'Recipes', icon: '🍳', path: 'recipe' },
+  { id: 'ai-suggester', name: 'AI Suggester', icon: '💡', path: 'ai-suggester' }
 ];
 
 export function initApp() {
@@ -91,6 +93,7 @@ export function initApp() {
   initPdfEditor();
   initVault();
   initRecipe();
+  initSuggester();
   initEmail();
   initWeather();
   initCalendar();
@@ -186,6 +189,7 @@ function switchView(viewId) {
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     if (viewId === 'news') openNews();
+    if (viewId === 'ai-suggester') openSuggester();
     // Per-app auth check
     if (['calendar','notes','todo'].includes(viewId)) {
       if (typeof ensureAuthEnabled === 'function') {
@@ -1890,6 +1894,9 @@ function initWidgetGrid() {
   window.__widgetGrid = wg;
 }
 window.APP_REGISTRY = APP_REGISTRY;
+window.toast = toast;
+window.loadSettings = loadSettings;
+window.saveSettings = saveSettings;
 window.initApp = initApp;
 window.openSearch = openSearch;
 window.closeSearch = closeSearch;

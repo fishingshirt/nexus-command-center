@@ -1,4 +1,4 @@
-import { loadSettings } from './app.js';
+const loadSettings = window.loadSettings || (() => ({}));
 
 const STORAGE_KEY = 'ncc-notifications';
 const MAX_ITEMS = 100;

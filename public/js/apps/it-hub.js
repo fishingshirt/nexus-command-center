@@ -1,4 +1,6 @@
-import { loadSettings, saveSettings, toast } from '../app.js';
+const loadSettings = window.loadSettings || (() => ({}));
+const saveSettings = window.saveSettings || (() => {});
+const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 
 const LS_KEY = 'ncc-it-hub';
 const REFRESH_INTERVAL = 10000;

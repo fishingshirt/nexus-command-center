@@ -1,4 +1,6 @@
-import { toast, loadSettings, saveSettings } from '../app.js';
+const loadSettings = window.loadSettings || (() => ({}));
+const saveSettings = window.saveSettings || (() => {});
+const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 import { flushOutboundQueue } from './gcal-outbound.js';
 
 /* ===== GOOGLE CALENDAR SYNC ENGINE ===== */

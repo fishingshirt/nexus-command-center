@@ -1,5 +1,7 @@
 /* ─── PIN Auth — Opt-in per-app lock ─────────────── */
-import { loadSettings, saveSettings, toast } from '../app.js';
+const loadSettings = window.loadSettings || (() => ({}));
+const saveSettings = window.saveSettings || (() => {});
+const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 
 const PIN_STORAGE = 'ncc-auth-pin-state';
 const PIN_SESSION  = 'ncc-pin-verified';

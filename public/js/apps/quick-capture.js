@@ -1,4 +1,4 @@
-import { toast } from '../app.js';
+const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 import { notify } from '../notifications.js';
 
 /**

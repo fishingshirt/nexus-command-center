@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="css/apps/pdf-editor.css">
     <link rel="stylesheet" href="css/apps/vault.css">
     <link rel="stylesheet" href="css/apps/recipe.css">
+    <link rel="stylesheet" href="css/apps/ai-suggester.css">
     <link rel="stylesheet" href="css/apps/shortcuts.css">
     <link rel="stylesheet" href="css/widgets/grid.css">
     <link rel="stylesheet" href="css/quick-capture.css">
@@ -1724,6 +1725,19 @@
           <span>Tap "+ Add" to save your first recipe.</span>
         </div>
         <div class="recipe-grid" id="recipe-grid"></div>
+      </div>
+    </div>
+
+    <!-- AI Suggester View -->
+    <div id="view-ai-suggester" class="view" aria-label="AI Suggester">
+      <div class="view-header">
+        <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <h2>AI Suggester</h2>
+      </div>
+      <div class="view-body suggester-view-body" id="sg-view-body">
+        <!-- Rendered by ai-suggester.js -->
       </div>
     </div>
 
