@@ -2,7 +2,7 @@
  * welcome.js — Cinematic Onboarding Experience (T-033)
  */
 
-const AUDIO_PATH = 'assets/audio/we-do-what-we-want-edit.mp3';
+const AUDIO_PATH = 'assets/audio/build-report.ogg';
 
 /* === shared helpers (duplicated here to avoid circular import with app.js) === */
 function loadSettings() {
