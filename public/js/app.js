@@ -23,7 +23,7 @@ import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
 import { initFinanceTracker } from './apps/finance-tracker.js';
 import { initQuickCapture } from './apps/quick-capture.js';
-import { initWidgetGrid } from './widgets/grid.js';
+import { WidgetGrid } from './widgets/grid.js';
 import { initWelcome } from './welcome.js';
 import { initNotifications, notify } from './notifications.js';
 
@@ -55,7 +55,19 @@ export function initApp() {
   initTheme();
   initSettings();
   initCalendarSync();
-  initWelcome();
+  /* === SAFEGUARD: Welcome overlay must not silently block the app === */
+  try {
+    initWelcome();
+  } catch (e) {
+    console.error('[Nexus] initWelcome crashed — forcing reveal', e);
+    const overlay = document.getElementById('welcome-overlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      overlay.style.display = 'none';
+    }
+    const app = document.getElementById('app');
+    if (app) app.classList.add('welcome-ready');
+  }
   runMigration();
   initNotifications();
   initAgentNotificationPoll();
