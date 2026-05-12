@@ -184,13 +184,25 @@ async function handleFiles(fileList) {
   window.toast && toast(`${fileList.length} file(s) added`);
 }
 
-function onDelete(id) {
+async function onDelete(id) {
   if (!window.confirm('Delete this file from Vault?')) return;
+  const file = state.files.find(f => f.id === id);
   state.files = state.files.filter(f => f.id !== id);
   save();
   renderFolders();
   renderFiles();
   window.toast && toast('File deleted');
+  if (!file) return;
+  const remoteId = file.remoteId || file.id;
+  try {
+    await fetch('/api/vault/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: String(remoteId) })
+    });
+  } catch {
+    // silent
+  }
 }
 
 function onDownload(id) {

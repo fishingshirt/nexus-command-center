@@ -4,8 +4,9 @@
    Adds /api/* endpoints for IT Hub telemetry.
    Usage: python3 nexus-server.py [--port 8080] [--dir /path/to/public]
 """
-import http.server, socketserver, os, sys, argparse, signal, atexit, json, time, subprocess, socket, shutil, hashlib
+import http.server, socketserver, os, sys, argparse, signal, atexit, json, time, subprocess, socket, shutil, hashlib, base64, uuid
 from pathlib import Path
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 PIDFILE = os.path.expanduser('~/.hermes/nexus-server.pid')
 START_TIME = time.time()
@@ -2475,6 +2476,204 @@ def _get_youtube_batch(seed=0, size=6):
         out.append(_YOUTUBE_POOL[(s + i) % n])
     return out
 
+# ── Vault API + AES-256-GCM encryption ──
+VAULT_DIR = os.path.expanduser('~/.hermes/data/vault')
+os.makedirs(VAULT_DIR, exist_ok=True)
+VAULT_INDEX = os.path.expanduser('~/.hermes/data/vault-index.json')
+
+def _get_vault_key():
+    raw = os.environ.get('ENCRYPTION_KEY') or TEMP_PIN
+    if isinstance(raw, str):
+        raw = raw.encode('utf-8')
+    # Derive 32-byte key via SHA-256
+    return hashlib.sha256(raw).digest()
+
+def _encrypt(data_bytes, key):
+    aes = AESGCM(key)
+    iv = os.urandom(12)
+    ct = aes.encrypt(iv, data_bytes, None)
+    return base64.b64encode(iv + ct).decode('utf-8')
+
+def _decrypt(enc_b64, key):
+    aes = AESGCM(key)
+    raw = base64.b64decode(enc_b64)
+    iv, ct = raw[:12], raw[12:]
+    return aes.decrypt(iv, ct, None)
+
+def _load_vault_index():
+    try:
+        with open(VAULT_INDEX, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {'items': []}
+
+def _save_vault_index(idx):
+    tmp = VAULT_INDEX + '.tmp'
+    with open(tmp, 'w') as f:
+        json.dump(idx, f, indent=2, default=str)
+    shutil.move(tmp, VAULT_INDEX)
+
+def _api_vault(handler, raw_path):
+    import urllib.parse, email, re
+    key = _get_vault_key()
+    parsed = urllib.parse.urlparse(raw_path)
+    path = parsed.path
+    qs = urllib.parse.parse_qs(parsed.query)
+
+    if path == '/api/vault/list':
+        idx = _load_vault_index()
+        folder = qs.get('folder', [''])[0]
+        items = idx.get('items', [])
+        if folder:
+            items = [i for i in items if i.get('folder') == folder]
+        _json(handler, 200, {'items': items})
+        return True
+
+    if path == '/api/vault/download':
+        fid = qs.get('id', [''])[0]
+        if not fid:
+            _json(handler, 400, {'ok': False, 'error': 'id required'})
+            return True
+        idx = _load_vault_index()
+        item = next((i for i in idx.get('items', []) if i['id'] == fid), None)
+        if not item:
+            _json(handler, 404, {'ok': False, 'error': 'file not found'})
+            return True
+        storage_path = os.path.join(VAULT_DIR, fid + '.enc')
+        try:
+            with open(storage_path, 'rb') as f:
+                enc = f.read().decode('utf-8')
+            data = _decrypt(enc, key)
+        except Exception as e:
+            _json(handler, 500, {'ok': False, 'error': 'decrypt failed: ' + str(e)})
+            return True
+        handler.send_response(200)
+        handler.send_header('Content-Type', item.get('mime', 'application/octet-stream'))
+        handler.send_header('Content-Disposition', 'attachment; filename="' + item.get('filename', 'download') + '"')
+        handler.send_header('Content-Length', len(data))
+        _cors(handler)
+        handler.end_headers()
+        handler.wfile.write(data)
+        return True
+
+    if handler.command != 'POST':
+        _json(handler, 405, {'ok': False, 'error': 'method not allowed'})
+        return True
+
+    if path == '/api/vault/upload':
+        length = int(handler.headers.get('Content-Length', 0))
+        body = b''
+        if length:
+            body = handler.rfile.read(length)
+        ctype = handler.headers.get('Content-Type', '')
+        # Parse multipart using email module (zero-dep)
+        boundary = ''
+        m = re.search(r'boundary=([^;\s]+)', ctype)
+        if m:
+            boundary = m.group(1).strip().strip("'""")
+        if not boundary:
+            _json(handler, 400, {'ok': False, 'error': 'cannot parse multipart'})
+            return True
+        msg = email.message_from_bytes(
+            (b'Content-Type: multipart/form-data; boundary=' + boundary.encode() + b'\n\n' + body)
+        )
+        uploaded = None
+        uploaded_name = ''
+        for part in msg.walk():
+            cd = part.get('Content-Disposition', '')
+            if 'form-data' in cd and 'name="file"' in cd:
+                uploaded = part.get_payload(decode=True)
+                uploaded_name = ''
+                fnm = re.search(r'filename="([^"]+)"', cd)
+                if fnm:
+                    uploaded_name = fnm.group(1)
+                break
+        if not uploaded:
+            _json(handler, 400, {'ok': False, 'error': 'no file'})
+            return True
+        fid = str(uuid.uuid4())
+        folder = 'Other'
+        mime = 'application/octet-stream'
+        # Re-parse form fields for folder/meta
+        folder_val = None
+        for part in msg.walk():
+            cd = part.get('Content-Disposition', '')
+            if 'form-data' in cd and 'name="folder"' in cd:
+                folder_val = part.get_payload(decode=True)
+                if folder_val:
+                    folder = folder_val.decode('utf-8', errors='replace').strip()
+            if 'form-data' in cd and 'name="mime"' in cd:
+                mv = part.get_payload(decode=True)
+                if mv:
+                    mime = mv.decode('utf-8', errors='replace').strip()
+        enc_str = _encrypt(uploaded, key)
+        storage_path = os.path.join(VAULT_DIR, fid + '.enc')
+        with open(storage_path, 'w') as f:
+            f.write(enc_str)
+        item = {
+            'id': fid,
+            'filename': uploaded_name or 'unknown',
+            'folder': folder,
+            'size': len(uploaded),
+            'ts': time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'mime': mime,
+        }
+        idx = _load_vault_index()
+        idx.setdefault('items', []).append(item)
+        _save_vault_index(idx)
+        _json(handler, 200, {'ok': True, 'id': fid, 'filename': item['filename'], 'size': item['size']})
+        return True
+
+    if path == '/api/vault/delete':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'bad json'})
+            return True
+        fid = req.get('id')
+        if not fid:
+            _json(handler, 400, {'ok': False, 'error': 'id required'})
+            return True
+        idx = _load_vault_index()
+        before = len(idx.get('items', []))
+        idx['items'] = [i for i in idx.get('items', []) if i['id'] != fid]
+        _save_vault_index(idx)
+        spath = os.path.join(VAULT_DIR, fid + '.enc')
+        try:
+            os.remove(spath)
+        except Exception:
+            pass
+        _json(handler, 200, {'ok': True, 'removed': before - len(idx['items'])})
+        return True
+
+    if path == '/api/vault/move':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            req = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'bad json'})
+            return True
+        fid = req.get('id')
+        new_folder = req.get('newFolder')
+        if not fid or not new_folder:
+            _json(handler, 400, {'ok': False, 'error': 'id and newFolder required'})
+            return True
+        idx = _load_vault_index()
+        item = next((i for i in idx.get('items', []) if i['id'] == fid), None)
+        if not item:
+            _json(handler, 404, {'ok': False, 'error': 'file not found'})
+            return True
+        item['folder'] = new_folder
+        _save_vault_index(idx)
+        _json(handler, 200, {'ok': True})
+        return True
+
+    _json(handler, 404, {'ok': False, 'error': 'unknown vault endpoint'})
+    return True
+
 class SPAHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         self.args_dir = k.pop('args_dir')
@@ -2578,6 +2777,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         if path.startswith('/api/backup/'):
             return _api_backup(self, path, repo)
+
+        if path.startswith('/api/vault/'):
+            return _api_vault(self, self.path)
 
         if path.startswith('/api/auth/'):
             return _api_auth(self, path)
@@ -2712,6 +2914,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                     return
             if path.startswith('/api/feedback/'):
                 if _api_feedback(self, self.path):
+                    return
+            if path.startswith('/api/vault/'):
+                if _api_vault(self, self.path):
                     return
             if path == '/api/finance/write':
                 if _api_finance_tracker_write(self):

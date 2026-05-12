@@ -12,3 +12,7 @@ CREATED
 END
 STOP
 TOOL
+
+data/vault/
+data/vault-index.json
+data/vault/**

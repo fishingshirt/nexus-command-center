@@ -26,7 +26,7 @@
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
 | HIGH | `T-031-a` | Cloud Vault JS app + wiring | `DONE` | [`tasks/T-031-a.md`](tasks/T-031-a.md) |
 | HIGH | `T-031-b` | Cloud Vault CSS module | `DONE` | [`tasks/T-031-b.md`](tasks/T-031-b.md) |
-| MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `PENDING` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
+| MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `DONE` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
 
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
 | MEDIUM | `T-040-a-1` | Widget Grid core engine + default layout | `DONE` | [`tasks/T-040-a-1.md`](tasks/T-040-a-1.md) |
