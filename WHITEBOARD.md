@@ -8,7 +8,7 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-12 00:14 UTC
+- **Last updated:** 2026-05-12 01:21 UTC
 - **Active tasks:** 22
 - **Completed tasks:** 33 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
@@ -22,7 +22,7 @@
 | MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `DONE` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
 | MEDIUM | `T-019-b` | Finance tracker CSS module | `DONE` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
-| LOW    | `T-019-c` | Finance tracker server backup API | `PENDING` | [`tasks/T-019-c.md`](tasks/T-019-c.md) |
+| LOW    | `T-019-c` | Finance tracker server backup API | `DONE` | [`tasks/T-019-c.md`](tasks/T-019-c.md) |
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
 | HIGH | `T-031-a` | Cloud Vault JS app + wiring | `DONE` | [`tasks/T-031-a.md`](tasks/T-031-a.md) |
 | HIGH | `T-031-b` | Cloud Vault CSS module | `DONE` | [`tasks/T-031-b.md`](tasks/T-031-b.md) |
@@ -61,6 +61,7 @@
 
 | ID | Task |
 |----|------|
+| `T-019-c` | Finance tracker server backup API |
 | `T-062-a` | Recipe App JS module + wiring |
 | `T-062-b` | Recipe App CSS module |
 | `T-043-b` | Quick Capture note/event/todo save logic |
