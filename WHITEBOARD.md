@@ -8,9 +8,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-11 14:44 UTC
-- **Active tasks:** 21
-- **Completed tasks:** 32 shown below
+- **Last updated:** 2026-05-12 02:10 UTC
+- **Active tasks:** 22
+- **Completed tasks:** 33 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 ---
 
@@ -18,29 +18,33 @@
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `PENDING` | [`tasks/T-017-a.md`](tasks/T-017-a.md) |
+| MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
 | MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `DONE` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
 | MEDIUM | `T-019-b` | Finance tracker CSS module | `DONE` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
-| LOW    | `T-019-c` | Finance tracker server backup API | `PENDING` | [`tasks/T-019-c.md`](tasks/T-019-c.md) |
+| LOW    | `T-019-c` | Finance tracker server backup API | `DONE` | [`tasks/T-019-c.md`](tasks/T-019-c.md) |
 | MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
 | HIGH | `T-031-a` | Cloud Vault JS app + wiring | `DONE` | [`tasks/T-031-a.md`](tasks/T-031-a.md) |
 | HIGH | `T-031-b` | Cloud Vault CSS module | `DONE` | [`tasks/T-031-b.md`](tasks/T-031-b.md) |
 | MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `PENDING` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
 
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
-| MEDIUM | `T-040-a` | Widget Grid core engine + default layout | `PENDING` | [`tasks/T-040-a.md`](tasks/T-040-a.md) |
+| MEDIUM | `T-040-a-1` | Widget Grid core engine + default layout | `DONE` | [`tasks/T-040-a-1.md`](tasks/T-040-a-1.md) |
+| MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `PENDING` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
 | MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
 | LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
-| MEDIUM | `T-043` | Quick capture widget (voice + fast entry) | `PENDING` | [`tasks/T-043.md`](tasks/T-043.md) |
+| MEDIUM | `T-043-a` | Quick Capture FAB + radial menu + modal shell | `DONE` | [`tasks/T-043-a.md`](tasks/T-043-a.md) |
+| MEDIUM | `T-043-b` | Quick Capture note/event/todo save logic | `DONE` | [`tasks/T-043-b.md`](tasks/T-043-b.md) |
+| LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
+| LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
 | LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `PENDING` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
 | LOW    | `T-046-b` | Auto dark mode settings panel + per-app override | `PENDING` | [`tasks/T-046-b.md`](tasks/T-046-b.md) |
 | MEDIUM | `T-047` | Keyboard shortcuts / hotkey system | `DONE` | [`tasks/T-047.md`](tasks/T-047.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-| MEDIUM | `T-062-a` | Recipe App JS module + wiring | `PENDING` | [`tasks/T-062-a.md`](tasks/T-062-a.md) |
-| LOW | `T-062-b` | Recipe App CSS module | `PENDING` | [`tasks/T-062-b.md`](tasks/T-062-b.md) |
+| MEDIUM | `T-062-a` | Recipe App JS module + wiring | `DONE` | [`tasks/T-062-a.md`](tasks/T-062-a.md) |
+| LOW | `T-062-b` | Recipe App CSS module | `DONE` | [`tasks/T-062-b.md`](tasks/T-062-b.md) |
 | ~~LOW~~ | ~~`T-051`~~ | ~~Post-completion QA & continuous improvement loop~~ | ~~`ABSORBED`~~ | Merged into T-060 QC/QA pipeline |
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
@@ -57,6 +61,12 @@
 
 | ID | Task |
 |----|------|
+| `T-040-a-1` | Widget Grid core engine + default layout |
+| `T-019-c` | Finance tracker server backup API |
+| `T-062-a` | Recipe App JS module + wiring |
+| `T-062-b` | Recipe App CSS module |
+| `T-043-b` | Quick Capture note/event/todo save logic |
+| `T-043-a` | Quick Capture FAB + radial menu + modal shell |
 | `T-055-b` | Feedback Pipeline dashboard UI + tracker |
 | `T-032` | Email Agent / Smart Inbox |
 | `T-055-a` | Feedback Pipeline backend queue API |

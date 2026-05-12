@@ -343,6 +343,33 @@ def _api_finance(handler, fullpath):
     _json(handler, 200, _finance_prices(symbols))
     return True
 
+# ── Finance Tracker (T-019-c) backup helpers ────
+_FINANCE_DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'finance.json')
+
+def _api_finance_tracker_read(handler):
+    try:
+        with open(_FINANCE_DATA_PATH, 'r') as f:
+            data = json.load(f)
+    except Exception:
+        data = {'transactions': []}
+    _json(handler, 200, data)
+    return True
+
+def _api_finance_tracker_write(handler):
+    try:
+        length = int(handler.headers.get('Content-Length', 0))
+        body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+        payload = json.loads(body)
+    except Exception:
+        _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+        return True
+    transactions = payload.get('transactions', [])
+    os.makedirs(os.path.dirname(_FINANCE_DATA_PATH), exist_ok=True)
+    with open(_FINANCE_DATA_PATH, 'w') as f:
+        json.dump({'transactions': transactions}, f, indent=2)
+    _json(handler, 200, {'ok': True, 'count': len(transactions)})
+    return True
+
 # ── Hermes Bridge helpers ───────────────────────
 _HERMES_STATE_PATH = os.path.expanduser('~/.hermes/nexus-hermes-bridge.json')
 
@@ -2559,6 +2586,10 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             return _api_adb(self, path)
 
         if path.startswith('/api/finance/'):
+            if path == '/api/finance/read' and self.command == 'GET':
+                return _api_finance_tracker_read(self)
+            if path == '/api/finance/write' and self.command == 'POST':
+                return _api_finance_tracker_write(self)
             return _api_finance(self, self.path)
 
         if path.startswith('/api/hermes/'):
@@ -2681,6 +2712,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                     return
             if path.startswith('/api/feedback/'):
                 if _api_feedback(self, self.path):
+                    return
+            if path == '/api/finance/write':
+                if _api_finance_tracker_write(self):
                     return
             if path == '/api/notifications':
                 queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')

@@ -1,0 +1,117 @@
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-4);
+  margin: 0 auto var(--space-6);
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .widget-grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 980px;
+  }
+}
+
+.widget-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: transform 160ms cubic-bezier(.4,0,.2,1), box-shadow 160ms cubic-bezier(.4,0,.2,1);
+  cursor: default;
+  user-select: none;
+}
+
+.widget-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.widget-card__title {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.widget-card__icon {
+  font-size: var(--font-size-lg);
+  opacity: 0.8;
+}
+
+.widget-card__body {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.widget-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.widget-metric__value {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.widget-metric__label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.widget-placeholder {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.widget-card--editing {
+  cursor: grab;
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+.widget-card--editing:active {
+  cursor: grabbing;
+}
+
+.widget-card--dragging {
+  opacity: 0.45;
+  transform: scale(0.97);
+}
+
+.widget-card--over {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+}
+
+.widget-grid__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0,0,0,0.25);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget-card {
+    transition: none;
+  }
+  .widget-card--dragging {
+    transform: none;
+  }
+}
