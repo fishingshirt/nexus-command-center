@@ -8,8 +8,8 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-11 22:24 UTC
-- **Active tasks:** 21
+- **Last updated:** 2026-05-12 00:14 UTC
+- **Active tasks:** 22
 - **Completed tasks:** 33 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 ---
@@ -18,7 +18,7 @@
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `PENDING` | [`tasks/T-017-a.md`](tasks/T-017-a.md) |
+| MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
 | MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
 | MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `DONE` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
 | MEDIUM | `T-019-b` | Finance tracker CSS module | `DONE` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
@@ -29,7 +29,8 @@
 | MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `PENDING` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
 
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
-| MEDIUM | `T-040-a` | Widget Grid core engine + default layout | `PENDING` | [`tasks/T-040-a.md`](tasks/T-040-a.md) |
+| MEDIUM | `T-040-a-1` | Widget Grid core engine + default layout | `PENDING` | [`tasks/T-040-a-1.md`](tasks/T-040-a-1.md) |
+| MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `PENDING` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
 | MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
 | LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
 | MEDIUM | `T-043-a` | Quick Capture FAB + radial menu + modal shell | `DONE` | [`tasks/T-043-a.md`](tasks/T-043-a.md) |
