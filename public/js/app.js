@@ -105,8 +105,7 @@ export function initApp() {
   updateDashboardDate();
   initOfflineMode();
   startOfflineWatcher();
-  renderFeedbackList(true);
-  updateFeedbackBadge();
+  // renderFeedbackList and updateFeedbackBadge are already triggered inside initFeedback
   registerServiceWorker();
   initSearch();
   initShortcuts();

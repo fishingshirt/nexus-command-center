@@ -1,5 +1,5 @@
 /* ===== RECIPE APP ===== */
-import { toast } from '../notifications.js';
+import { notify } from '../notifications.js';
 
 const STORAGE_KEY = 'ncc-recipes';
 const PRESETS_KEY = 'ncc-recipe-presets-loaded';
