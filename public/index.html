@@ -35,6 +35,7 @@
     <link rel="stylesheet" href="css/apps/vault.css">
     <link rel="stylesheet" href="css/apps/recipe.css">
     <link rel="stylesheet" href="css/apps/shortcuts.css">
+    <link rel="stylesheet" href="css/widgets/grid.css">
     <link rel="stylesheet" href="css/quick-capture.css">
   <style>
     /* CRITICAL: hide app before any CSS/JS loads. Zero flash. */
@@ -186,6 +187,9 @@
           <h1>Welcome back</h1>
           <p class="dashboard-date" id="dashboard-date"></p>
         </div>
+        <!-- Widget Grid -->
+        <div class="widget-grid" id="widget-grid" role="region" aria-label="Dashboard widgets"></div>
+
         <div class="app-grid" id="app-grid">
           <!-- Calendar Card -->
           <div class="app-card" data-app="calendar" tabindex="0" role="button" aria-label="Open Calendar">

@@ -8,7 +8,7 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-12 01:21 UTC
+- **Last updated:** 2026-05-12 02:10 UTC
 - **Active tasks:** 22
 - **Completed tasks:** 33 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
@@ -29,7 +29,7 @@
 | MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `PENDING` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
 
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
-| MEDIUM | `T-040-a-1` | Widget Grid core engine + default layout | `PENDING` | [`tasks/T-040-a-1.md`](tasks/T-040-a-1.md) |
+| MEDIUM | `T-040-a-1` | Widget Grid core engine + default layout | `DONE` | [`tasks/T-040-a-1.md`](tasks/T-040-a-1.md) |
 | MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `PENDING` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
 | MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
 | LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
@@ -61,6 +61,7 @@
 
 | ID | Task |
 |----|------|
+| `T-040-a-1` | Widget Grid core engine + default layout |
 | `T-019-c` | Finance tracker server backup API |
 | `T-062-a` | Recipe App JS module + wiring |
 | `T-062-b` | Recipe App CSS module |
