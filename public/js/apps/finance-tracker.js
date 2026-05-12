@@ -17,7 +17,6 @@ function loadTransactions() {
 }
 function saveTransactions(list) {
   localStorage.setItem(LS_KEY, JSON.stringify(list));
-  debouncedSync();
 }
 
 function todayStr() {
@@ -210,55 +209,12 @@ function cleanupAll() {
   window.removeEventListener('beforeunload', cleanupAll);
 }
 
-/* --- Server sync (T-019-c) --- */
-let _ftSyncTimer = null;
-
-function debouncedSync() {
-  clearTimeout(_ftSyncTimer);
-  _ftSyncTimer = setTimeout(() => syncToServer().catch(() => {}), 800);
-}
-
-async function syncToServer() {
-  try {
-    const data = loadTransactions();
-    const resp = await fetch('/api/finance/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transactions: data })
-    });
-    if (!resp.ok) return;
-  } catch (_) {
-    // offline is fine
-  }
-}
-
-async function syncFromServer() {
-  try {
-    const resp = await fetch('/api/finance/read');
-    if (!resp.ok) return;
-    const payload = await resp.json();
-    const serverTx = payload.transactions || [];
-    if (!serverTx.length) return;
-    const localTx = loadTransactions();
-    const map = new Map();
-    localTx.forEach(t => map.set(t.id, t));
-    serverTx.forEach(t => { if (t && t.id) map.set(t.id, t); });
-    const merged = Array.from(map.values());
-    merged.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id || '').localeCompare(a.id || ''));
-    saveTransactions(merged);
-  } catch (_) {
-    // offline is fine
-  }
-}
-
 export function initFinanceTracker() {
   if (trackerInit) return;
   trackerInit = true;
-  syncFromServer().then(() => {
-    bindForm();
-    bindExport();
-    bindListDelete();
-    renderAll();
-    window.addEventListener('beforeunload', cleanupAll, { once: true });
-  });
+  bindForm();
+  bindExport();
+  bindListDelete();
+  renderAll();
+  window.addEventListener('beforeunload', cleanupAll, { once: true });
 }

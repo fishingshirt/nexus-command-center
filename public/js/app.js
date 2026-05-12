@@ -18,12 +18,9 @@ import { initRss } from './apps/rss.js';
 import { initPdfEditor } from './apps/pdf.js';
 import { initVault } from './apps/vault.js';
 import { initWishlist } from './apps/wishlist.js';
-import { initRecipe } from './apps/recipe.js';
 import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
 import { initFinanceTracker } from './apps/finance-tracker.js';
-import { initQuickCapture } from './apps/quick-capture.js';
-import { initWidgetGrid } from './widgets/grid.js';
 import { initWelcome } from './welcome.js';
 import { initNotifications, notify } from './notifications.js';
 
@@ -45,8 +42,7 @@ const APP_REGISTRY = [
   { id: 'email', name: 'Email', icon: '✉️', path: 'email' },
   { id: 'rss', name: 'RSS Reader', icon: '📡', path: 'rss' },
   { id: 'pdf', name: 'PDF Editor', icon: '📄', path: 'pdf' },
-  { id: 'vault', name: 'Vault', icon: '🔐', path: 'vault' },
-  { id: 'recipe', name: 'Recipes', icon: '🍳', path: 'recipe' }
+  { id: 'vault', name: 'Vault', icon: '🔐', path: 'vault' }
 ];
 
 export function initApp() {
@@ -67,8 +63,6 @@ export function initApp() {
   initITHub();
   initPhoneBridge();
   initArcade();
-  initWidgetGrid();
-  initQuickCapture();
   initFinance();
   initFinanceTracker();
   initPomodoro();
@@ -78,7 +72,6 @@ export function initApp() {
   initWishlist();
   initPdfEditor();
   initVault();
-  initRecipe();
   initEmail();
   initWeather();
   initCalendar();
@@ -96,7 +89,7 @@ export function initApp() {
   initSearch();
   initShortcuts();
 
-  /* Keyboard shortcuts */
+  // EMERGENCY_REVEAL: if welcome.js fails to reveal app, force it after 2s
   setTimeout(() => {
     const app = document.getElementById('app');
     if (app && getComputedStyle(app).display === 'none') {
@@ -1826,57 +1819,6 @@ function activateResult(row) {
 }
 
 /* ===== EXPORTS ===== */
-function initWidgetGrid() {
-  const container = document.getElementById('widget-grid');
-  if (!container) return;
-  const wg = new WidgetGrid(container, null);
-  // Register built-in widgets
-  wg.registerWidget('weather', (el) => {
-    const s = localStorage.getItem('ncc-weather-data');
-    let html = '<span class="widget-placeholder">No data</span>';
-    if (s) {
-      try {
-        const data = JSON.parse(s);
-        html = `<div class="widget-metric"><span class="widget-metric__value">${data.temp ?? '--'}°</span><span class="widget-metric__label">${data.city ?? 'Local'}</span></div>`;
-      } catch { /* ignore */ }
-    }
-    el.innerHTML = html;
-  });
-  wg.registerWidget('calendar-today', (el) => {
-    const today = new Date();
-    const key = `ncc-calendar-${today.getFullYear()}-${today.getMonth()}`;
-    const s = localStorage.getItem(key);
-    let count = 0;
-    if (s) {
-      try {
-        const events = JSON.parse(s);
-        if (Array.isArray(events)) {
-          const d = today.toISOString().split('T')[0];
-          count = events.filter(e => e.date === d || (!e.date && e.start?.startsWith(d))).length;
-        }
-      } catch { /* ignore */ }
-    }
-    el.innerHTML = `<div class="widget-metric"><span class="widget-metric__value">${count}</span><span class="widget-metric__label">Events today</span></div>`;
-  });
-  wg.registerWidget('todo-count', (el) => {
-    const s = localStorage.getItem('ncc-todo');
-    let count = 0;
-    if (s) {
-      try {
-        const data = JSON.parse(s);
-        if (data && Array.isArray(data.todos)) {
-          count = data.todos.filter(t => !t.done).length;
-        }
-      } catch { /* ignore */ }
-    }
-    el.innerHTML = `<div class="widget-metric"><span class="widget-metric__value">${count}</span><span class="widget-metric__label">Open tasks</span></div>`;
-  });
-  wg.registerWidget('agent-stats', (el) => {
-    el.innerHTML = '<div class="widget-metric"><span class="widget-metric__value">●</span><span class="widget-metric__label">Ready</span></div>';
-  });
-  // Expose global for debug
-  window.__widgetGrid = wg;
-}
 window.APP_REGISTRY = APP_REGISTRY;
 window.initApp = initApp;
 window.openSearch = openSearch;
