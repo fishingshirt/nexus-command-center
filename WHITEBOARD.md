@@ -3,30 +3,47 @@
 > **Single source of truth.** The agent reads this first every wake cycle.
 > For full details on any task, read the linked file in `tasks/`.
 
----
 
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-12 02:10 UTC
-- **Active tasks:** 22
+- **Last updated:** 2026-05-12 06:21 UTC
+- **Active tasks:** 19
 - **Completed tasks:** 33 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
----
 
 ## 🎯 Active Tasks
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
+| HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
-| MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
-| MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `DONE` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
-| MEDIUM | `T-019-b` | Finance tracker CSS module | `DONE` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
-| LOW    | `T-019-c` | Finance tracker server backup API | `DONE` | [`tasks/T-019-c.md`](tasks/T-019-c.md) |
-| MEDIUM | `T-020` | AI task suggester | `PENDING` | [`tasks/T-020.md`](tasks/T-020.md) |
-| HIGH | `T-031-a` | Cloud Vault JS app + wiring | `DONE` | [`tasks/T-031-a.md`](tasks/T-031-a.md) |
-| HIGH | `T-031-b` | Cloud Vault CSS module | `DONE` | [`tasks/T-031-b.md`](tasks/T-031-b.md) |
-| MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `DONE` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
+| MEDIUM | `T-020` | AI task suggester | `IN_PROGRESS` | Decomposed: T-020-a, T-020-b, T-020-c, T-020-d |
+| MEDIUM | `T-020-a` | AI Suggester — JS app module + wiring | `PENDING` | [`tasks/T-020-a.md`](tasks/T-020-a.md) |
+| MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `PENDING` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
+| MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
+| MEDIUM | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
+| MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
+| MEDIUM | `T-055-c` | Feedback Pipeline agent integration + settings | `PENDING` | [`tasks/T-055-c.md`](tasks/T-055-c.md) |
+| LOW    | `T-020-b` | AI Suggester — CSS module | `PENDING` | [`tasks/T-020-b.md`](tasks/T-020-b.md) |
+| LOW    | `T-020-c` | AI Suggester — Server API endpoint | `PENDING` | [`tasks/T-020-c.md`](tasks/T-020-c.md) |
+| LOW    | `T-020-d` | AI Suggester — Settings integration | `PENDING` | [`tasks/T-020-d.md`](tasks/T-020-d.md) |
+| LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
+| LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
+| LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
+| LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `PENDING` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
+| LOW    | `T-046-b` | Auto dark mode settings panel + per-app override | `PENDING` | [`tasks/T-046-b.md`](tasks/T-046-b.md) |
+| LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
+| LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
+
+
+|----------|----|------|--------|---------|
+| MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
+| MEDIUM | `T-020` | AI task suggester | `IN_PROGRESS` | Decomposed: T-020-a, T-020-b, T-020-c, T-020-d |
+| MEDIUM | `T-020-a` | AI Suggester — JS app module + wiring | `PENDING` | [`tasks/T-020-a.md`](tasks/T-020-a.md) |
+| LOW    | `T-020-b` | AI Suggester — CSS module | `PENDING` | [`tasks/T-020-b.md`](tasks/T-020-b.md) |
+| LOW    | `T-020-c` | AI Suggester — Server API endpoint | `PENDING` | [`tasks/T-020-c.md`](tasks/T-020-c.md) |
+| LOW    | `T-020-d` | AI Suggester — Settings integration | `PENDING` | [`tasks/T-020-d.md`](tasks/T-020-d.md) |
 
 | MEDIUM | `T-039` | Multi-city weather manager | `DONE` | [`tasks/T-039.md`](tasks/T-039.md) |
 | MEDIUM | `T-040-a-1` | Widget Grid core engine + default layout | `DONE` | [`tasks/T-040-a-1.md`](tasks/T-040-a-1.md) |
@@ -55,10 +72,13 @@
 | ~~HIGH~~ | ~~`T-057`~~ | ~~Default theme should be dark~~ | ~~`DONE`~~ | ~~2026-05-10 — changed index.html and app.js defaults to jarvis~~ |
 | ~~HIGH~~ | ~~`T-058`~~ | ~~All themes should support dark mode (default on)~~ | ~~`DONE`~~ | ~~2026-05-10 — dark overrides + toggle + app.js wiring~~ |
 
+
 ---
 
 ## ✅ Recently Done
 
+| ID | Task |
+|----|------|
 | ID | Task |
 |----|------|
 | `T-040-a-1` | Widget Grid core engine + default layout |
@@ -108,19 +128,23 @@
 | `T-060-c` | Backlog Audit: all legacy files queued (48 files in nexus-quality-queue.json) |
 | `T-060-d` | Dashboard Quality Status Panel (server endpoints, settings UI, CSS, JS) |
 | `T-060-e` | Fast-Track & Merge Gate Rules |
-
----
-
-## 🐛 Bug Tracker
-
-||| ID | Description | Severity | Status |
-|||----|-------------|----------|--------|
-|||| B-001 | Missing `tasks/*.md` files for T-016, T-021, T-022, T-023, T-024, T-026, T-030, T-033, T-035, T-036, T-037, T-038. WHITEBOARD points to non-existent files. | LOW | OPEN |
-||||| B-002 | Calendar Google sync was one-way read-only via public API key. T-034 implemented OAuth token exchange, outbound events.insert/patch/delete, conflict resolution, offline queue, agent commands, and re-authorize prompt. | HIGH | **FIXED** |
-|||| B-003 | `calendar.js` event save does not check for overlapping time slots. | LOW | OPEN |
-|||| B-004 | Broken HTML structure after T-032-b merge — malformed wishlist nav, email view outside dashboard grid, extra unclosed div. | HIGH | **FIXED** |
-
----
+| MEDIUM | `T-018` | RSS feed reader | `DONE` | [`tasks/T-018.md`](tasks/T-018.md) |
+| MEDIUM | `T-019-a` | Finance tracker JS app + wiring | `DONE` | [`tasks/T-019-a.md`](tasks/T-019-a.md) |
+| MEDIUM | `T-019-b` | Finance tracker CSS module | `DONE` | [`tasks/T-019-b.md`](tasks/T-019-b.md) |
+| MEDIUM | `T-031-c` | Cloud Vault server API + AES encryption | `DONE` | [`tasks/T-031-c.md`](tasks/T-031-c.md) |
+| `T-039` | Multi-city weather manager |
+| `T-040-a-1` | Widget Grid core engine + default layout |
+| `T-043-a` | Quick Capture FAB + radial menu + modal shell |
+| `T-043-b` | Quick Capture note/event/todo save logic |
+| `T-047` | Keyboard shortcuts / hotkey system |
+| `T-062-a` | Recipe App JS module + wiring |
+| `T-062-b` | Recipe App CSS module |
+| `~~`T-051`~~` | ~~Post-completion QA & continuous improvement loop~~ |
+| `T-055-a` | Feedback Pipeline backend queue API |
+| `T-055-b` | Feedback Pipeline dashboard UI + tracker |
+| `T-059` | Hermes Chat: replies never arrive (bridge broken) |
+| `~~`T-057`~~` | ~~Default theme should be dark~~ |
+| `~~`T-058`~~` | ~~All themes should support dark mode (default on)~~ |
 
 ## 📝 Agent Notes
 
