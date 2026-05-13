@@ -24,6 +24,7 @@ import { initRecipe } from './apps/recipe.js';
 import { initSuggester, openSuggester } from './apps/ai-suggester.js';
 import { initShortcuts } from './apps/shortcuts.js';
 import { initEmail } from './apps/email.js';
+import { initBookmarks } from './apps/bookmarks.js';
 import { initFinanceTracker } from './apps/finance-tracker.js';
 import { initQuickCapture } from './apps/quick-capture.js';
 import { WidgetGrid } from './widgets/grid.js';
@@ -52,6 +53,7 @@ const APP_REGISTRY = [
   { id: 'pdf', name: 'PDF Editor', icon: '📄', path: 'pdf' },
   { id: 'vault', name: 'Vault', icon: '🔐', path: 'vault' },
   { id: 'recipe', name: 'Recipes', icon: '🍳', path: 'recipe' },
+  { id: 'bookmarks', name: 'Bookmarks', icon: '🔖', path: 'bookmarks' },
   { id: 'ai-suggester', name: 'AI Suggester', icon: '💡', path: 'ai-suggester' }
 ];
 
@@ -98,6 +100,7 @@ export function initApp() {
   initPdfEditor();
   initVault();
   initRecipe();
+  initBookmarks();
   initSuggester();
   initEmail();
   initWeather();

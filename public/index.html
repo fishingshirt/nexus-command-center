@@ -35,6 +35,7 @@
     <link rel="stylesheet" href="css/apps/vault.css">
     <link rel="stylesheet" href="css/apps/recipe.css">
     <link rel="stylesheet" href="css/apps/ai-suggester.css">
+    <link rel="stylesheet" href="css/apps/bookmarks.css">
     <link rel="stylesheet" href="css/apps/shortcuts.css">
     <link rel="stylesheet" href="css/widgets/grid.css">
     <link rel="stylesheet" href="css/quick-capture.css">
@@ -167,6 +168,10 @@
         <a href="#pdf" class="nav-link" data-app="pdf">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           PDF Editor
+        </a>
+        <a href="#bookmarks" class="nav-link" data-app="bookmarks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          Bookmarks
         </a>
         <a href="#vault" class="nav-link" data-app="vault">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="9" width="16" height="11" rx="2" ry="2"></rect><path d="M12 2L15 9H9L12 2Z" fill="currentColor"></path></svg>
@@ -467,6 +472,18 @@
             <p>Smart task recommendations</p>
           </div>
           <div class="app-card-badge" style="background:#a855f712;color:#a855f7;font-size:0.7rem;">NEW</div>
+        </div>
+
+        <!-- Bookmarks Card -->
+        <div class="app-card" data-app="bookmarks" tabindex="0" role="button" aria-label="Open Bookmarks">
+          <div class="app-card-icon" style="--card-accent: #10b981;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          </div>
+          <div class="app-card-info">
+            <h3>Bookmarks</h3>
+            <p>Save and organize links</p>
+          </div>
+          <div class="app-card-badge" style="background:#10b98112;color:#10b981;font-size:0.7rem;">NEW</div>
         </div>
 
         <!-- Weather mini-view (horizontal scroll row) -->
@@ -1854,6 +1871,71 @@
       </div>
     </div>
 
+    <!-- Bookmarks View -->
+    <div id="view-bookmarks" class="view" aria-label="Bookmarks">
+      <div class="view-header">
+        <button class="view-back" data-view="dashboard" aria-label="Back to dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <h2>Bookmarks</h2>
+        <button class="view-action" id="bm-add-btn" aria-label="Add bookmark">+ Add</button>
+      </div>
+      <div class="view-body bookmarks-view-body">
+        <div id="bm-toolbar" class="bm-toolbar">
+          <input type="search" id="bm-search" class="bm-search" placeholder="Search bookmarks…" aria-label="Search bookmarks">
+          <select id="bm-folder-filter" class="bm-select" aria-label="Filter folder"><option value="">All Folders</option></select>
+          <select id="bm-tag-filter" class="bm-select" aria-label="Filter tag"><option value="">All Tags</option></select>
+          <div class="bm-toolbar-actions">
+            <button class="btn-secondary" id="bm-import-btn" title="Import Netscape HTML">Import</button>
+            <button class="btn-secondary" id="bm-export-btn" title="Export Netscape HTML">Export</button>
+          </div>
+        </div>
+        <div class="bm-count" id="bm-count"></div>
+        <div class="bm-empty" id="bm-empty">
+          <div class="bm-empty-icon">📎</div>
+          <h3>Save your first bookmark</h3>
+          <p>Tap “+ Add” to save a link, organize with folders, and tag it.</p>
+        </div>
+        <div id="bm-grid"></div>
+      </div>
+    </div>
+    <!-- Bookmark Modal -->
+    <div id="bm-modal" class="bm-modal" aria-hidden="true" role="dialog" aria-label="Add bookmark">
+      <div class="bm-modal-backdrop" id="bm-modal-backdrop"></div>
+      <div class="bm-modal-panel">
+        <div class="bm-modal-header">
+          <h3 id="bm-modal-title">Add Bookmark</h3>
+          <button class="bm-modal-close" id="bm-modal-close" aria-label="Close">✕</button>
+        </div>
+        <form class="bm-modal-body" id="bm-form">
+          <div class="bm-field">
+            <span>URL</span>
+            <input type="url" id="bm-url" required placeholder="https://…">
+          </div>
+          <div class="bm-field">
+            <span>Title</span>
+            <input type="text" id="bm-title" required placeholder="Page title" maxlength="200">
+          </div>
+          <div class="bm-field">
+            <span>Description</span>
+            <textarea id="bm-desc" rows="2" placeholder="Optional description"></textarea>
+          </div>
+          <div class="bm-field">
+            <span>Folder</span>
+            <input type="text" id="bm-folder" placeholder="e.g. Work, Personal, Tools">
+          </div>
+          <div class="bm-field">
+            <span>Tags</span>
+            <input type="text" id="bm-tags" placeholder="tech, blog, news (comma separated)">
+          </div>
+          <div class="bm-modal-actions">
+            <button type="button" class="btn-secondary" id="bm-modal-cancel">Cancel</button>
+            <button type="submit" class="btn-primary" id="bm-modal-save">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     </main>
 
     <!-- Chat Widget (Floating) -->
@@ -2186,6 +2268,7 @@
   <script type="module" src="js/apps/recipe.js"></script>
   <script type="module" src="js/apps/finance-tracker.js"></script>
   <script type="module" src="js/apps/quick-capture.js"></script>
+  <script type="module" src="js/apps/bookmarks.js"></script>
   <script type="module" src="js/widgets/grid.js"></script>
   <script type="module" src="js/widgets/factories.js"></script>
   <script type="module">

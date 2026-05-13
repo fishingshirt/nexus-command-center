@@ -16,7 +16,7 @@
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `PENDING` | [`tasks/T-052.md`](tasks/T-052.md) |
+| HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `DONE` | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
 | MEDIUM | `T-020` | AI task suggester | `IN_PROGRESS` | Decomposed: T-020-a, T-020-b, T-020-c, T-020-d |
 | MEDIUM | `T-020-c` | AI Suggester — Server API endpoint | `DONE` | [`tasks/T-020-c.md`](tasks/T-020-c.md) |
@@ -28,13 +28,13 @@
 | LOW    | `T-020-b` | AI Suggester — CSS module | `DONE` | [`tasks/T-020-b.md`](tasks/T-020-b.md) |
 | LOW    | `T-020-d` | AI Suggester — Settings integration | `DONE` | [`tasks/T-020-d.md`](tasks/T-020-d.md) |
 || LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `DONE` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
-| LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
-| LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
+| LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `DONE` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
+| LOW    | `T-043-d` | Quick Capture agent command queue + integration | `DONE` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
 | LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `DONE` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
 | LOW    | `T-046-b` | Auto dark mode settings panel + per-app override | `DONE` | [`tasks/T-046-b.md`](tasks/T-046-b.md) |
-| LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
-| LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
-| LOW | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |
+| LOW | `T-048` | Usage analytics & screen time | `DONE` | [`tasks/T-048.md`](tasks/T-048.md) |
+| LOW | `T-050` | Bookmark manager | `DONE` | [`tasks/T-050.md`](tasks/T-050.md) |
+| LOW | `T-025` | Smart PDF Editor | `DONE` | [`tasks/T-025.md`](tasks/T-025.md) |
 
 
 ## ✅ Recently Done

@@ -1,0 +1,62 @@
+.bookmarks-view-body { padding: 0.5rem 0.8rem 3rem; }
+
+#bm-toolbar { display: grid; grid-template-columns: 1fr repeat(3, auto); gap: 0.6rem; align-items: center; margin-bottom: 0.8rem; }
+@media (max-width: 720px) {
+  #bm-toolbar { grid-template-columns: 1fr; }
+}
+#bm-toolbar.active { display: grid; }
+.bm-search { padding: 0.45rem 0.65rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(255,255,255,0.03); color: var(--text); font-size: 0.92rem; outline: none; }
+.bm-search:focus { border-color: var(--accent); }
+.bm-select { padding: 0.45rem 0.5rem; border-radius: 8px; background: rgba(255,255,255,0.03); color: var(--text); border: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem; }
+.bm-count { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+
+.bm-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem; padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); }
+.bm-empty-icon { font-size: 2.2rem; }
+.bm-empty h3 { font-size: 1.1rem; color: var(--text); margin: 0; }
+
+#bm-grid { display: grid; gap: 1rem; }
+.bm-folder-group { display: flex; flex-direction: column; gap: 0.55rem; }
+.bm-folder-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.1rem; }
+.bm-folder-name { font-size: 0.9rem; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
+.bm-folder-count { font-size: 0.72rem; color: var(--text-muted); background: rgba(255,255,255,0.06); padding: 0.1rem 0.4rem; border-radius: 12px; }
+.bm-folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.7rem; }
+
+.bm-card { position: relative; display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.7rem; border-radius: 12px; background: var(--surface); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: transform .14s, box-shadow .14s; }
+.bm-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+.bm-card-favicon { width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0; object-fit: contain; background: rgba(255,255,255,0.04); }
+.bm-card-body { flex: 1; min-width: 0; }
+.bm-card-title { font-size: 0.92rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bm-card-url { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem; }
+.bm-card-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bm-card-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.35rem; }
+.bm-tag { font-size: 0.72rem; padding: 0.12rem 0.4rem; border-radius: 10px; background: rgba(255,255,255,0.07); color: var(--text-muted); }
+.bm-card-actions { display: flex; gap: 0.2rem; opacity: 0; transition: opacity .15s; }
+.bm-card:hover .bm-card-actions { opacity: 1; }
+.bm-card-action-btn { background: none; border: none; color: var(--text-muted); padding: 0.2rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
+.bm-card-action-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+.bookmarks-header { display: flex; align-items: center; gap: 0.6rem; padding: 0.1rem 0 0.6rem; }
+.bookmarks-header h2 { margin: 0; font-size: 1.15rem; }
+
+.bm-toolbar-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+#bm-add-btn { margin-left: auto; }
+
+/* Modal */
+#bm-modal { position: fixed; inset: 0; z-index: 900; display: none; align-items: center; justify-content: center; }
+#bm-modal.open { display: flex; }
+.bm-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.45); }
+.bm-modal-panel { position: relative; width: min(90vw, 520px); max-height: 85vh; overflow-y: auto; border-radius: 16px; background: var(--surface); border: 1px solid rgba(255,255,255,0.08); padding: 1.2rem; box-shadow: 0 16px 48px rgba(0,0,0,0.35); }
+.bm-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+.bm-modal-header h3 { margin: 0; font-size: 1.1rem; }
+.bm-modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 0.2rem; border-radius: 6px; }
+.bm-modal-close:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+.bm-field { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.65rem; }
+.bm-field span { font-size: 0.82rem; color: var(--text-muted); }
+.bm-field input, .bm-field textarea { padding: 0.45rem 0.6rem; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: var(--text); font-size: 0.92rem; outline: none; }
+.bm-field input:focus, .bm-field textarea:focus { border-color: var(--accent); }
+.bm-field textarea { min-height: 64px; resize: vertical; }
+.bm-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.6rem; }
+
+/* Settings section */
+.settings-bookmarks-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; }
