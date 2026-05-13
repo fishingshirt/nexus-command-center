@@ -28,6 +28,7 @@ import { initFinanceTracker } from './apps/finance-tracker.js';
 import { initQuickCapture } from './apps/quick-capture.js';
 import { WidgetGrid } from './widgets/grid.js';
 import { registerWidgetFactories } from './widgets/factories.js';
+import { initThemeAutoSwitch, setThemeMode } from './theme-autoswitch.js';
 import { initWelcome } from './welcome.js';
 import { initNotifications, notify } from './notifications.js';
 
@@ -58,6 +59,7 @@ export function initApp() {
   initRouter();
   initNavigation();
   initTheme();
+  initThemeAutoSwitch();
   initSettings();
   initCalendarSync();
   /* === SAFEGUARD: Welcome overlay must not silently block the app === */
@@ -193,6 +195,21 @@ function switchView(viewId) {
     document.documentElement.scrollTop = 0;
     if (viewId === 'news') openNews();
     if (viewId === 'ai-suggester') openSuggester();
+
+    // Per-app theme override
+    const settings = loadSettings();
+    const perAppThemes = settings.perAppThemes || {};
+    const perTheme = perAppThemes[viewId];
+    if (perTheme) {
+      if (!window._ncc_lastGlobalTheme) {
+        window._ncc_lastGlobalTheme = document.body.getAttribute('data-theme') || settings.theme || 'jarvis';
+      }
+      applyTheme(perTheme);
+    } else if (window._ncc_lastGlobalTheme) {
+      applyTheme(window._ncc_lastGlobalTheme);
+      window._ncc_lastGlobalTheme = null;
+    }
+
     // Per-app auth check
     if (['calendar','notes','todo'].includes(viewId)) {
       if (typeof ensureAuthEnabled === 'function') {
@@ -200,7 +217,6 @@ function switchView(viewId) {
       }
     }
     if (viewId === 'pdf') {
-      // refresh any PDF-specific state on open
       if (typeof initPdfEditor === 'function') initPdfEditor();
     }
   } else {
@@ -282,8 +298,8 @@ export function applyTheme(themeName) {
   if (link) {
     link.href = `css/themes/${themeName}.css`;
   }
+  document.body.setAttribute('data-theme', themeName);
   // Update meta theme-color
-  // Wait for CSS to load then update
   setTimeout(() => {
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     const meta = document.getElementById('theme-color');
@@ -331,8 +347,45 @@ function initSettings() {
       applyThemeMode(mode);
       saveSettings({ themeMode: mode });
       toast(darkMode.checked ? 'Dark mode on' : 'Dark mode off');
+      // Manual toggle implicitly switches mode to manual
+      const sel = document.getElementById('theme-mode-select');
+      if (sel) sel.value = 'manual';
+      setThemeMode('manual');
     });
   }
+
+  // Theme mode auto-switcher wiring
+  (function wireThemeMode() {
+    const sel = document.getElementById('theme-mode-select');
+    const timeRow = document.getElementById('time-range-row');
+    const darkStart = document.getElementById('dark-start');
+    const lightStart = document.getElementById('light-start');
+    if (!sel) return;
+    const storedMode = settings.themeAutoMode || 'manual';
+    sel.value = storedMode;
+    if (timeRow) timeRow.style.display = storedMode === 'auto-time' ? 'flex' : 'none';
+    if (darkStart) darkStart.value = settings.darkStart || '20:00';
+    if (lightStart) lightStart.value = settings.lightStart || '07:00';
+    sel.addEventListener('change', () => {
+      const mode = sel.value;
+      if (timeRow) timeRow.style.display = mode === 'auto-time' ? 'flex' : 'none';
+      saveSettings({ themeAutoMode: mode, darkStart: darkStart?.value, lightStart: lightStart?.value });
+      setThemeMode(mode);
+      toast(mode === 'manual' ? 'Manual theme mode' : 'Auto theme mode enabled');
+    });
+    if (darkStart) {
+      darkStart.addEventListener('change', () => {
+        saveSettings({ darkStart: darkStart.value });
+        if (sel.value === 'auto-time') setThemeMode('auto-time');
+      });
+    }
+    if (lightStart) {
+      lightStart.addEventListener('change', () => {
+        saveSettings({ lightStart: lightStart.value });
+        if (sel.value === 'auto-time') setThemeMode('auto-time');
+      });
+    }
+  })();
 
   // Reduced motion
   reducedMotion.addEventListener('change', () => {
@@ -555,6 +608,72 @@ function initSettings() {
         saveSettings({ feedbackPipeline: next });
       });
     }
+  })();
+
+  // Per-app theme settings
+  (function wirePerAppTheme() {
+    const list = document.getElementById('per-app-theme-list');
+    if (!list) return;
+    const themeOpts = [
+      { v: '', l: 'Global' },
+      { v: 'professional', l: 'Professional' },
+      { v: 'midnight-hacker', l: 'Midnight Hacker' },
+      { v: 'sakura-garden', l: 'Sakura Garden' },
+      { v: 'space-odyssey', l: 'Space Odyssey' },
+      { v: 'retro-arcade', l: 'Retro Arcade' },
+      { v: 'ocean-breeze', l: 'Ocean Breeze' },
+      { v: 'jarvis', l: 'Jarvis' }
+    ];
+    const apps = APP_REGISTRY.filter(a => a.id !== 'dashboard');
+    const perApp = settings.perAppThemes || {};
+    list.innerHTML = '';
+    apps.forEach(app => {
+      const row = document.createElement('div');
+      row.className = 'settings-row';
+      row.style = 'justify-content:space-between;';
+      const label = document.createElement('span');
+      label.textContent = app.icon + ' ' + app.name;
+      const sel = document.createElement('select');
+      sel.dataset.app = app.id;
+      themeOpts.forEach(o => {
+        const op = document.createElement('option');
+        op.value = o.v;
+        op.textContent = o.l;
+        if (perApp[app.id] === o.v || (!perApp[app.id] && !o.v)) op.selected = true;
+        sel.appendChild(op);
+      });
+      sel.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.perAppThemes || {}) };
+        if (sel.value) next[app.id] = sel.value;
+        else delete next[app.id];
+        saveSettings({ perAppThemes: next });
+        toast(`${app.name} theme updated`);
+      });
+      row.appendChild(label);
+      row.appendChild(sel);
+      list.appendChild(row);
+    });
+  })();
+
+  // Theme transition slider
+  (function wireThemeTransition() {
+    const slider = document.getElementById('theme-transition');
+    const val = document.getElementById('theme-transition-val');
+    if (!slider) return;
+    const ms = settings.themeTransitionMs ?? 300;
+    slider.value = ms;
+    if (val) val.textContent = ms;
+    slider.addEventListener('input', () => {
+      const v = parseInt(slider.value, 10);
+      if (val) val.textContent = v;
+      document.documentElement.style.setProperty('--theme-transition-duration', `${v}ms`);
+    });
+    slider.addEventListener('change', () => {
+      saveSettings({ themeTransitionMs: parseInt(slider.value, 10) });
+      toast('Transition duration saved');
+    });
+    document.documentElement.style.setProperty('--theme-transition-duration', `${ms}ms`);
   })();
 
   // Export data

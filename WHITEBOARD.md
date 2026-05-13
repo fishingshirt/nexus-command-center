@@ -30,8 +30,8 @@
 || LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `DONE` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
 | LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
 | LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
-| LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `PENDING` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
-| LOW    | `T-046-b` | Auto dark mode settings panel + per-app override | `PENDING` | [`tasks/T-046-b.md`](tasks/T-046-b.md) |
+| LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `DONE` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
+| LOW    | `T-046-b` | Auto dark mode settings panel + per-app override | `DONE` | [`tasks/T-046-b.md`](tasks/T-046-b.md) |
 | LOW | `T-048` | Usage analytics & screen time | `PENDING` | [`tasks/T-048.md`](tasks/T-048.md) |
 | LOW | `T-050` | Bookmark manager | `PENDING` | [`tasks/T-050.md`](tasks/T-050.md) |
 | LOW | `T-025` | Smart PDF Editor | `PENDING` | [`tasks/T-025.md`](tasks/T-025.md) |

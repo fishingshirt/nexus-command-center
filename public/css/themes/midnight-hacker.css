@@ -1,4 +1,21 @@
 :root {
+  --bg: #f0f0f0;
+  --surface: #ffffff;
+  --header-bg: rgba(240,240,240,0.9);
+  --text: #1a1a1a;
+  --text-muted: #555555;
+  --accent: #007f20;
+  --accent-secondary: #39ff14;
+  --accent-bg: rgba(0,127,32,0.08);
+  --accent-rgb: 0,127,32;
+  --border: #d4d4d4;
+  --border-subtle: #e8e8e8;
+  --hover-bg: #e0e0e0;
+  --backdrop: rgba(0,0,0,0.3);
+  --welcome-bg: #e8e8e8;
+}
+
+body[data-theme-mode="dark"] {
   --bg: #0a0a0a;
   --surface: #111111;
   --header-bg: rgba(10,10,10,0.9);
