@@ -25,7 +25,7 @@
 | LOW | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
 | MEDIUM | `T-055-c` | Feedback Pipeline agent integration + settings | `PENDING` | [`tasks/T-055-c.md`](tasks/T-055-c.md) |
-| HIGH | `T-059` | Hermes Chat Bridge Replies Never Arrive | `PENDING` | [`tasks/T-059.md`](tasks/T-059.md) |
+| HIGH | `T-059` | Hermes Chat Bridge Replies Never Arrive | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
 | LOW    | `T-020-b` | AI Suggester — CSS module | `PENDING` | [`tasks/T-020-b.md`](tasks/T-020-b.md) |
 | LOW    | `T-020-d` | AI Suggester — Settings integration | `PENDING` | [`tasks/T-020-d.md`](tasks/T-020-d.md) |
 | LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
@@ -42,6 +42,7 @@
 
 | ID | Task |
 |----|------|
+| `T-059` | Hermes Chat Bridge Replies Never Arrive |
 | `T-020-a` | AI Suggester — JS app module + wiring |
 | `T-040-a-1` | Widget Grid core engine + default layout |
 | `T-019-c` | Finance tracker server backup API |
