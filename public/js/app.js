@@ -828,7 +828,6 @@ function updateBridgeBanner(status, message) {
 
 function startHermesPolling(container) {
   stopHermesPolling();
-  const seen = getSeenIds();
   _pollFailCount = 0;
 
   const warnSlow = () => {
@@ -837,6 +836,10 @@ function startHermesPolling(container) {
       msg.textContent = '⏳ Hermes may be busy, check Telegram if this persists';
     }
   };
+
+  // Cancel any previous warnSlow timeout before creating a new one
+  if (window._hermesWarnTimer) clearTimeout(window._hermesWarnTimer);
+  window._hermesWarnTimer = setTimeout(warnSlow, 12000);
 
   _pollTimer = setInterval(async () => {
     try {
@@ -853,9 +856,17 @@ function startHermesPolling(container) {
       updateBridgeBanner('ok');
       if (!Array.isArray(data.messages)) return;
 
+      if (data.messages.length) {
+        // We got real replies; cancel the slow-warning timeout early
+        if (window._hermesWarnTimer) {
+          clearTimeout(window._hermesWarnTimer);
+          window._hermesWarnTimer = null;
+        }
+      }
+
       for (const m of data.messages) {
-        const key = m.message_id || m.time;
-        if (seen.has(String(key))) continue;
+        const key = String(m.message_id || m.time);
+        if (getSeenIds().has(key)) continue;
         addSeenId(key);
         // Remove placeholder waiting messages when a real reply arrives
         const waiting = container.querySelector('.chat-msg-bot:last-child');
@@ -870,10 +881,7 @@ function startHermesPolling(container) {
         updateBridgeBanner('error', '⚠️ Bridge offline - check connection');
       }
     }
-  }, 4000);
-
-  // Warn user after 12s if no reply received yet
-  setTimeout(warnSlow, 12000);
+  }, 2000);
 }
 
 function stopHermesPolling() {
@@ -915,6 +923,18 @@ function handleCommand(text, container) {
     if (!result.ok) {
       addMessage(container, "Couldn't reach Hermes. Bridge may be offline.", 'bot');
       updateBridgeBanner('error', result.error === 'network' ? '⚠️ Bridge offline' : '⚠️ Bridge error');
+      // Add resend button next to the last user message
+      const lastUserMsg = container.querySelector('.chat-msg-user:last-child');
+      if (lastUserMsg && !lastUserMsg.querySelector('.chat-msg-resend')) {
+        const btn = document.createElement('button');
+        btn.className = 'chat-msg-resend';
+        btn.textContent = '↻ Resend';
+        btn.addEventListener('click', () => {
+          btn.remove();
+          handleCommand(text, container);
+        });
+        lastUserMsg.appendChild(btn);
+      }
       return;
     }
     if (result.message_id) addSeenId(result.message_id);

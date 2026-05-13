@@ -385,8 +385,12 @@ def _load_hermes_state():
 def _save_hermes_state(st):
     try:
         os.makedirs(os.path.dirname(_HERMES_STATE_PATH), exist_ok=True)
-        with open(_HERMES_STATE_PATH, 'w') as f:
+        tmp = _HERMES_STATE_PATH + '.tmp'
+        with open(tmp, 'w') as f:
             json.dump(st, f)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, _HERMES_STATE_PATH)
     except Exception:
         pass
 
@@ -460,6 +464,7 @@ def _api_hermes(handler, path):
         return True
 
     if path == '/api/hermes/message':
+        print(f"[hermes] /api/hermes/message request")
         try:
             length = int(handler.headers.get('Content-Length', 0))
             body = handler.rfile.read(length).decode('utf-8') if length else '{}'
@@ -489,28 +494,33 @@ def _api_hermes(handler, path):
                 resolved.add(str(numeric_cid))
                 st['resolved_chat_ids'] = list(resolved)
             st['last_poll_ts'] = time.time()
+            # Store outbound message so webhook push doesn't lose reply context
+            st.setdefault('outbound', []).append({'text': text, 'time': time.time(), 'chat_id': str(numeric_cid) if numeric_cid else str(chat_id)})
+            st['outbound'] = st['outbound'][-200:]
             _save_hermes_state(st)
+            print(f"[hermes] pushed message queue for chat={numeric_cid or chat_id}")
             _json(handler, 200, {'ok': True, 'message_id': result.get('message_id'), 'chat_id': numeric_cid})
         else:
+            print(f"[hermes] sendMessage failed: {res}")
             _json(handler, 502, {'ok': False, 'error': res.get('error', 'Telegram API failed'), 'description': res.get('description')})
         return True
 
     if path == '/api/hermes/poll':
+        print(f"[hermes] /api/hermes/poll request")
         chat_id = _tg_chat_id()
         if not chat_id:
             _json(handler, 503, {'ok': False, 'error': 'TELEGRAM_HOME_CHANNEL not configured'})
             return True
         st = _load_hermes_state()
         offset = st.get('offset', 0)
-        res = _tg_api('getUpdates', {'offset': offset + 1, 'limit': 20})
         messages = []
-        # Accept from the configured chat id OR previously resolved numeric ids
+        seen = set(str(x) for x in st.get('last_seen_ids', []))
+        # ── Strategy A: poll Telegram directly (may race with gateway) ──
+        res = _tg_api('getUpdates', {'offset': offset + 1, 'limit': 20})
         allowed_ids = set()
         if chat_id:
             allowed_ids.add(str(chat_id))
         allowed_ids.update(str(x) for x in st.get('resolved_chat_ids', []))
-        # Deduplication: track message_ids we have already delivered
-        seen = set(str(x) for x in st.get('last_seen_ids', []))
         if res.get('ok') and isinstance(res.get('result'), list):
             for upd in res['result']:
                 msg = upd.get('message') or upd.get('channel_post')
@@ -523,23 +533,122 @@ def _api_hermes(handler, path):
                     continue
                 txt = msg.get('text') or msg.get('caption', '')
                 mid = str(msg.get('message_id', ''))
-                # Skip previously seen messages
                 if mid and mid in seen:
                     continue
                 if mid:
                     seen.add(mid)
                 if txt:
-                    # Do NOT echo the user's own messages back
                     sender = msg.get('from', {})
-                    is_me = bool(sender.get('is_bot') or sender.get('id') == cid)
+                    # bot messages from Telegram have is_bot=true; we discard those.
+                    # We also discard messages whose sender id matches the chat id (outbound echo)
+                    is_me = bool(sender.get('is_bot') or str(sender.get('id', '')) == cid)
                     if not is_me:
                         messages.append({'text': txt, 'from': sender.get('first_name', 'Hermes'),
                                          'time': msg.get('date'), 'message_id': msg.get('message_id')})
+        # ── Strategy B: fallback to Hermes session files if poll is empty ──
+        if not messages:
+            try:
+                import glob, hashlib, re
+                sessions_dir = os.path.expanduser('~/.hermes/sessions')
+                files = sorted(glob.glob(os.path.join(sessions_dir, '*.jsonl')), key=os.path.getmtime, reverse=True)[:3]
+                outbound = st.get('outbound', [])
+                cutoff = outbound[-1]['time'] if outbound else (time.time() - 3600)
+                for f in files:
+                    try:
+                        with open(f, 'r') as fh:
+                            lines = fh.readlines()
+                    except Exception:
+                        continue
+                    for line in lines:
+                        try:
+                            obj = json.loads(line)
+                        except Exception:
+                            continue
+                        if obj.get('role') != 'assistant':
+                            continue
+                        ts_str = obj.get('timestamp', '')
+                        ts = 0
+                        try:
+                            # ISO 8601 with optional fractional seconds and optional timezone
+                            m = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?', ts_str)
+                            if m:
+                                ts = time.mktime(time.strptime(m.group(1), '%Y-%m-%dT%H:%M:%S'))
+                        except Exception:
+                            continue
+                        if ts < cutoff:
+                            continue
+                        body_text = obj.get('content', '')
+                        if not body_text or not body_text.strip():
+                            continue
+                        h = hashlib.md5(body_text.encode()).hexdigest()
+                        if h in seen:
+                            continue
+                        seen.add(h)
+                        messages.append({'text': body_text.strip(), 'from': 'Hermes',
+                                         'time': int(ts), 'message_id': h})
+                        break
+            except Exception:
+                pass
+        # ── Strategy C: serve pending webhook-pushed messages ──
+        pending = st.get('pending', [])
+        for m in pending:
+            mid = str(m.get('message_id', ''))
+            if mid and mid in seen:
+                continue
+            if mid:
+                seen.add(mid)
+            messages.append(m)
+        if pending:
+            st['pending'] = []
         st['offset'] = offset
         st['last_seen_ids'] = list(seen)[-500:]
         st['last_poll_ts'] = time.time()
         _save_hermes_state(st)
         _json(handler, 200, {'ok': True, 'messages': messages})
+        return True
+
+    if path == '/api/hermes/webhook':
+        try:
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            payload = json.loads(body)
+        except Exception:
+            _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+            return True
+        st = _load_hermes_state()
+        msg = payload.get('message') or payload.get('channel_post')
+        text = ''
+        mid = None
+        sender_name = 'Hermes'
+        msg_time = int(time.time())
+        if msg:
+            txt = msg.get('text') or msg.get('caption', '')
+            if txt:
+                text = txt
+            mid = str(msg.get('message_id', ''))
+            sender = msg.get('from', {})
+            if not sender.get('is_bot') or sender.get('id') != int(_tg_chat_id() or 0):
+                sender_name = sender.get('first_name', 'Hermes')
+            msg_time = msg.get('date', msg_time)
+        else:
+            text = payload.get('text', '')
+            mid = payload.get('message_id')
+            sender_name = payload.get('from', 'Hermes')
+        if text:
+            seen = set(str(x) for x in st.get('last_seen_ids', []))
+            key = mid or str(msg_time) + '_' + text[:32]
+            if key not in seen:
+                seen.add(key)
+                st.setdefault('pending', []).append({
+                    'text': text, 'from': sender_name,
+                    'time': msg_time, 'message_id': key
+                })
+                st['pending'] = st['pending'][-500:]
+                st['last_seen_ids'] = list(seen)[-500:]
+                _save_hermes_state(st)
+                _json(handler, 200, {'ok': True, 'message_id': key})
+                return True
+        _json(handler, 200, {'ok': True, 'note': 'duplicate or empty'})
         return True
 
     _json(handler, 404, {'ok': False, 'error': 'Unknown hermes endpoint'})
