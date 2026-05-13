@@ -1,3 +1,14 @@
+const _globalRegistry = new Map();
+
+export const widgetRegistry = {
+  registerWidget(type, factoryFn) {
+    _globalRegistry.set(type, factoryFn);
+  }
+};
+
+// expose globally for app stubs that don't want to import
+if (typeof window !== 'undefined') window.widgetRegistry = widgetRegistry;
+
 export class WidgetGrid {
   constructor(containerEl, registry) {
     this.container = containerEl;
@@ -91,7 +102,7 @@ export class WidgetGrid {
 
   _buildWidgetContent(card, cfg) {
     const body = card.querySelector('.widget-card__body');
-    const factory = this.registry.get(cfg.type);
+    const factory = this.registry.get(cfg.type) || _globalRegistry.get(cfg.type);
     if (factory) {
       factory(body, cfg);
       return;

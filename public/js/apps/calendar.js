@@ -591,6 +591,8 @@ export function initCalendar() {
     renderCalendar();
     updateCalendarBadge();
   });
+
+  _registerCalendarWidgetStub();
 }
 
 function _checkCalendarReminders() {
@@ -752,4 +754,20 @@ function escapeHtml(str) {
 
 function truncate(str, n) {
   return str.length > n ? str.slice(0, n - 1) + '…' : str;
+}
+
+/* ---- Widget stub ---- */
+function _registerCalendarWidgetStub() {
+  if (window.widgetRegistry) {
+    window.widgetRegistry.registerWidget('calendar-today', (el) => {
+      const today = new Date();
+      const events = loadEvents();
+      let count = 0;
+      if (Array.isArray(events)) {
+        const d = today.toISOString().split('T')[0];
+        count = events.filter(e => e.date === d || (!e.date && e.start?.startsWith(d))).length;
+      }
+      el.innerHTML = `<div class="widget-metric"><span class="widget-metric__value">${count}</span><span class="widget-metric__label">Events today</span></div>`;
+    });
+  }
 }

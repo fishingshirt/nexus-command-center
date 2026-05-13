@@ -117,6 +117,7 @@ export function initWeather() {
 
   // Settings wiring
   initWeatherSettings();
+  _registerWeatherWidgetStub();
 }
 
 function startAutoRefresh() {
@@ -528,4 +529,21 @@ export function initWeatherSettings() {
 
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+/* ---- Widget stub ---- */
+function _registerWeatherWidgetStub() {
+  if (window.widgetRegistry) {
+    window.widgetRegistry.registerWidget('weather', (el) => {
+      const s = localStorage.getItem('ncc-weather-data');
+      let html = '<span class="widget-placeholder">No data</span>';
+      if (s) {
+        try {
+          const data = JSON.parse(s);
+          html = `<div class="widget-metric"><span class="widget-metric__value">${data.temp ?? '--'}°</span><span class="widget-metric__label">${data.city ?? 'Local'}</span></div>`;
+        } catch {}
+      }
+      el.innerHTML = html;
+    });
+  }
 }

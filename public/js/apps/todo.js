@@ -18,6 +18,7 @@ export function initTodo() {
   updateBadge();
   _startDueReminders();
   window.addEventListener('beforeunload', _stopDueReminders);
+  _registerTodoWidgetStub();
 }
 
 function _startDueReminders() {
@@ -174,4 +175,14 @@ function updateBadge() {
 
 function esc(s) {
   return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+/* ---- Widget stub ---- */
+function _registerTodoWidgetStub() {
+  if (window.widgetRegistry) {
+    window.widgetRegistry.registerWidget('todo-count', (el) => {
+      const activeCount = tasks.filter(t => !t.completed).length;
+      el.innerHTML = `<div class="widget-metric"><span class="widget-metric__value">${activeCount}</span><span class="widget-metric__label">Pending tasks</span></div>`;
+    });
+  }
 }
