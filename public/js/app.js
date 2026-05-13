@@ -2,6 +2,8 @@ import { storage } from './lib/storage-adapter.js';
 import { runMigration } from './lib/migrate-legacy.js';
 import { initCalendar } from './apps/calendar.js';
 import { initNotes } from './apps/notes.js';
+import { calendarAddAttachment, calendarFindByTitle, calendarShowAttachments } from './apps/calendar.js';
+import { noteAddAttachment, noteFindByTitle, noteShowAttachments } from './apps/notes.js';
 import { initTodo } from './apps/todo.js';
 import { initGoogleSync } from './apps/gcal-sync.js';
 import { initBackup } from './apps/backup.js';
@@ -973,6 +975,28 @@ function handleCommand(text, container) {
   }
   if (lower === '/help') {
     addMessage(container, 'Commands:\n/new — start fresh conversation\n/help — show this message', 'bot');
+    return;
+  }
+
+  // Quick attachment commands (T-049)
+  const attachNoteMatch = lower.match(/^attach\s+(?:the\s+)?(.+?)\s+to\s+(?:my\s+)?(.+?)(?:\s+note)?$/);
+  if (attachNoteMatch) {
+    const [_full, fileNameHint, noteTitleHint] = attachNoteMatch;
+    addMessage(container, `Searching note "${noteTitleHint}"...`, 'bot');
+    const matches = noteFindByTitle(noteTitleHint);
+    if (!matches.length) { addMessage(container, 'No matching note found.', 'bot'); return; }
+    addMessage(container, `Found "${matches[0].title}". Drag the file onto the note editor or use the 📎 Attach button.`, 'bot');
+    location.hash = 'notes';
+    return;
+  }
+  const showAttMatch = lower.match(/^show\s+attachments\s+for\s+(?:event\s+)?(.+)$/);
+  if (showAttMatch) {
+    const q = showAttMatch[1];
+    const events = calendarFindByTitle(q);
+    if (!events.length) { addMessage(container, 'No matching event found.', 'bot'); return; }
+    const atts = calendarShowAttachments(events[0].id);
+    addMessage(container, `Event "${events[0].title}" has ${atts.length} attachment${atts.length !== 1 ? 's' : ''}.`, 'bot');
+    location.hash = 'calendar';
     return;
   }
 

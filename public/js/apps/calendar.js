@@ -1,4 +1,5 @@
 const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
+import { AttachmentStore, attachStrip, wireAttachmentDrop } from '../lib/attachment-store.js';
 import { syncEventToGoogle, deleteEventFromGoogle, flushOutboundQueue } from './gcal-outbound.js';
 import { notify } from '../notifications.js';
 
@@ -204,7 +205,8 @@ function renderMonth() {
       const cat = CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.other;
       const recCls = ev.recurrence && ev.recurrence !== 'none' ? 'recurring' : '';
       const cfl = conflictBadge(ev);
-      eventsHtml += `<div class="calendar-event-chip ${ev.category || 'other'} ${recCls}" style="background:${cat.bg};color:${cat.text}" title="${escapeHtml(ev.title)}">${cfl}${recCls ? '↻ ' : ''}${escapeHtml(truncate(ev.title, 14))}</div>`;
+      const hasAtt = (ev.attachments?.length) ? '📎 ' : '';
+      eventsHtml += `<div class="calendar-event-chip ${ev.category || 'other'} ${recCls}" style="background:${cat.bg};color:${cat.text}" title="${escapeHtml(ev.title)}">${cfl}${hasAtt}${recCls ? '↻ ' : ''}${escapeHtml(truncate(ev.title, 14))}</div>`;
     });
     if (more > 0) {
       eventsHtml += `<div class="calendar-more">+${more} more</div>`;
@@ -420,6 +422,11 @@ const elCategory = document.getElementById('event-category');
 const elRecurrence = document.getElementById('event-recurrence');
 const elDesc = document.getElementById('event-desc');
 
+// ---- Modal attachment elements ----
+const elAttachStrip = document.getElementById('event-attachments');
+const elAttachBtn   = document.getElementById('event-attach-btn');
+const elAttachInput = document.getElementById('event-attach-input');
+
 // Conflict panel elements
 let conflictEventId = null;
 const conflictPanel = document.getElementById('conflict-panel');
@@ -446,11 +453,13 @@ function openModal(dateStr, eventId = null) {
     elCategory.value = ev.category || 'other';
     elRecurrence.value = ev.recurrence || 'none';
     elDesc.value = ev.description || '';
+    renderEventAttachments(ev);
   } else {
     modalTitle.textContent = 'New Event';
     modalForm.reset();
     elDate.value = dateStr;
     elId.value = '';
+    renderEventAttachments(null);
   }
 
   setTimeout(() => elTitle.focus(), 50);
@@ -577,6 +586,9 @@ export function initCalendar() {
   conflictBackdrop.addEventListener('click', closeConflictPanel);
   conflictBtnMine.addEventListener('click', resolveKeepMine);
   conflictBtnGoogle.addEventListener('click', resolveUseGoogle);
+
+  // Attachments
+  bindEventAttachmentEvents();
 
   updateCalendarBadge();
   renderCalendar();
@@ -754,6 +766,100 @@ function escapeHtml(str) {
 
 function truncate(str, n) {
   return str.length > n ? str.slice(0, n - 1) + '…' : str;
+}
+
+/* ---- Attachments ---- */
+function renderEventAttachments(ev) {
+  if (!elAttachStrip) return;
+  attachStrip(elAttachStrip, ev ? (ev.attachments || []) : [], {
+    onDelete: (att) => removeEventAttachment(att),
+    onDownload: (att) => AttachmentStore.download(att)
+  });
+}
+
+async function attachFilesToEvent(files) {
+  if (!editingEventId) {
+    toast('An event must be selected first', 'warning');
+    return;
+  }
+  const events = loadEvents();
+  const ev = events.find(e => e.id === editingEventId);
+  if (!ev) return;
+  ev.attachments = ev.attachments || [];
+  let okCount = 0;
+  for (const file of files) {
+    try {
+      const result = await AttachmentStore.saveFile(file, ev.id);
+      if (result.ok) {
+        ev.attachments.push(result.meta);
+        okCount++;
+      } else {
+        toast(result.error || 'Failed to attach file', 'error');
+      }
+    } catch (e) {
+      toast('Attach failed: ' + (e.message || e), 'error');
+    }
+  }
+  if (okCount) {
+    saveEvents(events);
+    renderEventAttachments(ev);
+    toast(`${okCount} file${okCount > 1 ? 's' : ''} attached`);
+  }
+}
+
+async function removeEventAttachment(att) {
+  const events = loadEvents();
+  const ev = events.find(e => e.id === editingEventId);
+  if (!ev || !ev.attachments) return;
+  if (!confirm(`Remove "${att.name || 'file'}"?`)) return;
+  try { await AttachmentStore.deleteFile(att); } catch (e) { console.warn('Blob delete failed', e); }
+  ev.attachments = ev.attachments.filter(a => a.id !== att.id);
+  saveEvents(events);
+  renderEventAttachments(ev);
+  toast('Attachment removed');
+}
+
+function bindEventAttachmentEvents() {
+  if (elAttachBtn && elAttachInput) {
+    elAttachBtn.addEventListener('click', () => elAttachInput.click());
+    elAttachInput.addEventListener('change', () => {
+      if (elAttachInput.files?.length) attachFilesToEvent(Array.from(elAttachInput.files));
+      elAttachInput.value = '';
+    });
+  }
+  wireAttachmentDrop(modal, {
+    onFiles: (files) => {
+      if (modal.classList.contains('active')) attachFilesToEvent(files);
+    }
+  });
+}
+
+/* ---- Agent helpers ---- */
+export function calendarFindByTitle(q) {
+  const low = q.toLowerCase();
+  return loadEvents().filter(e => (e.title || '').toLowerCase().includes(low));
+}
+
+export function calendarAddAttachment(eventId, file) {
+  const events = loadEvents();
+  const ev = events.find(e => e.id === eventId);
+  if (!ev) return Promise.resolve({ ok: false, error: 'Event not found' });
+  ev.attachments = ev.attachments || [];
+  return AttachmentStore.saveFile(file, ev.id).then(result => {
+    if (result.ok) {
+      ev.attachments.push(result.meta);
+      saveEvents(events);
+      if (editingEventId === eventId) renderEventAttachments(ev);
+    }
+    return result;
+  });
+}
+
+export function calendarShowAttachments(eventId) {
+  const events = loadEvents();
+  const ev = events.find(e => e.id === eventId);
+  if (!ev) return [];
+  return ev.attachments || [];
 }
 
 /* ---- Widget stub ---- */

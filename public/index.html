@@ -643,7 +643,16 @@
                 <span class="note-meta" id="note-meta"></span>
               </div>
               <textarea id="note-content" class="note-content-area" placeholder="Start writing..."></textarea>
+              <div class="note-attachments" id="note-attachments-wrap">
+                <div class="note-attachments-header">
+                  <span>Attachments</span>
+                  <button class="note-attach-btn" id="note-attach-btn" title="Attach file">📎 Attach</button>
+                </div>
+                <div class="attachment-strip" id="note-attachments"></div>
+                <input type="file" id="note-attach-input" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/plain,text/markdown" style="display:none">
+              </div>
             </div>
+            <div class="attachment-drag-overlay" id="note-drag-overlay"> Drop files here </div>
           </div>
         </div>
       </div>
@@ -1950,6 +1959,14 @@
           <span>Description</span>
           <textarea id="event-desc" rows="3" placeholder="Details..."></textarea>
         </label>
+        <div class="event-field" id="event-attachments-field">
+          <span>Attachments</span>
+          <div class="attachment-strip" id="event-attachments"></div>
+          <div class="event-attach-actions">
+            <input type="file" id="event-attach-input" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/plain,text/markdown" style="display:none">
+            <button type="button" class="btn-secondary" id="event-attach-btn">📎 Attach file</button>
+          </div>
+        </div>
         <div class="event-modal-actions">
           <button type="button" class="btn-danger" id="event-delete">Delete</button>
           <div class="event-modal-actions-right">
