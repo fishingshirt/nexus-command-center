@@ -2791,13 +2791,43 @@ def _api_ai_suggester(handler, path):
             payload = json.loads(body)
         except Exception:
             payload = {}
-        suggestions = payload.get('suggestions', [])
+
+        model = payload.get('model', 'llama3.2')
+        context = payload.get('context', {})
+
+        prompt = (
+            "You are a productivity assistant. Given the user's recent dashboard data, suggest 3-5 actionable tasks or improvements.\n"
+            "Respond ONLY in valid JSON with no markdown formatting. Format exactly:\n"
+            '{ "suggestions": [ { "id": "suggest-1", "title": "...", "description": "...", "priority": "HIGH|MEDIUM|LOW", "category": "work|personal|health|learning|chores" } ] }\n'
+            f"Dashboard context: upcoming events={context.get('recentEvents', 0)}, pending todos={context.get('pendingTodos', 0)}, notes count={context.get('notesCount', 0)}.\n"
+            "Provide the JSON response now."
+        )
+
+        generated = _ollama_generate(prompt, model=model, timeout=45)
+        suggestions = []
+        if generated:
+            try:
+                raw = generated.strip()
+                if raw.startswith('```'):
+                    lines = raw.splitlines()
+                    if lines[0].startswith('```'):
+                        lines = lines[1:]
+                    if lines and lines[-1].startswith('```'):
+                        lines = lines[:-1]
+                    raw = '\n'.join(lines).strip()
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict) and isinstance(parsed.get('suggestions'), list):
+                    suggestions = parsed['suggestions']
+            except Exception:
+                pass
+
         if not suggestions:
             suggestions = [
-                {'title': 'Review open tasks', 'reason': 'High-priority items are pending', 'app': 'tasks'},
-                {'title': 'Check calendar', 'reason': 'Upcoming events today', 'app': 'calendar'},
-                {'title': 'Browse news digest', 'reason': 'Top stories are ready', 'app': 'news'},
+                {'id': 'suggest-1', 'title': 'Review open tasks', 'description': 'High-priority items are pending', 'priority': 'HIGH', 'category': 'work'},
+                {'id': 'suggest-2', 'title': 'Check calendar', 'description': 'Upcoming events today', 'priority': 'MEDIUM', 'category': 'personal'},
+                {'id': 'suggest-3', 'title': 'Browse news digest', 'description': 'Top stories are ready', 'priority': 'LOW', 'category': 'personal'},
             ]
+
         _json(handler, 200, {'ok': True, 'suggestions': suggestions})
         return True
     return False

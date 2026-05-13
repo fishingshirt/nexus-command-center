@@ -18,7 +18,7 @@
 |----------|----|------|--------|---------|
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | `DONE` | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
-| MEDIUM | `T-020` | AI task suggester | `IN_PROGRESS` | Decomposed: T-020-a, T-020-b, T-020-c, T-020-d |
+| MEDIUM | `T-020` | AI task suggester | `DONE` | Decomposed: T-020-a, T-020-b, T-020-c, T-020-d (all DONE) |
 | MEDIUM | `T-020-c` | AI Suggester — Server API endpoint | `DONE` | [`tasks/T-020-c.md`](tasks/T-020-c.md) |
 || MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `DONE` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
 || LOW | `T-049` | File attachments for notes & calendar | `DONE` | [`tasks/T-049.md`](tasks/T-049.md) |
