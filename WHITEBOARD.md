@@ -7,9 +7,9 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-12 07:30 UTC
-- **Active tasks:** 19
-- **Completed tasks:** 34 shown below
+- **Last updated:** 2026-05-13 03:00 UTC
+- **Active tasks:** 18
+- **Completed tasks:** 35 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 
 ## 🎯 Active Tasks
@@ -20,9 +20,8 @@
 | MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
 | MEDIUM | `T-020` | AI task suggester | `IN_PROGRESS` | Decomposed: T-020-a, T-020-b, T-020-c, T-020-d |
 | MEDIUM | `T-020-c` | AI Suggester — Server API endpoint | `DONE` | [`tasks/T-020-c.md`](tasks/T-020-c.md) |
-| MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `PENDING` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
-| MEDIUM | `T-040-b` | Widget Grid CSS + add/remove drawer | `PENDING` | [`tasks/T-040-b.md`](tasks/T-040-b.md) |
-| LOW | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
+|| MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `DONE` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
+|| LOW | `T-049` | File attachments for notes & calendar | `PENDING` | [`tasks/T-049.md`](tasks/T-049.md) |
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `PENDING` | [`tasks/T-054.md`](tasks/T-054.md) |
 | MEDIUM | `T-055-c` | Feedback Pipeline agent integration + settings | `PENDING` | [`tasks/T-055-c.md`](tasks/T-055-c.md) |
 | HIGH | `T-059` | Hermes Chat Bridge Replies Never Arrive | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
@@ -42,6 +41,7 @@
 
 | ID | Task |
 |----|------|
+| `T-040-b` | Widget Grid CSS + add/remove drawer |
 | `T-059` | Hermes Chat Bridge Replies Never Arrive |
 | `T-020-a` | AI Suggester — JS app module + wiring |
 | `T-040-a-1` | Widget Grid core engine + default layout |

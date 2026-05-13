@@ -188,6 +188,20 @@
           <h1>Welcome back</h1>
           <p class="dashboard-date" id="dashboard-date"></p>
         </div>
+        <!-- Widget Toolbar -->
+        <div class="widget-toolbar" id="widget-toolbar">
+          <h2>Widgets</h2>
+          <div class="widget-toolbar-actions">
+            <button class="widget-btn" id="widget-add-btn" aria-label="Add widget" title="Add widget">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add
+            </button>
+            <button class="widget-btn" id="widget-edit-btn" aria-label="Edit widgets" title="Edit widgets">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+              Edit
+            </button>
+          </div>
+        </div>
         <!-- Widget Grid -->
         <div class="widget-grid" id="widget-grid" role="region" aria-label="Dashboard widgets"></div>
 
@@ -2040,6 +2054,22 @@
       <div class="capture-modal-actions">
         <button id="capture-modal-cancel" class="btn-secondary" type="button">Cancel</button>
         <button id="capture-save" class="btn-primary" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget Drawer -->
+  <div id="widget-drawer" class="widget-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="widget-drawer-title">
+    <div class="widget-drawer__backdrop" id="widget-drawer-backdrop"></div>
+    <div class="widget-drawer__panel">
+      <div class="widget-drawer__header">
+        <h3 id="widget-drawer-title">Add Widget</h3>
+        <button class="widget-drawer__close" id="widget-drawer-close" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="widget-drawer__body">
+        <div class="widget-drawer__grid" id="widget-drawer-grid"></div>
       </div>
     </div>
   </div>

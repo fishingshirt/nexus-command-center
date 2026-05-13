@@ -19,7 +19,18 @@ export class WidgetGrid {
     this.editMode = false;
     this.dragSrc = null;
     this.storageKey = 'ncc-dashboard-widgets';
+    this.drawerEl = null;
+    this.drawerGridEl = null;
+    this._drawerItems = [];
+    this._boundKeydown = null;
+    this._toolbarListeners = [];
     this.defaultLayout = [
+      { type: 'weather', title: 'Weather', icon: '🌤️' },
+      { type: 'calendar-today', title: 'Today', icon: '📅' },
+      { type: 'todo-count', title: 'Tasks', icon: '✅' },
+      { type: 'agent-stats', title: 'Agent', icon: '🤖' }
+    ];
+    this.allTypes = [
       { type: 'weather', title: 'Weather', icon: '🌤️' },
       { type: 'calendar-today', title: 'Today', icon: '📅' },
       { type: 'todo-count', title: 'Tasks', icon: '✅' },
@@ -31,6 +42,8 @@ export class WidgetGrid {
   init() {
     this.container.classList.add('widget-grid');
     this.renderLayout();
+    this._initToolbar();
+    this._initDrawer();
     this._startAutoRefresh();
   }
 
@@ -64,40 +77,87 @@ export class WidgetGrid {
     this.widgets = layout;
     this.container.innerHTML = '';
 
+    if (!layout.length) {
+      this.container.appendChild(this._renderEmptyState());
+      return;
+    }
+
     layout.forEach((cfg, idx) => {
-      const card = document.createElement('div');
-      card.className = 'widget-card';
-      card.dataset.id = cfg.id;
-      card.dataset.type = cfg.type;
-      card.dataset.index = String(idx);
-      card.setAttribute('role', 'region');
-      card.setAttribute('aria-label', cfg.title || cfg.type);
-
-      if (this.editMode) {
-        card.classList.add('widget-card--editing');
-        card.setAttribute('draggable', 'true');
-      }
-
-      const header = document.createElement('div');
-      header.className = 'widget-card__header';
-      const title = document.createElement('span');
-      title.className = 'widget-card__title';
-      title.textContent = cfg.title || cfg.type;
-      const icon = document.createElement('span');
-      icon.className = 'widget-card__icon';
-      icon.textContent = cfg.icon || '◈';
-      header.appendChild(title);
-      header.appendChild(icon);
-      card.appendChild(header);
-
-      const body = document.createElement('div');
-      body.className = 'widget-card__body';
-      card.appendChild(body);
-
-      this._buildWidgetContent(card, cfg);
-      this._attachDragEvents(card);
+      const card = this._createCard(cfg, idx);
       this.container.appendChild(card);
     });
+  }
+
+  _renderEmptyState() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'widget-empty-state';
+    wrapper.innerHTML = `
+      <span class="widget-empty-state__icon">📂</span>
+      <span class="widget-empty-state__text">No widgets added yet</span>
+      <span class="widget-empty-state__hint">Tap <strong>+ Add</strong> to add your first widget</span>
+    `;
+    return wrapper;
+  }
+
+  _createCard(cfg, idx) {
+    const card = document.createElement('div');
+    card.className = 'widget-card';
+    card.dataset.id = cfg.id;
+    card.dataset.type = cfg.type;
+    card.dataset.index = String(idx);
+    card.setAttribute('role', 'region');
+    card.setAttribute('aria-label', cfg.title || cfg.type);
+
+    if (this.editMode) {
+      card.classList.add('widget-card--editing');
+      card.setAttribute('draggable', 'true');
+    }
+
+    const header = document.createElement('div');
+    header.className = 'widget-card__header';
+
+    const title = document.createElement('span');
+    title.className = 'widget-card__title';
+    title.textContent = cfg.title || cfg.type;
+
+    const icon = document.createElement('span');
+    icon.className = 'widget-card__icon';
+    icon.textContent = cfg.icon || '◈';
+
+    const editControls = document.createElement('div');
+    editControls.className = 'widget-card__edit-controls';
+
+    const dragHandle = document.createElement('button');
+    dragHandle.className = 'widget-card__drag-handle';
+    dragHandle.setAttribute('aria-label', 'Drag to reorder');
+    dragHandle.setAttribute('title', 'Drag to reorder');
+    dragHandle.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="16" y2="6"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="18" x2="16" y2="18"></line></svg>`;
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'widget-card__delete-btn';
+    deleteBtn.setAttribute('aria-label', 'Remove widget');
+    deleteBtn.setAttribute('title', 'Remove widget');
+    deleteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.removeWidget(cfg.id);
+    });
+
+    editControls.appendChild(dragHandle);
+    editControls.appendChild(deleteBtn);
+
+    header.appendChild(title);
+    header.appendChild(icon);
+    card.appendChild(header);
+    card.appendChild(editControls);
+
+    const body = document.createElement('div');
+    body.className = 'widget-card__body';
+    card.appendChild(body);
+
+    this._buildWidgetContent(card, cfg);
+    this._attachDragEvents(card);
+    return card;
   }
 
   _buildWidgetContent(card, cfg) {
@@ -171,6 +231,120 @@ export class WidgetGrid {
 
   _renderAgentWidget(el) {
     el.innerHTML = '<div class="widget-metric"><span class="widget-metric__value">●</span><span class="widget-metric__label">Agent awake</span></div>';
+  }
+
+  addWidget(typeConfig) {
+    const existing = this.widgets.find(w => w.type === typeConfig.type);
+    if (existing) {
+      if (window.toast) window.toast('Widget already added');
+      return;
+    }
+    const cfg = { ...typeConfig, id: this._genId() };
+    this.widgets.push(cfg);
+    this._saveLayout();
+    this.renderLayout();
+    if (window.toast) window.toast(`${cfg.title || cfg.type} widget added`);
+  }
+
+  removeWidget(id) {
+    this.widgets = this.widgets.filter(w => w.id !== id);
+    this._saveLayout();
+    this.renderLayout();
+    if (window.toast) window.toast('Widget removed');
+  }
+
+  _initToolbar() {
+    const addBtn = document.getElementById('widget-add-btn');
+    const editBtn = document.getElementById('widget-edit-btn');
+    if (addBtn) {
+      const onAdd = () => this.openDrawer();
+      addBtn.addEventListener('click', onAdd);
+      this._toolbarListeners.push(() => addBtn.removeEventListener('click', onAdd));
+    }
+    if (editBtn) {
+      const onEdit = () => {
+        if (this.editMode) {
+          this.exitEditMode();
+          editBtn.classList.remove('widget-btn--active');
+          editBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+            Edit
+          `;
+        } else {
+          this.enterEditMode();
+          editBtn.classList.add('widget-btn--active');
+          editBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Done
+          `;
+        }
+      };
+      editBtn.addEventListener('click', onEdit);
+      this._toolbarListeners.push(() => editBtn.removeEventListener('click', onEdit));
+    }
+  }
+
+  _initDrawer() {
+    this.drawerEl = document.getElementById('widget-drawer');
+    this.drawerGridEl = document.getElementById('widget-drawer-grid');
+    const closeBtn = document.getElementById('widget-drawer-close');
+    const backdrop = document.getElementById('widget-drawer-backdrop');
+
+    if (!this.drawerEl || !this.drawerGridEl) return;
+
+    this._renderDrawerItems();
+
+    const closeDrawer = () => this.closeDrawer();
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeDrawer);
+      this.listeners.push(() => closeBtn.removeEventListener('click', closeDrawer));
+    }
+    if (backdrop) {
+      backdrop.addEventListener('click', closeDrawer);
+      this.listeners.push(() => backdrop.removeEventListener('click', closeDrawer));
+    }
+
+    this._boundKeydown = (e) => {
+      if (e.key === 'Escape') this.closeDrawer();
+    };
+    document.addEventListener('keydown', this._boundKeydown);
+  }
+
+  _renderDrawerItems() {
+    if (!this.drawerGridEl) return;
+    this.drawerGridEl.innerHTML = '';
+    this._drawerItems = [];
+    this.allTypes.forEach(item => {
+      const el = document.createElement('button');
+      el.className = 'widget-drawer__item';
+      el.setAttribute('type', 'button');
+      el.innerHTML = `
+        <span class="widget-drawer__item-icon">${item.icon}</span>
+        <span class="widget-drawer__item-name">${item.title}</span>
+      `;
+      const onClick = () => {
+        this.addWidget(item);
+        this.closeDrawer();
+      };
+      el.addEventListener('click', onClick);
+      this._drawerItems.push({ el, type: item.type, off: onClick });
+      this.drawerGridEl.appendChild(el);
+    });
+  }
+
+  openDrawer() {
+    if (!this.drawerEl) return;
+    this.drawerEl.classList.add('open');
+    this.drawerEl.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeDrawer() {
+    if (!this.drawerEl) return;
+    this.drawerEl.classList.remove('open');
+    this.drawerEl.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
   }
 
   enterEditMode() {
@@ -255,6 +429,13 @@ export class WidgetGrid {
     this.intervals = [];
     this.listeners.forEach(fn => { try { fn(); } catch { /* empty */ } });
     this.listeners = [];
+    this._toolbarListeners.forEach(fn => { try { fn(); } catch {/* empty */} });
+    this._toolbarListeners = [];
+    if (this._boundKeydown) {
+      document.removeEventListener('keydown', this._boundKeydown);
+      this._boundKeydown = null;
+    }
+    this.closeDrawer();
     if (this._overlay) { this._overlay.remove(); this._overlay = null; }
     this.container.innerHTML = '';
     this.container.classList.remove('widget-grid');
