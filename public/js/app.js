@@ -109,6 +109,7 @@ export function initApp() {
   registerServiceWorker();
   initSearch();
   initShortcuts();
+  initAppLauncher();
 
   /* Keyboard shortcuts */
   setTimeout(() => {
@@ -1919,3 +1920,217 @@ window.saveSettings = saveSettings;
 window.initApp = initApp;
 window.openSearch = openSearch;
 window.closeSearch = closeSearch;
+
+/* ===== APP LAUNCHER CUSTOMIZATION ===== */
+function initAppLauncher() {
+  const listEl = document.getElementById('app-launcher-list');
+  const countEl = document.getElementById('app-launcher-count');
+  const showAllBtn = document.getElementById('app-launcher-show-all');
+  const resetBtn = document.getElementById('app-launcher-reset-order');
+  if (!listEl) return;
+
+  const VIS_KEY = 'ncc-app-visibility';
+  const ORDER_KEY = 'ncc-app-order';
+
+  function loadVisibility() {
+    try { return JSON.parse(localStorage.getItem(VIS_KEY) || '{}'); } catch { return {}; }
+  }
+  function saveVisibility(map) { localStorage.setItem(VIS_KEY, JSON.stringify(map)); }
+  function loadOrder() {
+    try {
+      const raw = localStorage.getItem(ORDER_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch { /* fallthrough */ }
+    return APP_REGISTRY.map(a => a.id);
+  }
+  function saveOrder(arr) { localStorage.setItem(ORDER_KEY, JSON.stringify(arr)); }
+
+  function getOrderedRegistry() {
+    const order = loadOrder();
+    const vis = loadVisibility();
+    const map = new Map(APP_REGISTRY.map(a => [a.id, a]));
+    const ordered = [];
+    for (const id of order) {
+      const app = map.get(id);
+      if (app) ordered.push(app);
+    }
+    for (const app of APP_REGISTRY) {
+      if (!ordered.includes(app)) ordered.push(app);
+    }
+    return { ordered, vis };
+  }
+
+  function renderList() {
+    const { ordered, vis } = getOrderedRegistry();
+    const hiddenCount = ordered.filter(a => vis[a.id] === false).length;
+    if (countEl) {
+      const visible = ordered.length - hiddenCount;
+      countEl.textContent = `${visible} visible, ${hiddenCount} hidden`;
+    }
+    listEl.innerHTML = '';
+    ordered.forEach((app, idx) => {
+      const row = document.createElement('div');
+      row.className = 'app-launcher-item';
+      row.draggable = true;
+      row.dataset.app = app.id;
+      row.dataset.index = String(idx);
+      const isVisible = vis[app.id] !== false;
+      row.innerHTML = `
+        <span class="launcher-drag-handle" aria-label="Drag to reorder" title="Drag to reorder">⋮⋮</span>
+        <div class="launcher-icon" style="--card-accent: ${getAppAccent(app.id)};">${app.icon}</div>
+        <span class="launcher-name">${escapeHtml(app.name)}</span>
+        <input type="checkbox" class="launcher-toggle" ${isVisible ? 'checked' : ''} aria-label="Show ${escapeHtml(app.name)}">
+      `;
+      const toggle = row.querySelector('.launcher-toggle');
+      toggle.addEventListener('change', () => {
+        const nextVis = loadVisibility();
+        nextVis[app.id] = toggle.checked;
+        saveVisibility(nextVis);
+        renderLauncherGrid();
+        renderList();
+      });
+      addDragHandlers(row);
+      listEl.appendChild(row);
+    });
+  }
+
+  function getAppAccent(id) {
+    const card = document.querySelector(`.app-card[data-app="${CSS.escape(id)}"] .app-card-icon`);
+    if (card) {
+      const s = getComputedStyle(card);
+      return s.getPropertyValue('--card-accent') || 'var(--accent)';
+    }
+    return 'var(--accent)';
+  }
+
+  let dragSrc = null;
+  function addDragHandlers(row) {
+    row.addEventListener('dragstart', e => {
+      dragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', row.dataset.app);
+      e.dataTransfer.effectAllowed = 'move';
+      if ('vibrate' in navigator) navigator.vibrate(10);
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      document.querySelectorAll('.app-launcher-item').forEach(r => r.classList.remove('drag-over'));
+      dragSrc = null;
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (row !== dragSrc) row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (!dragSrc || dragSrc === row) return;
+      const items = Array.from(listEl.children);
+      const fromIndex = items.indexOf(dragSrc);
+      const toIndex = items.indexOf(row);
+      if (fromIndex < 0 || toIndex < 0) return;
+      const order = loadOrder();
+      const moved = order.splice(fromIndex, 1)[0];
+      order.splice(toIndex, 0, moved);
+      saveOrder(order);
+      renderList();
+      renderLauncherGrid();
+    });
+    // Long-press for mobile drag
+    let pressTimer = null;
+    row.addEventListener('touchstart', e => {
+      pressTimer = setTimeout(() => {
+        if ('vibrate' in navigator) navigator.vibrate(20);
+        row.draggable = true;
+        // Trigger dragstart manually on mobile is tricky; user can then long-press and move
+      }, 500);
+    }, { passive: true });
+    row.addEventListener('touchend', () => clearTimeout(pressTimer));
+    row.addEventListener('touchmove', () => clearTimeout(pressTimer));
+  }
+
+  function renderLauncherGrid() {
+    const grid = document.getElementById('app-grid');
+    if (!grid) return;
+    const { ordered, vis } = getOrderedRegistry();
+    const visibleApps = ordered.filter(a => vis[a.id] !== false);
+    // If all hidden, show empty state
+    if (visibleApps.length === 0) {
+      if (!grid.querySelector('.app-grid-empty')) {
+        grid.innerHTML = `
+          <div class="app-grid-empty">
+            <div class="empty-icon">🙈</div>
+            <h3>All apps hidden</h3>
+            <p>All apps are hidden. <a onclick="location.hash='settings'">Tap the settings gear</a> to show some.</p>
+          </div>
+        `;
+      }
+      return;
+    }
+    // Reorder existing cards to match order, hide/show
+    const cards = Array.from(grid.querySelectorAll('.app-card'));
+    const cardMap = new Map(cards.map(c => [c.dataset.app, c]));
+    // Remove empty state if present
+    const empty = grid.querySelector('.app-grid-empty');
+    if (empty) empty.remove();
+    // Append in order
+    for (const app of ordered) {
+      const card = cardMap.get(app.id);
+      if (!card) continue;
+      if (vis[app.id] === false) {
+        card.style.display = 'none';
+      } else {
+        card.style.display = '';
+        grid.appendChild(card);
+      }
+    }
+    syncNavDrawer(ordered, vis);
+  }
+
+  function syncNavDrawer(ordered, vis) {
+    const drawer = document.getElementById('nav-drawer');
+    if (!drawer) return;
+    const body = drawer.querySelector('.nav-drawer-body');
+    if (!body) return;
+    const links = Array.from(body.querySelectorAll('.nav-link[data-app]'));
+    const linkMap = new Map(links.map(l => [l.dataset.app, l]));
+    // Hide/show links according to visibility (keep dividers, dashboard, settings untouched)
+    for (const app of ordered) {
+      const link = linkMap.get(app.id);
+      if (!link) continue;
+      if (vis[app.id] === false) {
+        link.style.display = 'none';
+      } else {
+        link.style.display = '';
+        body.appendChild(link);
+      }
+    }
+    // Ensure dividers stay visible and settings stays at bottom
+    const settingsLink = body.querySelector('.nav-settings-link');
+    if (settingsLink) body.appendChild(settingsLink);
+  }
+
+  if (showAllBtn) {
+    showAllBtn.addEventListener('click', () => {
+      const next = {};
+      for (const a of APP_REGISTRY) next[a.id] = true;
+      saveVisibility(next);
+      renderList();
+      renderLauncherGrid();
+      toast('All apps shown');
+    });
+  }
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      localStorage.removeItem(ORDER_KEY);
+      renderList();
+      renderLauncherGrid();
+      toast('App order reset to default');
+    });
+  }
+
+  renderList();
+  renderLauncherGrid();
+}
