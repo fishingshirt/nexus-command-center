@@ -1644,6 +1644,29 @@ export function initAgentStats() {
       fetchWhiteboard();
     });
   }
+
+  // Pause / resume banner
+  const pauseBanner = document.getElementById('agent-pause-banner');
+  const resumeBtn = document.getElementById('btn-agent-resume');
+  if (pauseBanner) {
+    const paused = localStorage.getItem('ncc-agent-paused') === 'true';
+    pauseBanner.style.display = paused ? 'block' : 'none';
+  }
+  if (resumeBtn) {
+    resumeBtn.addEventListener('click', async () => {
+      localStorage.removeItem('ncc-agent-paused');
+      try {
+        await fetch('/api/agent/pause', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paused: false }) });
+      } catch (e) {}
+      if (pauseBanner) pauseBanner.style.display = 'none';
+      const indicator = document.getElementById('agent-indicator');
+      if (indicator) {
+        indicator.style.background = '#22c55e';
+        indicator.title = 'Build agent active';
+      }
+      toast('Agent resumed');
+    });
+  }
 }
 
 function setStat(id, n) {

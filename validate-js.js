@@ -61,7 +61,7 @@ global.confirm = () => true;
 global.alert = () => {};
 global.console = { log:()=>{}, warn:()=>{}, error:()=>{} };
 
-const jsDir = '/tmp/nexus-command-center/public/js';
+const jsDir = '/home/fishingshirt/nexus-command-center/public/js';
 
 function validateFile(file) {
   const fullPath = path.join(jsDir, file);

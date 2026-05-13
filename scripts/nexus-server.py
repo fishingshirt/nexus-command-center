@@ -752,6 +752,22 @@ def agent_heartbeat():
         json.dump({'timestamp': ts}, f)
     return {'timestamp': ts, 'ok': True}
 
+def agent_pause_state():
+    path = os.path.expanduser('~/.hermes/nexus-agent-pause.json')
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (FileNotFoundError, ValueError):
+        return {'paused': False}
+
+def agent_pause(paused_flag):
+    path = os.path.expanduser('~/.hermes/nexus-agent-pause.json')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    data = {'paused': bool(paused_flag), 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%S')}
+    with open(path, 'w') as f:
+        json.dump(data, f)
+    return data
+
 # ── PIN Auth helpers ──────────────────────────
 AUTH_FILE = os.path.expanduser('~/.hermes/nexus-auth.json')
 def _load_auth():
@@ -2918,6 +2934,10 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             _json(self, 200, {'notifications': queue[-20:]})
             return True
 
+        if path == '/api/agent/pause':
+            _json(self, 200, {'ok': True, 'paused': agent_pause_state().get('paused', False)})
+            return True
+
         if path == '/api/notifications':
             queue_path = os.path.expanduser('~/.hermes/nexus-notifications.json')
             queue = []
@@ -3079,6 +3099,18 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             if path == '/api/finance/write':
                 if _api_finance_tracker_write(self):
                     return
+            if path == '/api/agent/pause':
+                try:
+                    length = int(self.headers.get('Content-Length', 0))
+                    body = self.rfile.read(length).decode('utf-8') if length else '{}'
+                    req = json.loads(body)
+                except Exception:
+                    _json(self, 400, {'ok': False, 'error': 'Invalid JSON'})
+                    return True
+                paused_flag = req.get('paused', False)
+                data = agent_pause(paused_flag)
+                _json(self, 200, {'ok': True, 'paused': data['paused']})
+                return True
             if path.startswith('/api/ai/'):
                 if _api_ai_suggester(self, path):
                     return

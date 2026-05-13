@@ -208,21 +208,16 @@ def check_cross_reference(files):
         for m in re.finditer(r'querySelector\(["\']([.#][^"\']+)["\']\)', text):
             sel = m.group(1)
             if sel.startswith("."):
-                # Handle comma-separated and chained selectors: .a.b, .c
-                raw = sel[1:]
-                parts = [p.strip() for p in raw.split(",")]
-                for part in parts:
-                    # chained classes like beat-text.active
-                    simple_classes = part.split(".")
-                    for cls in simple_classes:
-                        # remove pseudo-class suffixes if any
-                        cls = cls.split(":")[0].split("[")[0].strip()
-                        if not cls:
-                            continue
-                        if cls not in css_classes:
-                            if is_boot:
-                                missing_classes.append(f"{jsf.name}:{m.start()} class='{cls}'")
-                            break  # report once per outer selector
+                # Extract all class names from the selector, ignoring tag names and pseudo-classes
+                for cls in re.findall(r'\.([a-zA-Z_\-][a-zA-Z0-9_\-]*)', sel):
+                    # remove pseudo-class suffixes if any
+                    cls = cls.split(":")[0].split("[")[0].strip()
+                    if not cls:
+                        continue
+                    if cls not in css_classes:
+                        if is_boot:
+                            missing_classes.append(f"{jsf.name}:{m.start()} class='{cls}'")
+                        break  # report once per selector
 
     # data-app registry check (aliases allow mapped name != module name)
     app_aliases = {
