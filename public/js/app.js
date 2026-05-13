@@ -781,7 +781,7 @@ function initCalendarSync() {
       dot.title = `Google Calendar: ${m.text}`;
     }
     if (unlinkBtn) unlinkBtn.style.display = (status !== 'none' && status !== 'error') ? 'inline-flex' : 'none';
-    if (reauthBtn) reauthBtn.style.display = (status === 'linked') ? 'inline-flex' : 'none';
+    if (reauthBtn) reauthBtn.style.display = (status === 'linked' && extra === 'read-only') ? 'inline-flex' : 'none';
     if (hint) {
       if (status === 'linked') {
         hint.textContent = 'Connected with full read/write access via OAuth 2.0.';

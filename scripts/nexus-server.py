@@ -1540,7 +1540,7 @@ def _api_calendar(handler, raw_path):
         _json(handler, 200, {
             'linked': bool(at),
             'scope': scope,
-            'readOnly': 'readonly' in scope and 'auth/calendar' not in scope
+            'readOnly': 'readonly' in scope and 'https://www.googleapis.com/auth/calendar' not in scope
         })
         return True
 

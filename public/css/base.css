@@ -887,7 +887,10 @@ button.nav-link {
   flex-wrap: wrap;
 }
 
-.sync-actions .btn-secondary {
+.sync-actions .btn-primary,
+.sync-actions .btn-secondary,
+.sync-actions .btn-warning,
+.sync-actions .btn-danger {
   width: auto;
   margin-bottom: 0;
 }

@@ -110,7 +110,7 @@
 - **This repo lives on this local Linux machine.** GitHub is the **backup mirror** — always push commits there after every change.
 - **One task per cycle.** Read the task file before starting. Update this board after finishing.
 - **Backup rule:** Every commit must be pushed to GitHub immediately. Do not let local and remote drift.
-- **T-034 sub-tasks:** T-034-a DONE, T-034-b DONE, T-034-c-1 DONE, T-034-c-2 DONE, T-034-c-3 DONE, **T-034-d DONE**. Next: T-034-e (scope upgrade + re-auth prompt) then finish T-034.
+- **T-034 sub-tasks:** T-034-a DONE, T-034-b DONE, T-034-c-1 DONE, T-034-c-2 DONE, T-034-c-3 DONE, **T-034-d DONE**. Next: T-034-e DONE. **T-034 COMPLETE.**
 
 ---
 
