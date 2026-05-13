@@ -186,3 +186,11 @@ function _registerTodoWidgetStub() {
     });
   }
 }
+
+export function getTodoWidgetData() {
+  const pending = tasks.filter(t => !t.completed);
+  return {
+    count: pending.length,
+    topThree: pending.slice(0, 3).map(t => t.text || 'Untitled')
+  };
+}

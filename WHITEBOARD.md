@@ -7,7 +7,7 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-13 04:40 UTC
+- **Last updated:** 2026-05-13 05:05 UTC
 - **Active tasks:** 18
 - **Completed tasks:** 35 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
@@ -27,7 +27,7 @@
 | HIGH | `T-059` | Hermes Chat Bridge Replies Never Arrive | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
 | LOW    | `T-020-b` | AI Suggester — CSS module | `DONE` | [`tasks/T-020-b.md`](tasks/T-020-b.md) |
 | LOW    | `T-020-d` | AI Suggester — Settings integration | `DONE` | [`tasks/T-020-d.md`](tasks/T-020-d.md) |
-| LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
+|| LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `DONE` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
 | LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
 | LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
 | LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `PENDING` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |

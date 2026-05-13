@@ -547,3 +547,16 @@ function _registerWeatherWidgetStub() {
     });
   }
 }
+
+export function getWeatherWidgetData() {
+  const locs = loadLocations();
+  const loc = locs.find(l => l.isHome) || locs[0];
+  if (!loc || !loc.current) return null;
+  return {
+    city: loc.name || 'Local',
+    temp: loc.current.temp,
+    code: loc.current.code,
+    icon: wmoIcon(loc.current.code),
+    condition: wmoText(loc.current.code)
+  };
+}

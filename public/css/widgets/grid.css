@@ -232,6 +232,29 @@
   color: var(--text-muted);
 }
 
+.widget-list {
+  width: 100%;
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.widget-list li {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Empty state */
 .widget-empty-state {
   grid-column: 1 / -1;

@@ -877,3 +877,17 @@ function _registerCalendarWidgetStub() {
     });
   }
 }
+
+export function getCalendarWidgetData() {
+  const today = new Date();
+  const events = loadEvents();
+  let count = 0;
+  const titles = [];
+  if (Array.isArray(events)) {
+    const d = today.toISOString().split('T')[0];
+    const todays = events.filter(e => e.date === d || (!e.date && e.start?.startsWith(d)));
+    count = todays.length;
+    titles.push(...todays.slice(0, 3).map(e => e.title || 'Untitled'));
+  }
+  return { count, events: titles };
+}
