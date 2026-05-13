@@ -488,6 +488,72 @@ function initSettings() {
     dndEnd.addEventListener('change', () => saveSettings({ dndEnd: dndEnd.value }));
   }
 
+  // AI Suggester settings
+  (function wireAISuggester() {
+    const enabledEl = document.getElementById('ai-suggester-enabled');
+    const modelEl = document.getElementById('ai-suggester-model');
+    const freqEl = document.getElementById('ai-suggester-frequency');
+    const clearEl = document.getElementById('ai-suggester-clear');
+    const cfg = settings.aiSuggester || {};
+
+    if (enabledEl) {
+      enabledEl.checked = cfg.enabled !== false;
+      enabledEl.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.aiSuggester || {}), enabled: enabledEl.checked };
+        saveSettings({ aiSuggester: next });
+        toast(enabledEl.checked ? 'AI Suggester enabled' : 'AI Suggester disabled');
+      });
+    }
+    if (modelEl) {
+      modelEl.value = cfg.model || 'llama3.2';
+      modelEl.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.aiSuggester || {}), model: modelEl.value };
+        saveSettings({ aiSuggester: next });
+      });
+    }
+    if (freqEl) {
+      freqEl.value = cfg.frequency || 'manual';
+      freqEl.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.aiSuggester || {}), frequency: freqEl.value };
+        saveSettings({ aiSuggester: next });
+      });
+    }
+    if (clearEl) {
+      clearEl.addEventListener('click', () => {
+        localStorage.removeItem('ncc-ai-suggester-dismissed');
+        toast('Dismissed suggestions cleared');
+      });
+    }
+  })();
+
+  // Feedback Pipeline settings
+  (function wireFeedbackSettings() {
+    const autoEl = document.getElementById('feedback-auto-generate');
+    const notifyEl = document.getElementById('feedback-notify');
+    const cfg = settings.feedbackPipeline || {};
+
+    if (autoEl) {
+      autoEl.checked = cfg.autoGenerate !== false;
+      autoEl.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.feedbackPipeline || {}), autoGenerate: autoEl.checked };
+        saveSettings({ feedbackPipeline: next });
+        toast(autoEl.checked ? 'Auto-generate from feedback enabled' : 'Auto-generate from feedback disabled');
+      });
+    }
+    if (notifyEl) {
+      notifyEl.checked = cfg.notifyProcessed !== false;
+      notifyEl.addEventListener('change', () => {
+        const cur = loadSettings();
+        const next = { ...(cur.feedbackPipeline || {}), notifyProcessed: notifyEl.checked };
+        saveSettings({ feedbackPipeline: next });
+      });
+    }
+  })();
+
   // Export data
   document.getElementById('btn-export').addEventListener('click', () => {
     const data = {};

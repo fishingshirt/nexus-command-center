@@ -168,7 +168,8 @@ export function getUnreadCount() {
 const APP_ICONS = {
   calendar: '📅', notes: '📝', todo: '✅', chat: '💬',
   weather: '☀️', phone: '📱', feedback: '💬', arcade: '🎮',
-  finance: '💰', pomodoro: '🍅', system: '◈', agent: '🤖'
+  finance: '💰', pomodoro: '🍅', system: '◈', agent: '🤖',
+  feedback: '💡', 'ai-suggester': '💡'
 };
 
 function _relativeTime(ts) {

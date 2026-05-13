@@ -1480,6 +1480,46 @@
           </section>
 
           <section class="settings-section">
+            <h3>AI Suggester</h3>
+            <div class="settings-row">
+              <label for="ai-suggester-enabled">Enable AI suggestions</label>
+              <input type="checkbox" id="ai-suggester-enabled" class="toggle" checked>
+            </div>
+            <div class="settings-row">
+              <label for="ai-suggester-model">Model</label>
+              <select id="ai-suggester-model">
+                <option value="llama3.2">llama3.2</option>
+                <option value="llama3">llama3</option>
+                <option value="mistral">mistral</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="ai-suggester-frequency">Frequency</label>
+              <select id="ai-suggester-frequency">
+                <option value="manual">Manual only</option>
+                <option value="hourly">Hourly</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <button class="btn-secondary" id="ai-suggester-clear" type="button">Clear dismissed suggestions</button>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3>Feedback Pipeline</h3>
+            <div class="settings-row">
+              <label for="feedback-auto-generate">Auto-generate tasks from feedback</label>
+              <input type="checkbox" id="feedback-auto-generate" class="toggle" checked>
+            </div>
+            <div class="settings-row">
+              <label for="feedback-notify">Notify me when feedback is processed</label>
+              <input type="checkbox" id="feedback-notify" class="toggle" checked>
+            </div>
+          </section>
+
+          <section class="settings-section">
             <h3>About</h3>
             <p class="settings-about">Nexus Command Center v1.0</p>
             <p class="settings-about">Built by AI, for you.</p>

@@ -25,8 +25,8 @@
 | MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `DONE` | [`tasks/T-054.md`](tasks/T-054.md) |
 | MEDIUM | `T-055-c` | Feedback Pipeline agent integration + settings | `PENDING` | [`tasks/T-055-c.md`](tasks/T-055-c.md) |
 | HIGH | `T-059` | Hermes Chat Bridge Replies Never Arrive | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
-| LOW    | `T-020-b` | AI Suggester — CSS module | `PENDING` | [`tasks/T-020-b.md`](tasks/T-020-b.md) |
-| LOW    | `T-020-d` | AI Suggester — Settings integration | `PENDING` | [`tasks/T-020-d.md`](tasks/T-020-d.md) |
+| LOW    | `T-020-b` | AI Suggester — CSS module | `DONE` | [`tasks/T-020-b.md`](tasks/T-020-b.md) |
+| LOW    | `T-020-d` | AI Suggester — Settings integration | `DONE` | [`tasks/T-020-d.md`](tasks/T-020-d.md) |
 | LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `PENDING` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
 | LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `PENDING` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
 | LOW    | `T-043-d` | Quick Capture agent command queue + integration | `PENDING` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |

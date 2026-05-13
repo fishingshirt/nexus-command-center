@@ -16,3 +16,4 @@ TOOL
 data/vault/
 data/vault-index.json
 data/vault/**
+data/feedback-queue.jsonl

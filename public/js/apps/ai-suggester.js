@@ -61,7 +61,22 @@ function buildContext() {
 export async function openSuggester() {
   const view = document.getElementById('view-ai-suggester');
   if (!view) return;
-  const body = view.querySelector('.suggester-view-body') || view;
+  const body = view.querySelector('.suggester-view-body') || view.querySelector('#sg-view-body') || view;
+
+  // Check settings
+  const settings = JSON.parse(localStorage.getItem('ncc-settings') || '{}');
+  const cfg = settings.aiSuggester || {};
+  if (cfg.enabled === false) {
+    body.innerHTML = `
+      <div class="suggestion-empty" style="display:flex;">
+        <div class="suggestion-empty-icon">💤</div>
+        <h3>AI Suggester is disabled</h3>
+        <p>Enable it in Settings → AI Suggester</p>
+      </div>
+    `;
+    return;
+  }
+
   renderShell(body);
   loadDismissed();
   await fetchSuggestions();
@@ -105,15 +120,21 @@ function renderShell(container) {
   container.appendChild(empty);
 
   card.querySelector('#sg-refresh').addEventListener('click', async () => {
+    const s = JSON.parse(localStorage.getItem('ncc-settings') || '{}');
+    const c = s.aiSuggester || {};
+    if (c.enabled === false) { toast('AI Suggester is disabled in Settings', 'error'); return; }
     await fetchSuggestions(true);
     renderSuggestions();
   });
   card.querySelector('#sg-settings').addEventListener('click', () => {
-    toast('AI Suggester settings coming in T-020-d');
+    toast('Use Settings → AI Suggester to configure');
   });
 }
 
 async function fetchSuggestions(force = false) {
+  const s = JSON.parse(localStorage.getItem('ncc-settings') || '{}');
+  const c = s.aiSuggester || {};
+  if (c.enabled === false) { suggestions = []; return; }
   if (!force) {
     const cached = loadCache();
     if (cached && cached.length) {
@@ -126,7 +147,7 @@ async function fetchSuggestions(force = false) {
   renderSkeleton();
 
   try {
-    const body = JSON.stringify({ context: buildContext() });
+    const body = JSON.stringify({ context: buildContext(), model: c.model || 'llama3.2' });
     const res = await fetch('/api/ai/suggest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
