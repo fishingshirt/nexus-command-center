@@ -52,11 +52,11 @@ try:
     m = re.search(r"Agent state:\s*([^\n]+)", wb)
     agent_state = m.group(1).strip() if m else "UNKNOWN"
 
-    # Count statuses
-    pending = len(re.findall(r"`PENDING`|\bPENDING\b", wb))
-    inprog  = len(re.findall(r"`IN_PROGRESS`|\bIN_PROGRESS\b", wb))
-    blocked = len(re.findall(r"`BLOCKED`|\bBLOCKED\b", wb))
-    done    = len(re.findall(r"`DONE`|\bDONE\b", wb))
+    # Count statuses (only backticked status markers in the task table)
+    pending = len(re.findall(r"`PENDING`", wb))
+    inprog  = len(re.findall(r"`IN_PROGRESS`", wb))
+    blocked = len(re.findall(r"`BLOCKED`", wb))
+    done    = len(re.findall(r"`DONE`", wb))
 
     lines.append("📊 WHITEBOARD Status:")
     lines.append(f"   Agent state: {agent_state}")
