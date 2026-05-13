@@ -7,7 +7,9 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - nexus-data:/usr/share/nginx/html/data
+      - ./public:/usr/share/nginx/html:ro
+      - ./data:/usr/share/nginx/html/data:ro
+      - nexus-data:/usr/share/nginx/html/persist
     restart: unless-stopped
 
 volumes:
