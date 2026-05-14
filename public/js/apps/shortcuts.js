@@ -173,7 +173,7 @@ export function initShortcuts() {
   /* First-run hint */
   if (!localStorage.getItem('ncc-shortcuts-hint-shown')) {
     setTimeout(() => {
-      const toast = window.__nexusToast || ((msg) => console.log('[Shortcuts]', msg));
+      const toast = (typeof window.toast === 'function') ? window.toast : (msg) => console.log('[Shortcuts]', msg);
       toast('💡 Press ? anytime for keyboard shortcuts');
       localStorage.setItem('ncc-shortcuts-hint-shown', '1');
     }, 3500);

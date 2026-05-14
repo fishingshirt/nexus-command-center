@@ -167,25 +167,28 @@ function initRouter() {
   window.addEventListener('hashchange', handleHash);
   handleHash();
 
-  // App card clicks
-  document.querySelectorAll('.app-card').forEach(card => {
-    card.addEventListener('click', () => {
+  /* ── Event delegation: works even if cards are re-rendered by launcher/grid scripts ── */
+  document.addEventListener('click', e => {
+    const card = e.target.closest('.app-card');
+    if (card) {
       const app = card.dataset.app;
-      location.hash = app;
-    });
-    card.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        location.hash = card.dataset.app;
-      }
-    });
+      if (app) location.hash = app;
+    }
+  });
+  document.addEventListener('keydown', e => {
+    const card = e.target.closest('.app-card');
+    if (!card) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const app = card.dataset.app;
+      if (app) location.hash = app;
+    }
   });
 
-  // View back buttons
-  document.querySelectorAll('.view-back').forEach(btn => {
-    btn.addEventListener('click', () => {
-      location.hash = btn.dataset.view;
-    });
+  // View back buttons — delegated for dynamically added views
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.view-back');
+    if (btn) location.hash = btn.dataset.view || 'dashboard';
   });
 }
 
@@ -294,13 +297,14 @@ function initNavigation() {
     if (e.key === 'Escape' && drawer.classList.contains('open')) close();
   });
 
-  // Nav links click → close drawer + route via hash (except settings which navigates to #settings)
-  drawer.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-      const app = link.dataset.app;
-      close();
-      if (app) location.hash = app;
-    });
+  /* ── Nav links click → close drawer + route via hash ── */
+  // Delegated so dynamically added or reordered nav links still work
+  drawer.addEventListener('click', e => {
+    const link = e.target.closest('.nav-link');
+    if (!link) return;
+    const app = link.dataset.app;
+    close();
+    if (app) location.hash = app;
   });
 }
 
@@ -342,13 +346,16 @@ function initSettings() {
   const reducedMotion = document.getElementById('reduced-motion');
   const showWelcome = document.getElementById('show-welcome');
 
+  // If not on the settings view yet, wait until it is rendered before wiring
+  if (!themeSelect) return;
+
   const settings = loadSettings();
 
   // Apply saved values
   themeSelect.value = settings.theme || 'jarvis';
   if (darkMode) darkMode.checked = (settings.themeMode ?? 'dark') === 'dark';
-  reducedMotion.checked = settings.reducedMotion || false;
-  showWelcome.checked = settings.showWelcomeOnBoot || false;
+  if (reducedMotion) reducedMotion.checked = settings.reducedMotion || false;
+  if (showWelcome) showWelcome.checked = settings.showWelcomeOnBoot || false;
 
   // Theme change
   themeSelect.addEventListener('change', () => {
@@ -908,18 +915,6 @@ function initCalendarSync() {
 /* ===== WELCOME ===== */
 /* ===== CHAT ===== */
 function initChat() {
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
-
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
-
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
-
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
-
   if (!document.getElementById('chat-widget')) return;
   if (!document.getElementById('chat-widget-toggle')) return;
 
