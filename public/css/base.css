@@ -152,6 +152,8 @@ body {
 
 .header-menu-btn,
 .header-btn {
+  position: relative;
+  z-index: 101;
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
@@ -163,6 +165,12 @@ body {
   align-items: center;
   justify-content: center;
   transition: background var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.header-menu-btn svg,
+.header-btn svg {
+  pointer-events: none;
 }
 
 .header-menu-btn:hover,
@@ -975,6 +983,58 @@ button.nav-link {
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+}
+
+.chat-widget-header:active,
+.chat-widget.dragging .chat-widget-header {
+  cursor: grabbing;
+}
+
+.chat-widget-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chat-widget-close,
+.chat-widget-drag {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  padding: 2px;
+}
+
+.chat-widget-close:hover,
+.chat-widget-drag:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+
+/* Optional: visual drag grip indicators */
+.chat-widget-drag::before {
+  content: '⋮⋮';
+  font-size: 10px;
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.chat-widget.dragging {
+  opacity: 0.92;
+  transition: none;
+}
+
+.chat-widget.dragging .chat-widget-window {
+  transition: none;
 }
 
 .chat-widget-title {

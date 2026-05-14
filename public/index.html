@@ -1956,7 +1956,13 @@
       <div class="chat-widget-window" id="chat-widget-window">
         <div class="chat-widget-header">
           <span class="chat-widget-title">Hermes</span>
-          <span class="chat-widget-status">Online</span>
+          <div class="chat-widget-header-actions">
+            <span class="chat-widget-status">Online</span>
+            <button class="chat-widget-drag" aria-label="Drag chat widget" title="Drag to move"></button>
+            <button class="chat-widget-close" id="chat-widget-close" aria-label="Close chat" title="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
         </div>
         <div class="chat-widget-messages" id="chat-widget-messages"></div>
         <div class="chat-widget-input-wrap">

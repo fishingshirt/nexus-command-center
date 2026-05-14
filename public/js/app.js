@@ -254,8 +254,13 @@ function initNavigation() {
   const backdrop = document.getElementById('nav-backdrop');
   const openBtn = document.getElementById('header-menu-btn');
   const closeBtn = document.getElementById('nav-drawer-close');
+  if (!drawer || !backdrop || !openBtn || !closeBtn) return;
+
+  let isOpen = false;
 
   function open() {
+    if (isOpen) return;
+    isOpen = true;
     drawer.classList.add('open');
     drawer.setAttribute('aria-hidden', 'false');
     backdrop.classList.add('visible');
@@ -264,6 +269,8 @@ function initNavigation() {
   }
 
   function close() {
+    if (!isOpen) return;
+    isOpen = false;
     drawer.classList.remove('open');
     drawer.setAttribute('aria-hidden', 'true');
     backdrop.classList.remove('visible');
@@ -271,8 +278,16 @@ function initNavigation() {
     openBtn.focus();
   }
 
-  openBtn.addEventListener('click', open);
-  closeBtn.addEventListener('click', close);
+  openBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    open();
+  });
+  closeBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+  });
   backdrop.addEventListener('click', close);
 
   document.addEventListener('keydown', e => {
@@ -905,9 +920,56 @@ function initChat() {
   const fpSend = document.getElementById('chat-send');
   const fpHistory = document.getElementById('chat-history');
 
+  // Header controls
+  const closeBtn = document.getElementById('chat-widget-close');
+  const header   = widget.querySelector('.chat-widget-header');
+
+  /* ---- Toggle open/close ---- */
   toggle.addEventListener('click', () => {
     widget.classList.toggle('open');
   });
+
+  /* ---- Close button ---- */
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      widget.classList.remove('open');
+    });
+  }
+
+  /* ---- Drag-to-move ---- */
+  let isDragging = false, startX, startY, origBottom, origRight;
+  const onPointerDown = (e) => {
+    // Let close/send/input buttons work
+    if (e.target.closest('button, input, a, textarea')) return;
+    isDragging = true;
+    widget.classList.add('dragging');
+    startX = e.clientX;
+    startY = e.clientY;
+    const style = window.getComputedStyle(widget);
+    origBottom = parseFloat(style.bottom);
+    origRight  = parseFloat(style.right);
+    widget.setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e) => {
+    if (!isDragging) return;
+    const dx = startX - e.clientX;
+    const dy = startY - e.clientY;
+    widget.style.bottom = `${origBottom + dy}px`;
+    widget.style.right  = `${origRight  + dx}px`;
+  };
+  const onPointerUp = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    widget.classList.remove('dragging');
+  };
+
+  if (header) {
+    header.addEventListener('pointerdown', onPointerDown);
+    header.addEventListener('pointermove', onPointerMove);
+    header.addEventListener('pointerup',   onPointerUp);
+    header.addEventListener('pointercancel', onPointerUp);
+  }
 
   // Unified send handler
   function sendFromWidget() {
