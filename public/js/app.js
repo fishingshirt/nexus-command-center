@@ -77,6 +77,18 @@ export function initApp() {
     const app = document.getElementById('app');
     if (app) app.classList.add('welcome-ready');
   }
+  /* Safety valve: if overlay is still active after 500ms, force-dismiss */
+  setTimeout(() => {
+    const overlay = document.getElementById('welcome-overlay');
+    if (overlay && overlay.classList.contains('active')) {
+      console.warn('[Nexus] Welcome overlay still active after 1s — auto-dismiss');
+      overlay.classList.remove('active');
+      overlay.style.display = 'none';
+      overlay.setAttribute('aria-hidden', 'true');
+      const app = document.getElementById('app');
+      if (app) app.classList.add('welcome-ready');
+    }
+  }, 500);
   runMigration();
   initNotifications();
   initAgentNotificationPoll();

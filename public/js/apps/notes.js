@@ -237,7 +237,7 @@ function updateBadge() {
 }
 
 function esc(s) {
-  return (s || '').replace(/[&<>"]/g, c => ({&:'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
 /* ===== AGENT HELPERS ===== */

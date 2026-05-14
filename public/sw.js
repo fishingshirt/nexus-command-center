@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nexus-v6-fix';
+const CACHE_NAME = 'nexus-v7-fix';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -121,7 +121,23 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Stale-while-revalidate for everything else
+  // JS/CSS: ALWAYS network-first during active development so fixes deploy immediately
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    e.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then(r => r || new Response('Offline', { status: 503 })))
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for everything else (images, fonts, etc)
   e.respondWith(
     caches.match(request).then(cached => {
       const network = fetch(request)
