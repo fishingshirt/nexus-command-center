@@ -1,0 +1,324 @@
+/* === COSMIC DRIFT THEME ===
+   A pure-CSS animated space theme.
+   Twinkling multi-layer starfield + drifting nebula particles.
+   Dark-mode only; light mode falls back to soft space-grey.
+   ================================================ */
+
+:root {
+  --bg: #0b0d17;
+  --surface: #11131f;
+  --header-bg: rgba(11, 13, 23, 0.85);
+  --text: #e2e4f0;
+  --text-muted: #6b7094;
+  --accent: #a78bfa;
+  --accent-secondary: #38bdf8;
+  --accent-bg: rgba(167, 139, 250, 0.12);
+  --accent-rgb: 167, 139, 250;
+  --border: #1e2033;
+  --border-subtle: #151725;
+  --hover-bg: #1a1d2e;
+  --backdrop: rgba(0, 0, 0, 0.65);
+  --welcome-bg: #060710;
+}
+
+/* ── Starfield Background ── */
+body[data-theme="cosmic-drift"]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 130px 80px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 160px 120px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 180px 20px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 220px 90px, #eee, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 260px 150px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 300px 60px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 340px 110px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 380px 180px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 420px 50px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 460px 130px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 500px 90px, #eee, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 540px 170px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 580px 30px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 620px 100px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 660px 140px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 700px 70px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 740px 160px, #eee, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 780px 40px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 820px 120px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 860px 80px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 900px 150px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 940px 20px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 980px 110px, #eee, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1020px 170px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 1060px 60px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1100px 130px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 1140px 90px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1180px 180px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 1220px 50px, #eee, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1260px 140px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 1300px 70px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1340px 160px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 1380px 30px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1420px 100px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 1460px 170px, #eee, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1500px 80px, #fff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 1540px 210px;
+  animation: star-twinkle 8s ease-in-out infinite alternate;
+  opacity: 0.55;
+}
+
+/* ── Secondary faint star layer ── */
+body[data-theme="cosmic-drift"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1px 1px at 35px 65px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 75px 15px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 115px 105px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 155px 45px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 195px 135px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 235px 85px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 275px 25px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 315px 115px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 355px 55px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 395px 145px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 435px 95px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 475px 35px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 515px 125px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 555px 75px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 595px 165px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 635px 15px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 675px 105px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 715px 55px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 755px 145px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 795px 95px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 835px 35px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 875px 125px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 915px 75px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 955px 165px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 995px 15px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1035px 105px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1075px 55px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1115px 145px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1155px 95px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1195px 35px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1235px 125px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1275px 75px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1315px 165px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1355px 15px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1395px 105px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1435px 55px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1475px 145px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1515px 95px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1555px 35px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1595px 125px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1635px 75px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1675px 165px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1715px 15px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1755px 105px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1795px 55px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1835px 145px, rgba(255,255,255,0.4), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1875px 95px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1915px 35px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1955px 125px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 1995px 75px, rgba(255,255,255,0.6), rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 1000px 200px;
+  animation: star-drift 18s linear infinite;
+  opacity: 0.35;
+}
+
+/* ── Nebula haze overlay ── */
+body[data-theme="cosmic-drift"] .app-main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(167, 139, 250, 0.07), transparent),
+    radial-gradient(ellipse 60% 80% at 80% 70%, rgba(56, 189, 248, 0.05), transparent),
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(139, 92, 246, 0.04), transparent);
+  animation: nebula-shift 20s ease-in-out infinite alternate;
+}
+
+/* ── Floating dust motes ── */
+body[data-theme="cosmic-drift"] .app-main::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 15% 25%, rgba(167, 139, 250, 0.25) 0px, transparent 2px),
+    radial-gradient(circle at 65% 45%, rgba(56, 189, 248, 0.2) 0px, transparent 2px),
+    radial-gradient(circle at 35% 75%, rgba(139, 92, 246, 0.2) 0px, transparent 2px),
+    radial-gradient(circle at 85% 15%, rgba(167, 139, 250, 0.15) 0px, transparent 2px),
+    radial-gradient(circle at 45% 55%, rgba(56, 189, 248, 0.25) 0px, transparent 2px),
+    radial-gradient(circle at 75% 85%, rgba(139, 92, 246, 0.15) 0px, transparent 2px),
+    radial-gradient(circle at 25% 90%, rgba(167, 139, 250, 0.2) 0px, transparent 2px),
+    radial-gradient(circle at 55% 10%, rgba(56, 189, 248, 0.15) 0px, transparent 2px);
+  background-size: 150% 150%;
+  animation: dust-float 25s ease-in-out infinite alternate;
+  opacity: 0.6;
+}
+
+/* ── Animations ── */
+@keyframes star-twinkle {
+  0%   { opacity: 0.35; }
+  50%  { opacity: 0.70; }
+  100% { opacity: 0.45; }
+}
+
+@keyframes star-drift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 1000px 200px; }
+}
+
+@keyframes nebula-shift {
+  0%   { transform: translate(-2%, -1%) scale(1); }
+  50%  { transform: translate(1%, 2%) scale(1.03); }
+  100% { transform: translate(-1%, 1%) scale(1); }
+}
+
+@keyframes dust-float {
+  0%   { background-position: 0% 0%; }
+  25%  { background-position: 50% 30%; }
+  50%  { background-position: 100% 60%; }
+  75%  { background-position: 50% 80%; }
+  100% { background-position: 0% 100%; }
+}
+
+/* ── Ensure content sits above particles ── */
+body[data-theme="cosmic-drift"] .app,
+body[data-theme="cosmic-drift"] .app-header,
+body[data-theme="cosmic-drift"] .app-main,
+body[data-theme="cosmic-drift"] .nav-drawer,
+body[data-theme="cosmic-drift"] .modal-overlay {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Subtle glassmorphism on cards ── */
+body[data-theme="cosmic-drift"] .app-card,
+body[data-theme="cosmic-drift"] .widget-card {
+  background: rgba(17, 19, 31, 0.72);
+  backdrop-filter: blur(8px) saturate(1.1);
+  border: 1px solid rgba(167, 139, 250, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+body[data-theme="cosmic-drift"] .app-card:hover,
+body[data-theme="cosmic-drift"] .widget-card:hover {
+  border-color: rgba(167, 139, 250, 0.30);
+  box-shadow: 0 8px 32px rgba(167, 139, 250, 0.10),
+              0 4px 24px rgba(0, 0, 0, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+/* ── Accent glow on interactive elements ── */
+body[data-theme="cosmic-drift"] button:hover,
+body[data-theme="cosmic-drift"] .nav-item:hover,
+body[data-theme="cosmic-drift"] .header-btn:hover {
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.15);
+}
+
+body[data-theme="cosmic-drift"] input:focus,
+body[data-theme="cosmic-drift"] textarea:focus,
+body[data-theme="cosmic-drift"] select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+}
+
+/* ── Scrollbar ── */
+body[data-theme="cosmic-drift"] ::-webkit-scrollbar {
+  width: 6px;
+}
+body[data-theme="cosmic-drift"] ::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+body[data-theme="cosmic-drift"] ::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.25);
+  border-radius: 3px;
+}
+body[data-theme="cosmic-drift"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.45);
+}
+
+/* ── Modal / chat / widget glow ── */
+body[data-theme="cosmic-drift"] .modal-content,
+body[data-theme="cosmic-drift"] .chat-widget,
+body[data-theme="cosmic-drift"] .feedback-widget {
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  box-shadow: 0 0 40px rgba(167, 139, 250, 0.08),
+              0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Status glow ── */
+body[data-theme="cosmic-drift"] .status-connected {
+  color: #6ee7b7;
+  text-shadow: 0 0 8px rgba(110, 231, 183, 0.35);
+}
+body[data-theme="cosmic-drift"] .status-syncing {
+  color: #fcd34d;
+  text-shadow: 0 0 8px rgba(252, 211, 77, 0.35);
+}
+body[data-theme="cosmic-drift"] .status-error {
+  color: #f87171;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.35);
+}
+
+/* ── Agent pulse ── */
+@keyframes cosmic-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(167, 139, 250, 0.15); }
+  50%      { box-shadow: 0 0 22px rgba(167, 139, 250, 0.40); }
+}
+body[data-theme="cosmic-drift"] .agent-active {
+  animation: cosmic-pulse 2.5s ease-in-out infinite;
+}
+
+/* ── Light mode fallback (soft space-grey) ── */
+body[data-theme="cosmic-drift"][data-theme-mode="light"] {
+  --bg: #e8e6f0;
+  --surface: #f0eef5;
+  --header-bg: rgba(232, 230, 240, 0.85);
+  --text: #1e1b2e;
+  --text-muted: #6b6680;
+  --accent: #7c3aed;
+  --accent-secondary: #2563eb;
+  --accent-bg: rgba(124, 58, 237, 0.10);
+  --accent-rgb: 124, 58, 237;
+  --border: #d4d0e0;
+  --border-subtle: #e8e6f0;
+  --hover-bg: #ddd8ec;
+  --backdrop: rgba(30, 27, 46, 0.25);
+  --welcome-bg: #ddd8ec;
+}
+
+body[data-theme="cosmic-drift"][data-theme-mode="light"]::before,
+body[data-theme="cosmic-drift"][data-theme-mode="light"]::after,
+body[data-theme="cosmic-drift"][data-theme-mode="light"] .app-main::before,
+body[data-theme="cosmic-drift"][data-theme-mode="light"] .app-main::after {
+  opacity: 0.15;
+}
+
+body[data-theme="cosmic-drift"][data-theme-mode="light"] .app-card,
+body[data-theme="cosmic-drift"][data-theme-mode="light"] .widget-card {
+  background: rgba(240, 238, 245, 0.80);
+  backdrop-filter: blur(8px);
+}

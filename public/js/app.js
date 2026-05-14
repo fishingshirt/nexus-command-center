@@ -661,6 +661,7 @@ function initSettings() {
       { v: 'space-odyssey', l: 'Space Odyssey' },
       { v: 'retro-arcade', l: 'Retro Arcade' },
       { v: 'ocean-breeze', l: 'Ocean Breeze' },
+      { v: 'cosmic-drift', l: 'Cosmic Drift' },
       { v: 'jarvis', l: 'Jarvis' }
     ];
     const apps = APP_REGISTRY.filter(a => a.id !== 'dashboard');
