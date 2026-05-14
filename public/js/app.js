@@ -325,7 +325,7 @@ function initNavigation() {
 /* ===== THEME ===== */
 export function initTheme() {
   const saved = loadSettings();
-  applyTheme(saved.theme || 'jarvis');
+  applyTheme(saved.theme || 'professional');
   applyThemeMode(saved.themeMode ?? 'dark');
 }
 
@@ -366,7 +366,7 @@ function initSettings() {
   const settings = loadSettings();
 
   // Apply saved values
-  themeSelect.value = settings.theme || 'jarvis';
+  themeSelect.value = settings.theme || 'professional';
   if (darkMode) darkMode.checked = (settings.themeMode ?? 'dark') === 'dark';
   if (reducedMotion) reducedMotion.checked = settings.reducedMotion || false;
   if (showWelcome) showWelcome.checked = settings.showWelcomeOnBoot || false;
@@ -956,8 +956,14 @@ function initChat() {
 
   /* ---- Close button ---- */
   if (closeBtn) {
+    closeBtn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      widget.classList.remove('open');
+    });
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       widget.classList.remove('open');
     });
   }

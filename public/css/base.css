@@ -1018,6 +1018,9 @@ button.nav-link {
   justify-content: center;
   transition: all var(--transition-fast);
   padding: 2px;
+  position: relative;
+  z-index: 5;
+  touch-action: manipulation;
 }
 
 .chat-widget-close:hover,
