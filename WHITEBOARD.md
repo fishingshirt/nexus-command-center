@@ -7,8 +7,8 @@
 ## 📊 Status Snapshot
 
 - **Project phase:** Agent Task System
-- **Last updated:** 2026-05-13 08:25 UTC
-- **Active tasks:** 1 (0 pending, 0 in-progress, 17 done)
+- **Last updated:** 2026-05-14 17:45 UTC
+- **Active tasks:** 3 (1 pending, 0 in-progress, 2 blocked, 17 done)
 - **Completed tasks:** 35 shown below
 - **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
 - **Agent state:** PAUSED — awaiting user review
@@ -20,6 +20,7 @@
 | HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | **DONE** — Agent paused, dashboard updated | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
 | MEDIUM | `T-063` | Calendar Service Email Integration | `BLOCKED` | Awaiting user API credentials + calendar permissions | [`tasks/T-063.md`](tasks/T-063.md) |
+| LOW | `T-064` | Agent Virtual Office (pixel-art game view) | `PENDING` | User request — do not start yet | [`tasks/T-064.md`](tasks/T-064.md) |
 | MEDIUM | `T-020` | AI task suggester | `DONE` | Decomposed: T-020-a, T-020-b, T-020-c, T-020-d (all DONE) |
 | MEDIUM | `T-020-c` | AI Suggester — Server API endpoint | `DONE` | [`tasks/T-020-c.md`](tasks/T-020-c.md) |
 || MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `DONE` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
