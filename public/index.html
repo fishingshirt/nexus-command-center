@@ -41,9 +41,9 @@
     <link rel="stylesheet" href="css/quick-capture.css">
   <style>
     /* App visible by default — welcome overlay covers it when active */
-    #app { display: block !important; }
+    #app { display: flex !important; }
     #welcome-overlay.active ~ #app:not(.welcome-ready) { display: none !important; }
-    #app.welcome-ready { display: block !important; }
+    #app.welcome-ready { display: flex !important; }
     /* Overlay: hidden until JS activates */
     #welcome-overlay { display: none !important; }
     #welcome-overlay.active { display: flex !important; }
