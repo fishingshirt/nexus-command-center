@@ -40,8 +40,9 @@
     <link rel="stylesheet" href="css/widgets/grid.css">
     <link rel="stylesheet" href="css/quick-capture.css">
   <style>
-    /* CRITICAL: hide app before any CSS/JS loads. Zero flash. */
-    #app { display: none !important; }
+    /* App visible by default — welcome overlay covers it when active */
+    #app { display: block !important; }
+    #welcome-overlay.active ~ #app:not(.welcome-ready) { display: none !important; }
     #app.welcome-ready { display: block !important; }
     /* Overlay: hidden until JS activates */
     #welcome-overlay { display: none !important; }

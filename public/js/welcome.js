@@ -135,13 +135,16 @@ function buildPhase1() {
 
   input.focus();
 
-  // Preload audio
+  // Preload audio — but don't block the UI
   preloadAudio(status, () => {
-    btn.disabled = false;
-    btn.classList.add('ready');
+    // Audio ready callback — just update status, button is already enabled
     status.textContent = '🎵 Audio ready. Press START.';
     status.classList.add('ready');
   });
+
+  // Enable button immediately so user isn't blocked by slow audio
+  btn.disabled = false;
+  btn.classList.add('ready');
 
   btn.addEventListener('click', () => {
     userName = input.value.trim();
