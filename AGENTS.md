@@ -1,6 +1,6 @@
 # 🤖 AGENTS.md — Nexus Command Center
 
-**CRITICAL:** You build on **THIS SYSTEM**, `/tmp/nexus-command-center`. GitHub is the backup mirror.
+**CRITICAL:** You build on **THIS SYSTEM**, `~/nexus-command-center`. GitHub is the backup mirror.
 
 ## Wake Cycle
 
@@ -21,7 +21,7 @@
 | Read full spec | `tasks/T-XXX.md` |
 | Push commits safely | `~/.hermes/scripts/nexus-push-helper.sh` |
 | Check server health | `curl -s http://localhost:8080 \| head` |
-| Restart local server | `python3 ~/.hermes/scripts/nexus-server.py --dir /tmp/nexus-command-center/public` |
+| Restart local server | `python3 ~/.hermes/scripts/nexus-server.py --dir ~/nexus-command-center/public` |
 
 ---
 
