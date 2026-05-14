@@ -949,7 +949,7 @@ function initChat() {
     const style = window.getComputedStyle(widget);
     origBottom = parseFloat(style.bottom);
     origRight  = parseFloat(style.right);
-    widget.setPointerCapture?.(e.pointerId);
+    header.setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e) => {
     if (!isDragging) return;
