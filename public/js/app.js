@@ -929,41 +929,30 @@ function initCalendarSync() {
 /* ===== WELCOME ===== */
 /* ===== CHAT ===== */
 function initChat() {
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
+  const widget   = document.getElementById('chat-widget');
+  const toggle   = document.getElementById('chat-widget-toggle');
+  if (!widget) return;
+  // toggle button is now hidden by default; make it optional
 
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
-
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
-
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
-
-  if (!document.getElementById('chat-widget')) return;
-  if (!document.getElementById('chat-widget-toggle')) return;
-
-  // Widget
-  const widget = document.getElementById('chat-widget');
-  const toggle = document.getElementById('chat-widget-toggle');
-  const wInput = document.getElementById('chat-widget-input');
-  const wSend = document.getElementById('chat-widget-send');
-  const wMessages = document.getElementById('chat-widget-messages');
+  const wInput   = document.getElementById('chat-widget-input');
+  const wSend    = document.getElementById('chat-widget-send');
+  const wMessages= document.getElementById('chat-widget-messages');
 
   // Full-page chat
-  const fpInput = document.getElementById('chat-input');
-  const fpSend = document.getElementById('chat-send');
-  const fpHistory = document.getElementById('chat-history');
+  const fpInput  = document.getElementById('chat-input');
+  const fpSend   = document.getElementById('chat-send');
+  const fpHistory= document.getElementById('chat-history');
 
   // Header controls
   const closeBtn = document.getElementById('chat-widget-close');
   const header   = widget.querySelector('.chat-widget-header');
 
   /* ---- Toggle open/close ---- */
-  toggle.addEventListener('click', () => {
-    widget.classList.toggle('open');
-  });
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      widget.classList.toggle('open');
+    });
+  }
 
   /* ---- Close button ---- */
   if (closeBtn) {

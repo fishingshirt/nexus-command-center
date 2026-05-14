@@ -937,7 +937,7 @@ button.nav-link {
   box-shadow: var(--shadow-lg);
   transition: all var(--transition-fast);
   flex-shrink: 0;
-  pointer-events: auto; /* always clickable even when widget is closed */
+  pointer-events: auto; /* always clickable even when widget container is closed */
 }
 
 .chat-widget-toggle:hover {
