@@ -257,7 +257,7 @@ function initNavigation() {
   const backdrop = document.getElementById('nav-backdrop');
   const openBtn = document.getElementById('header-menu-btn');
   const closeBtn = document.getElementById('nav-drawer-close');
-  if (!drawer || !backdrop || !openBtn || !closeBtn) return;
+  if (!drawer || !backdrop || !openBtn) return;
 
   let isOpen = false;
 
@@ -268,7 +268,7 @@ function initNavigation() {
     drawer.setAttribute('aria-hidden', 'false');
     backdrop.classList.add('visible');
     backdrop.setAttribute('aria-hidden', 'false');
-    closeBtn.focus();
+    closeBtn && closeBtn.focus();
   }
 
   function close() {
@@ -286,11 +286,13 @@ function initNavigation() {
     e.stopPropagation();
     open();
   });
-  closeBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    close();
-  });
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    });
+  }
   backdrop.addEventListener('click', close);
 
   document.addEventListener('keydown', e => {
@@ -915,6 +917,9 @@ function initCalendarSync() {
 /* ===== WELCOME ===== */
 /* ===== CHAT ===== */
 function initChat() {
+  if (!document.getElementById('chat-widget')) return;
+  if (!document.getElementById('chat-widget-toggle')) return;
+
   if (!document.getElementById('chat-widget')) return;
   if (!document.getElementById('chat-widget-toggle')) return;
 
