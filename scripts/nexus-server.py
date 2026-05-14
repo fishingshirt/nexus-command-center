@@ -605,6 +605,15 @@ def _api_hermes(handler, path):
             messages.append(m)
         if pending:
             st['pending'] = []
+        # ── Strategy D: serve hook-pushed messages array (backward compat) ──
+        hook_messages = st.get('messages', [])
+        for m in hook_messages:
+            mid = str(m.get('message_id', ''))
+            if mid and mid in seen:
+                continue
+            if mid:
+                seen.add(mid)
+            messages.append(m)
         st['offset'] = offset
         st['last_seen_ids'] = list(seen)[-500:]
         st['last_poll_ts'] = time.time()
