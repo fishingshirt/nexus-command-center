@@ -914,6 +914,9 @@ function initChat() {
   if (!document.getElementById('chat-widget')) return;
   if (!document.getElementById('chat-widget-toggle')) return;
 
+  if (!document.getElementById('chat-widget')) return;
+  if (!document.getElementById('chat-widget-toggle')) return;
+
   // Widget
   const widget = document.getElementById('chat-widget');
   const toggle = document.getElementById('chat-widget-toggle');
