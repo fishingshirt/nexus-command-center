@@ -4,9 +4,14 @@
    Adds /api/* endpoints for IT Hub telemetry.
    Usage: python3 nexus-server.py [--port 8080] [--dir /path/to/public]
 """
-import http.server, socketserver, os, sys, argparse, signal, atexit, json, time, subprocess, socket, shutil, hashlib, base64, uuid
+import http.server, socketserver, os, sys, argparse, signal, atexit, json, time, subprocess, socket, shutil, hashlib, base64, uuid, re
+import datetime, urllib.request, urllib.parse, urllib.error, html
+import xml.etree.ElementTree as ET
+import email.utils
 from pathlib import Path
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+_html_mod = html
 
 PIDFILE = os.path.expanduser('~/.hermes/nexus-server.pid')
 START_TIME = time.time()
@@ -18,8 +23,8 @@ os.makedirs(PDF_DIR, exist_ok=True)
 
 def get_args():
     p = argparse.ArgumentParser()
-    p.add_argument('--port', type=int, default=8080)
-    p.add_argument('--dir', default='/tmp/nexus-command-center/public')
+    p.add_argument('--port', type=int, default=9000)
+    p.add_argument('--dir', default=os.path.expanduser('~/nexus-command-center/public'))
     return p.parse_args()
 
 def write_pid(pid):
@@ -2465,12 +2470,12 @@ def _api_rss_fetch(handler, path):
             t = channel.find('{0}title'.format(ns) if ns else 'title')
             if t is not None:
                 feed_title = _html_mod.unescape(t.text or '')
-        items = root.findall('.//{0}item'.format(ns) if ns else 'item')
+        items = root.findall('.//{0}item'.format(ns) if ns else './/item')
         if not items:
             atom_ns = ''
             if root.tag.startswith('{'):
                 atom_ns = root.tag.split('}')[0] + '}'
-            items = root.findall('.//{0}entry'.format(atom_ns) if atom_ns else 'entry')
+            items = root.findall('.//{0}entry'.format(atom_ns) if atom_ns else './/entry')
             feed_title = feed_title or 'Atom Feed'
         parsed_items = []
         for item in items[:30]:
