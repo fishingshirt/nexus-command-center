@@ -547,3 +547,133 @@
   .wishlist-detail-status-btn,
   .wishlist-detail-edit { transition: none !important; }
 }
+
+/* ═══════════════════════════════════════════
+   PROJECT CHIPS BAR
+   ═══════════════════════════════════════════ */
+.wishlist-project-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-3);
+  align-items: center;
+}
+
+.wishlist-project-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 6px 12px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s, border-color .12s, color .12s, transform .12s;
+  white-space: nowrap;
+}
+.wishlist-project-chip:hover {
+  border-color: var(--accent, #60a5fa);
+  transform: translateY(-1px);
+}
+.wishlist-project-chip.active {
+  background: rgba(96, 165, 250, .18);
+  border-color: var(--accent, #60a5fa);
+  color: var(--text);
+  box-shadow: 0 0 0 2px var(--accent-10, rgba(96,165,250,.12));
+}
+.wishlist-project-chip.add {
+  padding: 6px 10px;
+  color: var(--accent, #60a5fa);
+  border-style: dashed;
+}
+.wishlist-project-chip.add:hover {
+  background: rgba(96, 165, 250, .12);
+}
+
+.chip-name {
+  font-weight: 600;
+}
+.chip-price {
+  font-weight: 700;
+  color: #22c55e;
+  background: rgba(34, 197, 94, .12);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.675rem;
+}
+.chip-count {
+  font-size: 0.7rem;
+  background: rgba(148,163,184,.15);
+  color: #94a3b8;
+  padding: 1px 6px;
+  border-radius: 999px;
+  min-width: 1.2rem;
+  text-align: center;
+}
+.chip-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  color: #ef4444;
+  opacity: 0;
+  transition: opacity .12s;
+  pointer-events: auto;
+}
+.wishlist-project-chip:hover .chip-del {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════
+   PROJECT TOTAL
+   ═══════════════════════════════════════════ */
+.wishlist-project-total {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+}
+.wishlist-project-total[style*="flex"],
+.wishlist-project-total:not([style]),
+.wishlist-project-total {
+  display: flex;
+}
+.wishlist-total-label {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 500;
+}
+.wishlist-total-value {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #22c55e;
+  background: rgba(34, 197, 94, .12);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+.wishlist-project-total sup {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════
+   DETAIL PROJECT LABEL
+   ═══════════════════════════════════════════ */
+.wishlist-detail-project {
+  font-size: .7rem;
+  background: rgba(100,116,139,.15);
+  color: #94a3b8;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
