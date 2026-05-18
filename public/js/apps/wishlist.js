@@ -1,4 +1,5 @@
-const LS_KEY = 'ncc-wishlist-v1';
+const LS_KEY = 'ncc-wishlist-v2';
+const LS_KEY_V1 = 'ncc-wishlist-v1';
 
 const PRIORITY_ORDER = { 'Must Buy': 4, High: 3, Normal: 2, Low: 1 };
 const STATUS_ORDER = { Want: 1, Watching: 2, Purchased: 3, Archived: 4 };
@@ -17,19 +18,89 @@ const STATUS_META = {
   Archived:  { class: 'status-archived' }
 };
 
+/* ═══════════════════════════════════════════
+   DATA LAYER
+   ═══════════════════════════════════════════ */
+
 function loadData() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
-  catch { return {}; }
+  try {
+    // Attempt migration from v1
+    const v2 = JSON.parse(localStorage.getItem(LS_KEY));
+    if (v2) return v2;
+
+    const v1 = JSON.parse(localStorage.getItem(LS_KEY_V1));
+    if (v1 && Array.isArray(v1.items)) {
+      const generalId = uuid();
+      const migrated = {
+        projects: [{
+          id: generalId,
+          name: 'General',
+          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+          pinned: false
+        }],
+        items: v1.items.map(i => ({
+          ...i,
+          projectId: generalId,
+          updated: i.updated || i.created || new Date().toISOString()
+        })),
+        activeProjectId: generalId
+      };
+      saveDataRaw(migrated);
+      localStorage.removeItem(LS_KEY_V1);
+      return migrated;
+    }
+    return {};
+  } catch { return {}; }
 }
+
+function saveDataRaw(data) {
+  localStorage.setItem(LS_KEY, JSON.stringify(data));
+}
+
 function saveData(patch) {
   const d = loadData();
-  localStorage.setItem(LS_KEY, JSON.stringify({ ...d, ...patch }));
+  saveDataRaw({ ...d, ...patch });
 }
+
 function ensureData() {
   const d = loadData();
   if (!Array.isArray(d.items)) d.items = [];
-  saveData(d);
+  if (!Array.isArray(d.projects)) d.projects = [];
+  if (!d.activeProjectId && d.projects.length) d.activeProjectId = d.projects[0].id;
+
+  if (!d.projects.length) {
+    const generalId = uuid();
+    d.projects = [{
+      id: generalId,
+      name: 'General',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      pinned: false
+    }];
+    d.activeProjectId = generalId;
+    (d.items || []).forEach(i => { i.projectId = generalId; });
+  }
+
+  // Ensure all items belong to a valid project
+  const validIds = new Set(d.projects.map(p => p.id));
+  (d.items || []).forEach(i => {
+    if (!i.projectId || !validIds.has(i.projectId)) {
+      i.projectId = d.projects[0].id;
+    }
+  });
+
+  // Ensure active project is valid
+  if (!validIds.has(d.activeProjectId)) d.activeProjectId = d.projects[0]?.id;
+
+  saveDataRaw(d);
   return d;
+}
+
+export function initWishlist() {
+  ensureData();
+  renderWishlist();
+  bindEvents();
 }
 
 function uuid() {
@@ -47,126 +118,128 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-let _fetchAbort = null;
-function attemptFetchLink(url) {
-  if (!url || !url.startsWith('http')) return;
-  const titleInput = document.getElementById('wishlist-title');
-  const imageInput = document.getElementById('wishlist-image');
-  const priceInput = document.getElementById('wishlist-price');
-  if (!titleInput || !imageInput || !priceInput) return;
-
-  const modalTitle = document.getElementById('wishlist-modal-title');
-  const oldTitle = modalTitle?.textContent;
-  if (modalTitle) modalTitle.textContent = oldTitle + ' (Fetching…)';
-
-  if (_fetchAbort) _fetchAbort.abort();
-  _fetchAbort = new AbortController();
-
-  fetch(`/api/fetch-link?url=${encodeURIComponent(url)}`, { signal: _fetchAbort.signal })
-    .then(r => r.json())
-    .then(data => {
-      if (modalTitle) modalTitle.textContent = oldTitle;
-      if (!data.ok) return;
-      if (data.title && !titleInput.value.trim()) titleInput.value = data.title;
-      if (data.image && !imageInput.value.trim()) imageInput.value = data.image;
-      if (data.price != null && priceInput.value === '') priceInput.value = data.price;
-    })
-    .catch(() => { if (modalTitle) modalTitle.textContent = oldTitle; })
-    .finally(() => { _fetchAbort = null; });
+function currencySymbol(cur) {
+  const map = { USD: '$', EUR: '€', GBP: '£', CAD: 'CA$', JPY: '¥', Other: '' };
+  return map[cur] || map.USD;
 }
 
-let _toolbarVisible = false;
+function showToast(msg) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2500);
+}
 
-export function initWishlist() {
-  ensureData();
+/* ═══════════════════════════════════════════
+   PROJECT MANAGEMENT
+   ═══════════════════════════════════════════ */
+
+function createProject(name) {
+  const d = ensureData();
+  const proj = {
+    id: uuid(),
+    name: name.trim().slice(0, 60),
+    created: new Date().toISOString(),
+    updated: new Date().toISOString(),
+    pinned: false
+  };
+  d.projects.push(proj);
+  d.activeProjectId = proj.id;
+  saveDataRaw(d);
   renderWishlist();
-  bindEvents();
+  showToast('Project created');
+  return proj;
 }
 
-function bindEvents() {
-  const addBtn = document.getElementById('wishlist-add-btn');
-  addBtn?.addEventListener('click', () => openAddModal());
+function renameProject(id, newName) {
+  const d = ensureData();
+  const p = d.projects.find(pr => pr.id === id);
+  if (!p || id === 'ALL') return;
+  p.name = newName.trim().slice(0, 60);
+  p.updated = new Date().toISOString();
+  saveDataRaw(d);
+  renderWishlist();
+  showToast('Project renamed');
+}
 
-  const modal = document.getElementById('wishlist-modal');
-  const backdrop = document.getElementById('wishlist-modal-backdrop');
-  const closeBtn = document.getElementById('wishlist-modal-close');
-  const cancelBtn = document.getElementById('wishlist-modal-cancel');
-  const form = document.getElementById('wishlist-form');
-
-  backdrop?.addEventListener('click', closeModal);
-  closeBtn?.addEventListener('click', closeModal);
-  cancelBtn?.addEventListener('click', closeModal);
-  form?.addEventListener('submit', onFormSubmit);
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal?.classList.contains('open')) {
-      closeModal();
-    }
-  });
-
-  document.getElementById('wishlist-search')?.addEventListener('input', renderWishlist);
-  document.getElementById('wishlist-sort')?.addEventListener('change', renderWishlist);
-  document.getElementById('wishlist-filter')?.addEventListener('change', renderWishlist);
-  document.getElementById('wishlist-filter-priority')?.addEventListener('change', renderWishlist);
-  document.getElementById('wishlist-filter-tag')?.addEventListener('change', renderWishlist);
-  document.getElementById('wishlist-show-archived')?.addEventListener('change', renderWishlist);
-  populateTagFilter();
-
-  const urlInput = document.getElementById('wishlist-url');
-  if (urlInput) {
-    let debounceTimer = null;
-    urlInput.addEventListener('input', () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => attemptFetchLink(urlInput.value.trim()), 800);
-    });
-    urlInput.addEventListener('paste', (e) => {
-      const pasted = (e.clipboardData || window.clipboardData)?.getData('text') || '';
-      if (pasted.startsWith('http')) {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => attemptFetchLink(pasted.trim()), 400);
-      }
-    });
+function deleteProject(id) {
+  const d = ensureData();
+  if (d.projects.length <= 1) {
+    showToast('You need at least one project');
+    return;
   }
-
-  const detailClose = document.getElementById('wishlist-detail-close');
-  const detailBackdrop = document.getElementById('wishlist-detail-backdrop');
-  const detailEdit = document.getElementById('wishlist-detail-edit');
-  const detailNotes = document.querySelector('.wishlist-detail-notes');
-  detailClose?.addEventListener('click', closeDetailModal);
-  detailBackdrop?.addEventListener('click', closeDetailModal);
-  detailEdit?.addEventListener('click', () => {
-    const id = detailEdit.dataset.id;
-    closeDetailModal();
-    if (id) openEditModal(id);
-  });
-  detailNotes?.addEventListener('change', onDetailNotesChange);
-  detailNotes?.addEventListener('blur', onDetailNotesChange);
-  document.querySelectorAll('.wishlist-detail-status-btn').forEach(b => {
-    b.addEventListener('click', onStatusChange);
-  });
+  const fallback = d.projects.find(p => p.id !== id)?.id;
+  d.items = d.items.filter(i => i.projectId !== id);
+  d.items.forEach(i => { if (i.projectId === id) i.projectId = fallback; });
+  d.projects = d.projects.filter(p => p.id !== id);
+  d.activeProjectId = fallback;
+  saveDataRaw(d);
+  renderWishlist();
+  showToast('Project deleted');
 }
 
-function populateTagFilter() {
-  const sel = document.getElementById('wishlist-filter-tag');
-  if (!sel) return;
-  const { items } = ensureData();
-  const current = sel.value;
-  const all = new Set();
-  items.forEach(i => (i.tags || []).forEach(t => all.add(t)));
-  sel.innerHTML = '<option value="">All Tags</option>' + [...all].sort().map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
-  sel.value = all.has(current) ? current : '';
+function setActiveProject(id) {
+  const d = ensureData();
+  d.activeProjectId = id;
+  saveDataRaw(d);
+  renderWishlist();
 }
+
+function getActiveProject() {
+  const d = ensureData();
+  if (!d.activeProjectId) return d.projects[0] || null;
+  return d.projects.find(p => p.id === d.activeProjectId) || d.projects[0] || null;
+}
+
+function formatMoney(value, currency) {
+  if (value == null || Number.isNaN(value)) return '—';
+  const sym = currencySymbol(currency);
+  return sym + Number(value).toFixed(2);
+}
+
+function computeProjectTotal(projectId, items) {
+  const projectItems = items.filter(i =>
+    i.projectId === projectId &&
+    i.price != null &&
+    !Number.isNaN(Number(i.price))
+  );
+  if (!projectItems.length) return { total: 0, currency: 'USD' };
+
+  // Group by currency
+  const byCurrency = {};
+  projectItems.forEach(i => {
+    const cur = i.currency || 'USD';
+    byCurrency[cur] = (byCurrency[cur] || 0) + Number(i.price);
+  });
+
+  // Prefer USD, then first currency
+  const mainCur = byCurrency.USD ? 'USD' : Object.keys(byCurrency)[0];
+  return { total: byCurrency[mainCur] || 0, currency: mainCur };
+}
+
+/* ═══════════════════════════════════════════
+   RENDERING
+   ═══════════════════════════════════════════ */
 
 function getFilteredSortedItems() {
-  const { items } = ensureData();
+  const d = ensureData();
+  let list = [...(d.items || [])];
+  const activeProj = d.activeProjectId;
+
+  if (activeProj && activeProj !== 'ALL') {
+    list = list.filter(i => i.projectId === activeProj);
+  }
+
   const query = (document.getElementById('wishlist-search')?.value || '').toLowerCase().trim();
   const sort = document.getElementById('wishlist-sort')?.value || 'created-desc';
   const statusFilter = document.getElementById('wishlist-filter')?.value || '';
   const priorityFilter = document.getElementById('wishlist-filter-priority')?.value || '';
   const tagFilter = document.getElementById('wishlist-filter-tag')?.value || '';
   const showArchived = document.getElementById('wishlist-show-archived')?.checked;
-
-  let list = [...items];
 
   if (!showArchived) list = list.filter(i => i.status !== 'Archived');
   if (statusFilter) list = list.filter(i => i.status === statusFilter);
@@ -199,7 +272,7 @@ function getFilteredSortedItems() {
       return (new Date(a.created) - new Date(b.created)) * desc;
     }
     if (field === 'updated') {
-      return (new Date(a.updated) - new Date(b.updated)) * desc;
+      return (new Date(a.updated || a.created) - new Date(b.updated || b.created)) * desc;
     }
     return 0;
   });
@@ -207,62 +280,140 @@ function getFilteredSortedItems() {
 }
 
 function renderWishlist() {
+  const d = ensureData();
   const grid = document.getElementById('wishlist-grid');
   const empty = document.getElementById('wishlist-empty');
   const toolbar = document.getElementById('wishlist-toolbar');
-  if (!grid || !empty || !toolbar) return;
+  const projectBar = document.getElementById('wishlist-project-bar');
+  const totalEl = document.getElementById('wishlist-project-total');
 
-  const { items } = ensureData();
-  const hasItems = items.length > 0;
+  // Render project bar
+  if (projectBar) projectBar.innerHTML = renderProjectBar(d);
+  bindProjectBarEvents();
 
-  // Show/hide toolbar using class (CSS handles display)
-  toolbar.classList.toggle('active', hasItems);
+  // Show/hide toolbar
+  const hasItems = (d.items || []).length > 0;
+  if (toolbar) toolbar.classList.toggle('active', hasItems);
+
+  // Project total
+  const activeProj = getActiveProject();
+  if (totalEl && activeProj) {
+    const { total, currency } = computeProjectTotal(activeProj.id, d.items);
+    if (total > 0) {
+      totalEl.innerHTML = `<span class="wishlist-total-label">Total:</span> <span class="wishlist-total-value">${formatMoney(total, currency)}</span> <sup>(${d.items.filter(i => i.projectId === activeProj.id && i.price != null).length} item${d.items.filter(i => i.projectId === activeProj.id && i.price != null).length !== 1 ? 's' : ''})</sup>`;
+      totalEl.style.display = 'flex';
+    } else {
+      totalEl.style.display = 'none';
+    }
+  }
 
   const visible = getFilteredSortedItems();
 
   if (!visible.length) {
-    grid.style.display = 'none';
-    empty.style.display = 'flex';
-    grid.innerHTML = '';
+    if (grid) grid.style.display = 'none';
+    if (empty) empty.style.display = 'flex';
+    if (grid) grid.innerHTML = '';
+    const countEl = document.getElementById('wishlist-count');
+    if (countEl) countEl.textContent = '0 items';
     return;
   }
 
-  grid.style.display = 'grid';
-  empty.style.display = 'none';
-
-  grid.innerHTML = visible.map(item => renderCard(item)).join('');
+  if (grid) grid.style.display = 'grid';
+  if (empty) empty.style.display = 'none';
+  if (grid) grid.innerHTML = visible.map(item => renderCard(item)).join('');
 
   const countEl = document.getElementById('wishlist-count');
   if (countEl) {
-    const total = (ensureData().items || []).length;
+    const total = (d.items || []).length;
     countEl.textContent = `Showing ${visible.length} of ${total}`;
   }
 
-  // Attach delete + edit handlers
-  grid.querySelectorAll('.wishlist-card-delete').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteItem(btn.dataset.id);
+  // Attach card handlers
+  if (grid) {
+    grid.querySelectorAll('.wishlist-card-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteItem(btn.dataset.id);
+      });
+    });
+    grid.querySelectorAll('.wishlist-card-edit').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditModal(btn.dataset.id);
+      });
+    });
+    grid.querySelectorAll('.wishlist-card-copy').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        copyLink(btn.dataset.url);
+      });
+    });
+    grid.querySelectorAll('.wishlist-card').forEach(card => {
+      card.addEventListener('click', () => openDetailModal(card.dataset.id));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') openDetailModal(card.dataset.id);
+      });
+    });
+  }
+
+  populateTagFilter();
+}
+
+function renderProjectBar(d) {
+  const activeId = d.activeProjectId;
+  let html = '';
+
+  d.projects.forEach(p => {
+    const isActive = p.id === activeId;
+    const count = d.items.filter(i => i.projectId === p.id).length;
+    const { total, currency } = computeProjectTotal(p.id, d.items);
+    html += `
+      <button class="wishlist-project-chip${isActive ? ' active' : ''}" data-id="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
+        <span class="chip-name">${escapeHtml(p.name)}</span>
+        ${total > 0 ? `<span class="chip-price">${formatMoney(total, currency)}</span>` : ''}
+        <span class="chip-count">${count}</span>
+        ${d.projects.length > 1 ? `<span class="chip-del" title="Delete project">×</span>` : ''}
+      </button>
+    `;
+  });
+
+  html += `
+    <button class="wishlist-project-chip add" id="wishlist-new-project-btn" title="New project">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+    <button class="wishlist-project-chip all${activeId === 'ALL' ? ' active' : ''}" data-id="ALL" title="All projects">
+      <span class="chip-name">All</span>
+      <span class="chip-count">${d.items.length}</span>
+    </button>
+  `;
+
+  return html;
+}
+
+function bindProjectBarEvents() {
+  document.querySelectorAll('#wishlist-project-bar .wishlist-project-chip').forEach(chip => {
+    const del = chip.querySelector('.chip-del');
+
+    chip.addEventListener('click', (e) => {
+      if (e.target === del || del?.contains(e.target)) {
+        e.stopPropagation();
+        const id = chip.dataset.id;
+        if (confirm('Delete this project and all its items?')) deleteProject(id);
+        return;
+      }
+      const id = chip.dataset.id;
+      if (id === 'ALL' || id) setActiveProject(id);
     });
   });
-  grid.querySelectorAll('.wishlist-card-edit').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openEditModal(btn.dataset.id);
+
+  const newBtn = document.getElementById('wishlist-new-project-btn');
+  if (newBtn && !newBtn._bound) {
+    newBtn._bound = true;
+    newBtn.addEventListener('click', () => {
+      const name = prompt('Project name:')?.trim();
+      if (name) createProject(name);
     });
-  });
-  grid.querySelectorAll('.wishlist-card-copy').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      copyLink(btn.dataset.url);
-    });
-  });
-  grid.querySelectorAll('.wishlist-card').forEach(card => {
-    card.addEventListener('click', () => openDetailModal(card.dataset.id));
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') openDetailModal(card.dataset.id);
-    });
-  });
+  }
 }
 
 function renderCard(item) {
@@ -302,12 +453,26 @@ function renderCard(item) {
   `;
 }
 
-function copyLink(url) {
-  if (!url) { showToast('No URL to copy'); return; }
-  try {
-    navigator.clipboard.writeText(url).then(() => showToast('Copied link'));
-  } catch (_) { showToast('Could not copy'); }
+function populateTagFilter() {
+  const sel = document.getElementById('wishlist-filter-tag');
+  if (!sel) return;
+  const d = ensureData();
+  const current = sel.value;
+  const all = new Set();
+
+  const activeId = d.activeProjectId;
+  (d.items || []).forEach(i => {
+    if (activeId && activeId !== 'ALL' && i.projectId !== activeId) return;
+    (i.tags || []).forEach(t => all.add(t));
+  });
+
+  sel.innerHTML = '<option value="">All Tags</option>' + [...all].sort().map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  sel.value = all.has(current) ? current : '';
 }
+
+/* ═══════════════════════════════════════════
+   DETAIL PANEL
+   ═══════════════════════════════════════════ */
 
 function openDetailModal(id) {
   const d = ensureData();
@@ -315,30 +480,42 @@ function openDetailModal(id) {
   if (!item) return;
   const panel = document.getElementById('wishlist-detail-panel');
   if (!panel) { openEditModal(id); return; }
+
   const p = PRIORITY_META[item.priority] || PRIORITY_META.Normal;
   const s = STATUS_META[item.status] || STATUS_META.Want;
   const img = item.image || '';
   const priceStr = item.price != null ? `${currencySymbol(item.currency)}${Number(item.price).toFixed(2)}` : '';
   const placeholderSvg = panel.querySelector('.wishlist-detail-image')?.dataset?.placeholder || '';
+
   panel.querySelector('.wishlist-detail-header h3').textContent = item.title;
   panel.querySelector('.wishlist-detail-image').innerHTML = img ? `<img src="${escapeHtml(img)}" alt="" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;">` : (placeholderSvg || '');
+
+  const proj = d.projects.find(pr => pr.id === item.projectId);
   const metaEl = panel.querySelector('.wishlist-detail-meta');
   metaEl.innerHTML = `
     ${priceStr ? `<span class="wishlist-detail-price">${priceStr}</span>` : ''}
     <span class="wishlist-detail-priority" style="color:${p.color}">${p.label}</span>
     <span class="wishlist-detail-status ${s.class}">${escapeHtml(item.status)}</span>
+    ${proj ? `<span class="wishlist-detail-project">${escapeHtml(proj.name)}</span>` : ''}
     ${(item.tags || []).length ? `<div class="wishlist-detail-tags">${item.tags.map(t => `<span class="wishlist-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
   `;
+
   const notesEl = panel.querySelector('.wishlist-detail-notes');
   notesEl.value = item.notes || '';
   notesEl.dataset.id = id;
+
   const urlEl = panel.querySelector('.wishlist-detail-url');
-  if (item.url) {
-    urlEl.href = item.url;
-    urlEl.textContent = item.url.replace(/^https?:\/\//, '').substring(0, 40);
-    urlEl.style.display = 'inline-block';
-  } else { urlEl.style.display = 'none'; }
-  panel.querySelector('.wishlist-detail-edit').dataset.id = id;
+  if (urlEl) {
+    if (item.url) {
+      urlEl.href = item.url;
+      urlEl.textContent = item.url.replace(/^https?:\/\//, '').substring(0, 40);
+      urlEl.style.display = 'inline-block';
+    } else { urlEl.style.display = 'none'; }
+  }
+
+  const editBtn = panel.querySelector('.wishlist-detail-edit');
+  if (editBtn) editBtn.dataset.id = id;
+
   panel.querySelectorAll('.wishlist-detail-status-btn').forEach(b => {
     b.dataset.id = id;
     b.disabled = item.status === b.dataset.status;
@@ -364,7 +541,7 @@ function onDetailNotesChange(e) {
   if (idx === -1) return;
   d.items[idx].notes = notes;
   d.items[idx].updated = new Date().toISOString();
-  saveData(d);
+  saveDataRaw(d);
   renderWishlist();
 }
 
@@ -377,15 +554,14 @@ function onStatusChange(e) {
   if (idx === -1) return;
   d.items[idx].status = status;
   d.items[idx].updated = new Date().toISOString();
-  saveData(d);
+  saveDataRaw(d);
   renderWishlist();
   openDetailModal(id);
 }
 
-function currencySymbol(cur) {
-  const map = { USD: '$', EUR: '€', GBP: '£', CAD: 'CA$', JPY: '¥', Other: '' };
-  return map[cur] || map.USD;
-}
+/* ═══════════════════════════════════════════
+   ADD / EDIT MODAL
+   ═══════════════════════════════════════════ */
 
 function openAddModal() {
   const modal = document.getElementById('wishlist-modal');
@@ -395,9 +571,22 @@ function openAddModal() {
   delete form.dataset.editingId;
   document.getElementById('wishlist-modal-title').textContent = 'Add Item';
   document.getElementById('wishlist-modal-save').textContent = 'Add Item';
+
+  // Populate project select
+  populateProjectSelect();
+
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   setTimeout(() => document.getElementById('wishlist-title')?.focus(), 50);
+}
+
+function populateProjectSelect() {
+  const sel = document.getElementById('wishlist-project');
+  if (!sel) return;
+  const d = ensureData();
+  const activeProj = getActiveProject();
+  sel.innerHTML = d.projects.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+  if (activeProj) sel.value = activeProj.id;
 }
 
 function openEditModal(id) {
@@ -419,6 +608,10 @@ function openEditModal(id) {
   document.getElementById('wishlist-tags').value = (item.tags || []).join(', ');
   document.getElementById('wishlist-notes').value = item.notes || '';
 
+  populateProjectSelect();
+  const projSel = document.getElementById('wishlist-project');
+  if (projSel && item.projectId) projSel.value = item.projectId;
+
   document.getElementById('wishlist-modal-title').textContent = 'Edit Item';
   document.getElementById('wishlist-modal-save').textContent = 'Save Changes';
   modal.classList.add('open');
@@ -431,8 +624,7 @@ function closeModal() {
   if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  const trigger = document.getElementById('wishlist-add-btn');
-  trigger?.focus();
+  document.getElementById('wishlist-add-btn')?.focus();
   const form = document.getElementById('wishlist-form');
   if (form) delete form.dataset.editingId;
 }
@@ -447,14 +639,12 @@ function onFormSubmit(e) {
 
   const form = document.getElementById('wishlist-form');
   const editingId = form?.dataset.editingId;
+  const projectId = document.getElementById('wishlist-project')?.value;
 
   const d = ensureData();
   if (editingId) {
     const idx = d.items.findIndex(i => i.id === editingId);
-    if (idx === -1) {
-      showToast('Item not found');
-      return;
-    }
+    if (idx === -1) { showToast('Item not found'); return; }
     d.items[idx] = {
       ...d.items[idx],
       title,
@@ -465,9 +655,10 @@ function onFormSubmit(e) {
       priority: document.getElementById('wishlist-priority')?.value || 'Normal',
       tags: parseTags(document.getElementById('wishlist-tags')?.value),
       notes: document.getElementById('wishlist-notes')?.value.trim() || '',
+      projectId: projectId || d.activeProjectId || d.projects[0].id,
       updated: new Date().toISOString()
     };
-    saveData(d);
+    saveDataRaw(d);
     renderWishlist();
     closeModal();
     showToast('Item updated');
@@ -485,35 +676,132 @@ function onFormSubmit(e) {
     status: 'Want',
     tags: parseTags(document.getElementById('wishlist-tags')?.value),
     notes: document.getElementById('wishlist-notes')?.value.trim() || '',
+    projectId: projectId || d.activeProjectId || d.projects[0].id,
     created: new Date().toISOString(),
     updated: new Date().toISOString()
   };
 
   d.items.unshift(item);
-  saveData(d);
+  saveDataRaw(d);
   renderWishlist();
   closeModal();
   showToast('Added to wishlist');
 }
+
+/* ═══════════════════════════════════════════
+   EVENT BINDING
+   ═══════════════════════════════════════════ */
+
+function bindEvents() {
+  document.getElementById('wishlist-add-btn')?.addEventListener('click', openAddModal);
+
+  document.getElementById('wishlist-modal-backdrop')?.addEventListener('click', closeModal);
+  document.getElementById('wishlist-modal-close')?.addEventListener('click', closeModal);
+  document.getElementById('wishlist-modal-cancel')?.addEventListener('click', closeModal);
+  document.getElementById('wishlist-form')?.addEventListener('submit', onFormSubmit);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('wishlist-modal');
+      if (modal?.classList.contains('open')) {
+        e.preventDefault();
+        closeModal();
+      } else {
+        closeDetailModal();
+      }
+    }
+  });
+
+  document.getElementById('wishlist-search')?.addEventListener('input', renderWishlist);
+  document.getElementById('wishlist-sort')?.addEventListener('change', renderWishlist);
+  document.getElementById('wishlist-filter')?.addEventListener('change', renderWishlist);
+  document.getElementById('wishlist-filter-priority')?.addEventListener('change', renderWishlist);
+  document.getElementById('wishlist-filter-tag')?.addEventListener('change', renderWishlist);
+  document.getElementById('wishlist-show-archived')?.addEventListener('change', renderWishlist);
+
+  const urlInput = document.getElementById('wishlist-url');
+  if (urlInput) {
+    let debounceTimer = null;
+    urlInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => attemptFetchLink(urlInput.value.trim()), 800);
+    });
+    urlInput.addEventListener('paste', (e) => {
+      const pasted = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+      if (pasted.startsWith('http')) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => attemptFetchLink(pasted.trim()), 400);
+      }
+    });
+  }
+
+  const detailClose = document.getElementById('wishlist-detail-close');
+  const detailBackdrop = document.getElementById('wishlist-detail-backdrop');
+  const detailEdit = document.getElementById('wishlist-detail-edit');
+  const detailNotes = document.querySelector('.wishlist-detail-notes');
+  detailClose?.addEventListener('click', closeDetailModal);
+  detailBackdrop?.addEventListener('click', closeDetailModal);
+  detailEdit?.addEventListener('click', () => {
+    const id = detailEdit.dataset.id;
+    closeDetailModal();
+    if (id) openEditModal(id);
+  });
+  detailNotes?.addEventListener('change', onDetailNotesChange);
+  detailNotes?.addEventListener('blur', onDetailNotesChange);
+  document.querySelectorAll('.wishlist-detail-status-btn').forEach(b => {
+    b.addEventListener('click', onStatusChange);
+  });
+}
+
+let _fetchAbort = null;
+function attemptFetchLink(url) {
+  if (!url || !url.startsWith('http')) return;
+  const modal = document.getElementById('wishlist-modal');
+  if (!modal?.classList.contains('open')) return;
+
+  const titleInput = document.getElementById('wishlist-title');
+  const imageInput = document.getElementById('wishlist-image');
+  const priceInput = document.getElementById('wishlist-price');
+  if (!titleInput || !imageInput || !priceInput) return;
+
+  const modalTitle = document.getElementById('wishlist-modal-title');
+  const oldTitle = modalTitle?.textContent;
+  if (modalTitle && !oldTitle.includes('Fetching')) modalTitle.textContent = oldTitle + ' (Fetching…)';
+
+  if (_fetchAbort) _fetchAbort.abort();
+  _fetchAbort = new AbortController();
+
+  fetch(`/api/fetch-link?url=${encodeURIComponent(url)}`, { signal: _fetchAbort.signal })
+    .then(r => r.json())
+    .then(data => {
+      if (modalTitle && oldTitle) modalTitle.textContent = oldTitle;
+      if (!data.ok) return;
+      if (data.title && !titleInput.value.trim()) titleInput.value = data.title;
+      if (data.image && !imageInput.value.trim()) imageInput.value = data.image;
+      if (data.price != null && priceInput.value === '') priceInput.value = data.price;
+    })
+    .catch(() => { if (modalTitle && oldTitle) modalTitle.textContent = oldTitle; })
+    .finally(() => { _fetchAbort = null; });
+}
+
+/* ═══════════════════════════════════════════
+   CRUD
+   ═══════════════════════════════════════════ */
 
 function deleteItem(id) {
   const d = ensureData();
   const before = d.items.length;
   d.items = d.items.filter(i => i.id !== id);
   if (d.items.length < before) {
-    saveData(d);
+    saveDataRaw(d);
     renderWishlist();
     showToast('Item deleted');
   }
 }
 
-function showToast(msg) {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  container.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('show'));
-  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2500);
+function copyLink(url) {
+  if (!url) { showToast('No URL to copy'); return; }
+  try {
+    navigator.clipboard.writeText(url).then(() => showToast('Copied link'));
+  } catch (_) { showToast('Could not copy'); }
 }
