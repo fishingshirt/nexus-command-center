@@ -17,3 +17,7 @@ data/vault/
 data/vault-index.json
 data/vault/**
 data/feedback-queue.jsonl
+data/nexus.db*
+*.db-journal
+*.db-shm
+*.db-wal

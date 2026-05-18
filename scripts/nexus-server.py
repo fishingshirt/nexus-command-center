@@ -11,6 +11,12 @@ import email.utils
 from pathlib import Path
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+# -- Local SQLite database --
+try:
+    import nexus_db
+except Exception:
+    nexus_db = None
+
 _html_mod = html
 
 PIDFILE = os.path.expanduser('~/.hermes/nexus-server.pid')
@@ -223,6 +229,111 @@ def _api_pdf(handler, path, raw_path):
         return _api_pdf_file(handler, path)
     _json(handler, 405, {'ok': False, 'error': 'Method not allowed'})
     return True
+
+
+# ── Local SQLite Database REST API ─────────────────
+
+def _api_db(handler, path):
+    if nexus_db is None:
+        _json(handler, 503, {'ok': False, 'error': 'Database module not available'})
+        return True
+    parts = path.strip('/').split('/')
+    # parts = ['api','db', table, id?]
+    if len(parts) < 3:
+        _json(handler, 400, {'ok': False, 'error': 'Missing table name'})
+        return True
+    table = parts[2]
+    resource_id = parts[3] if len(parts) > 3 else None
+    qs = {}
+    if '?' in handler.path:
+        import urllib.parse
+        qs = urllib.parse.parse_qs(handler.path.split('?', 1)[1])
+
+    try:
+        # ── GET ──
+        if handler.command == 'GET':
+            if table == 'stats':
+                _json(handler, 200, {'ok': True, 'stats': nexus_db.db_stats()})
+                return True
+            if table == 'backup':
+                _json(handler, 200, {'ok': True, 'data': nexus_db.export_json()})
+                return True
+            if resource_id:
+                row = nexus_db.get_row(table, resource_id)
+                if row is None:
+                    _json(handler, 404, {'ok': False, 'error': 'Not found'})
+                else:
+                    _json(handler, 200, {'ok': True, 'data': row})
+                return True
+            filters = {}
+            for k in ('folder', 'list_name', 'category', 'priority', 'status', 'type', 'app', 'role', 'completed'):
+                if k in qs:
+                    filters[k] = qs[k][0]
+            search = qs.get('search', [''])[0] or None
+            sort = qs.get('sort', ['created_at'])[0]
+            order = qs.get('order', ['desc'])[0]
+            limit = qs.get('limit', [None])[0]
+            offset = qs.get('offset', [None])[0]
+            rows = nexus_db.list_rows(table, filters=filters, search=search, sort=sort, order=order, limit=limit, offset=offset)
+            _json(handler, 200, {'ok': True, 'table': table, 'count': len(rows), 'data': rows})
+            return True
+
+        # ── POST (create or bulk) ──
+        if handler.command == 'POST':
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            try:
+                payload = json.loads(body)
+            except Exception:
+                _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+                return True
+            if table == 'restore':
+                data = payload.get('data', {})
+                wipe = payload.get('wipe', False)
+                ok = nexus_db.import_json(data, wipe=wipe)
+                _json(handler, 200, {'ok': ok})
+                return True
+            if isinstance(payload, list):
+                ids = nexus_db.bulk_upsert(table, payload)
+                _json(handler, 200, {'ok': True, 'ids': ids})
+                return True
+            new_id = nexus_db.create_row(table, payload)
+            _json(handler, 201, {'ok': True, 'id': new_id})
+            return True
+
+        # ── PUT (update) ──
+        if handler.command == 'PUT':
+            if not resource_id:
+                _json(handler, 400, {'ok': False, 'error': 'Missing ID for PUT'})
+                return True
+            length = int(handler.headers.get('Content-Length', 0))
+            body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+            try:
+                payload = json.loads(body)
+            except Exception:
+                _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+                return True
+            ok = nexus_db.update_row(table, resource_id, payload)
+            _json(handler, 200, {'ok': ok, 'id': resource_id})
+            return True
+
+        # ── DELETE ──
+        if handler.command == 'DELETE':
+            if not resource_id:
+                _json(handler, 400, {'ok': False, 'error': 'Missing ID for DELETE'})
+                return True
+            ok = nexus_db.delete_row(table, resource_id)
+            _json(handler, 200, {'ok': ok, 'id': resource_id})
+            return True
+
+        _json(handler, 405, {'ok': False, 'error': 'Method not allowed'})
+        return True
+    except ValueError as e:
+        _json(handler, 400, {'ok': False, 'error': str(e)})
+        return True
+    except Exception as e:
+        _json(handler, 500, {'ok': False, 'error': str(e)})
+        return True
 
 
 def _deps():
@@ -3050,11 +3161,37 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             if _api_pdf(self, path, self.path):
                 return True
 
+        # ── Local SQLite Database REST API ──
+        if path.startswith('/api/db/'):
+            return _api_db(self, path)
+
         return False
 
     def do_OPTIONS(self):
         self.send_response(204)
         _cors(self)
+        self.end_headers()
+
+    def do_PUT(self):
+        self.extensions_map['.js'] = 'application/javascript'
+        self.extensions_map['.css'] = 'text/css'
+        self.extensions_map['.svg'] = 'image/svg+xml'
+        self.extensions_map['.json'] = 'application/json'
+        if self.path.startswith('/api/'):
+            if self._api_handler():
+                return
+        self.send_response(405)
+        self.end_headers()
+
+    def do_DELETE(self):
+        self.extensions_map['.js'] = 'application/javascript'
+        self.extensions_map['.css'] = 'text/css'
+        self.extensions_map['.svg'] = 'image/svg+xml'
+        self.extensions_map['.json'] = 'application/json'
+        if self.path.startswith('/api/'):
+            if self._api_handler():
+                return
+        self.send_response(405)
         self.end_headers()
 
     def do_POST(self):
@@ -3163,6 +3300,10 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                 return
             if path.startswith('/api/store/'):
                 if _api_store_post(self, path):
+                    return
+            # ── Local SQLite Database POST ──
+            if path.startswith('/api/db/'):
+                if _api_db(self, path):
                     return
             # -- News Hub POST stubs --
             if path == '/api/news/digest':
