@@ -271,7 +271,7 @@ async function loadDbBackups(dot, rows) {
     if (!ok) {
       html = `
         <div class="it-row"><span class="it-label">Status</span><span class="it-value">No backups yet</span></div>
-        <div class="it-row"><span class="it-label">Action</span><span class="it-value"><button id="it-db-trigger" class="it-hub-refresh" style="margin:0">Trigger Backup</button></span></div>
+        <div class="it-row"><span class="it-label">Action</span><span class="it-value"><button id="it-db-new" class="it-hub-refresh" style="margin:0">New Backup...</button></span></div>
       `;
     } else {
       const latest = backups[0];
@@ -280,58 +280,117 @@ async function loadDbBackups(dot, rows) {
       const sizeStr = totalSize < 1024**2 ? `${(totalSize/1024).toFixed(1)} KB` : `${(totalSize/1024**2).toFixed(1)} MB`;
       html = `
         <div class="it-row"><span class="it-label">Backups</span><span class="it-value">${total} (${sizeStr})</span></div>
-        <div class="it-row"><span class="it-label">Latest</span><span class="it-value">${esc(latest.age_str)} • ${esc(latest.size)}</span></div>
+        <div class="it-row"><span class="it-label">Latest</span><span class="it-value">${esc(latest.age_str)} • ${esc(latest.size)} • ${esc(latest.scope || 'unknown')}</span></div>
         <div class="it-row"><span class="it-label">File</span><span class="it-value" style="font-size:0.75rem">${esc(latest.filename)}</span></div>
-        <div class="it-row"><span class="it-label">Actions</span><span class="it-value"><button id="it-db-trigger" class="it-hub-refresh" style="margin:0 4px 0 0">New</button><button id="it-db-restore" class="it-hub-refresh" style="margin:0">Restore...</button></span></div>
+        <div class="it-row"><span class="it-label">Actions</span><span class="it-value"><button id="it-db-new" class="it-hub-refresh" style="margin:0 4px 0 0">New...</button><button id="it-db-restore" class="it-hub-refresh" style="margin:0">Restore...</button></span></div>
       `;
     }
     rows.innerHTML = html;
 
-    // Wire buttons
-    rows.querySelector('#it-db-trigger')?.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/db/trigger-backup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
-        const j = await res.json();
-        if (j.ok) { if (typeof toast !== 'undefined') toast('Backup created'); refreshCard('it-db'); }
-        else { if (typeof toast !== 'undefined') toast(j.error || 'Backup failed', 'error'); }
-      } catch (e) { if (typeof toast !== 'undefined') toast(e.message, 'error'); }
-    });
+    rows.querySelector('#it-db-new')?.addEventListener('click', () => showScopePicker());
     rows.querySelector('#it-db-restore')?.addEventListener('click', () => showRestoreDialog(backups));
   } catch (e) {
     dot.className = 'it-status-dot red';
     rows.innerHTML = `
       <div class="it-row"><span class="it-label">Error</span><span class="it-value">${esc(e.message)}</span></div>
-      <div class="it-row"><span class="it-label">Action</span><span class="it-value"><button id="it-db-trigger" class="it-hub-refresh" style="margin:0">Trigger Backup</button></span></div>
+      <div class="it-row"><span class="it-label">Action</span><span class="it-value"><button id="it-db-new" class="it-hub-refresh" style="margin:0">New Backup...</button></span></div>
     `;
-    rows.querySelector('#it-db-trigger')?.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/db/trigger-backup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
-        const j = await res.json();
-        if (j.ok) { if (typeof toast !== 'undefined') toast('Backup created'); refreshCard('it-db'); }
-      } catch (err) {}
-    });
+    rows.querySelector('#it-db-new')?.addEventListener('click', () => showScopePicker());
   }
+}
+
+function showScopePicker() {
+  document.getElementById('it-db-scope-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'it-db-scope-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);';
+  modal.innerHTML = `
+    <div style="background:var(--surface-1,#11111a);border:1px solid var(--border,#1f1f2e);border-radius:12px;padding:1.5rem;max-width:420px;width:90%;">
+      <h3 style="margin:0 0 1rem;color:var(--accent,#39d0f2);">📦 Create Backup</h3>
+      <p style="margin:0 0 1rem;color:#888;font-size:0.9rem;">Choose what to include in the backup archive:</p>
+      <div id="scope-options" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;">
+        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;background:var(--surface-0,#0a0a0f);border-radius:8px;cursor:pointer;">
+          <input type="checkbox" name="scope" value="database" checked style="accent-color:var(--accent,#39d0f2);">
+          <span>💾 <strong>SQLite Database</strong></span>
+        </label>
+        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;background:var(--surface-0,#0a0a0f);border-radius:8px;cursor:pointer;">
+          <input type="checkbox" name="scope" value="docker" checked style="accent-color:var(--accent,#39d0f2);">
+          <span>🐳 <strong>Docker Config</strong> — docker-compose.yml, Dockerfile, nginx.conf</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;background:var(--surface-0,#0a0a0f);border-radius:8px;cursor:pointer;">
+          <input type="checkbox" name="scope" value="brain" checked style="accent-color:var(--accent,#39d0f2);">
+          <span>🧠 <strong>Hermes Brain</strong> — config, auth, channel directory, SOUL.md</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;background:var(--surface-0,#0a0a0f);border-radius:8px;cursor:pointer;">
+          <input type="checkbox" name="scope" value="assets" style="accent-color:var(--accent,#39d0f2);">
+          <span>🎨 <strong>Static Assets</strong> — images, audio, CSS extras</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;background:var(--surface-0,#0a0a0f);border-radius:8px;cursor:pointer;">
+          <input type="checkbox" name="scope" value="metadata" style="accent-color:var(--accent,#39d0f2);">
+          <span>📋 <strong>Project Metadata</strong> — PROJECT.md, README, AGENTS.md, WHITEBOARD</span>
+        </label>
+      </div>
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+        <button id="scope-cancel" class="it-hub-refresh">Cancel</button>
+        <button id="scope-full" class="it-hub-refresh" style="margin:0 4px 0 0;">Everything</button>
+        <button id="scope-confirm" class="it-hub-refresh" style="background:var(--accent,#39d0f2);color:#000;font-weight:600;">Create Backup</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal.querySelector('#scope-cancel')?.addEventListener('click', () => modal.remove());
+  modal.querySelector('#scope-full')?.addEventListener('click', () => {
+    modal.querySelectorAll('input[name="scope"]').forEach(cb => cb.checked = true);
+    doCreateBackup(modal, 'full');
+  });
+  modal.querySelector('#scope-confirm')?.addEventListener('click', () => {
+    const checked = Array.from(modal.querySelectorAll('input[name="scope"]:checked')).map(cb => cb.value);
+    if (!checked.length) { if (typeof toast !== 'undefined') toast('Select at least one scope', 'error'); return; }
+    const scope = checked.length === 5 ? 'full' : checked[0]; // API supports single scope for now; full if all
+    doCreateBackup(modal, scope);
+  });
+}
+
+async function doCreateBackup(modal, scope) {
+  modal.remove();
+  if (typeof toast !== 'undefined') toast(`Creating ${scope === 'full' ? 'full' : scope} backup...`);
+  try {
+    const res = await fetch('/api/db/trigger-backup', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ scope })
+    });
+    const j = await res.json();
+    if (j.ok) {
+      if (typeof toast !== 'undefined') toast(`Backup created: ${j.backup.filename}`);
+      refreshCard('it-db');
+    } else {
+      if (typeof toast !== 'undefined') toast(j.error || 'Backup failed', 'error');
+    }
+  } catch (e) { if (typeof toast !== 'undefined') toast(e.message, 'error'); }
 }
 
 function showRestoreDialog(backups) {
   if (!backups || !backups.length) return;
-  // Remove existing
   document.getElementById('it-db-modal')?.remove();
 
   const modal = document.createElement('div');
   modal.id = 'it-db-modal';
   modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);';
   modal.innerHTML = `
-    <div style="background:var(--surface-1,#11111a);border:1px solid var(--border,#1f1f2e);border-radius:12px;padding:1.5rem;max-width:420px;width:90%;max-height:80vh;overflow:auto;">
-      <h3 style="margin:0 0 1rem;color:var(--accent,#39d0f2);">↩️ Restore Database</h3>
-      <p style="margin:0 0 1rem;color:#888;font-size:0.9rem;">⚠️ This will overwrite the current database with a backup copy. A safety backup of the current DB will be created first.</p>
+    <div style="background:var(--surface-1,#11111a);border:1px solid var(--border,#1f1f2e);border-radius:12px;padding:1.5rem;max-width:460px;width:90%;max-height:80vh;overflow:auto;">
+      <h3 style="margin:0 0 1rem;color:var(--accent,#39d0f2);">↩️ Restore System Backup</h3>
+      <p style="margin:0 0 1rem;color:#888;font-size:0.9rem;">⚠️ This will overwrite current files with the backup. A safety copy of the database will be created first.</p>
       <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;">
         ${backups.slice(0,10).map((b,i) => `
           <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;background:var(--surface-0,#0a0a0f);border-radius:8px;cursor:pointer;border:2px solid ${i===0?'var(--accent,#39d0f2)':'transparent'};">
             <input type="radio" name="it-db-restore-pick" value="${esc(b.filename)}" ${i===0?'checked':''} style="accent-color:var(--accent,#39d0f2);">
             <div style="flex:1">
               <div style="font-size:0.85rem;color:#e2e8f0;">${esc(b.filename)}</div>
-              <div style="font-size:0.75rem;color:#64748b;">${esc(b.size)} • ${esc(b.age_str)}</div>
+              <div style="font-size:0.75rem;color:#64748b;">${esc(b.scope || 'unknown')} • ${esc(b.size)} • ${esc(b.age_str)}</div>
             </div>
           </label>
         `).join('')}

@@ -261,15 +261,25 @@ def _api_db(handler, path):
                 _json(handler, 200, {'ok': True, 'stats': nexus_db.db_stats()})
                 return True
             if table == 'backups':
-                # Database file backups (from nexus-backup.py)
+                # System backups (scoped tar.gz archives from nexus_backup.py)
                 if nexus_backup is None:
                     _json(handler, 503, {'ok': False, 'error': 'Backup module unavailable'})
                     return True
                 try:
-                    backups = nexus_backup.list_backups()
+                    scope = qs.get('scope', [''])[0] or None
+                    backups = nexus_backup.list_backups(scope=scope)
                     _json(handler, 200, {'ok': True, 'backups': backups})
                 except Exception as e:
                     _json(handler, 500, {'ok': False, 'error': str(e)})
+                return True
+            if table == 'backup-scopes':
+                _json(handler, 200, {
+                    'ok': True,
+                    'scopes': {
+                        k: {'label': v['label'], 'icon': v['icon']}
+                        for k, v in nexus_backup.SCOPES.items()
+                    } if nexus_backup else {}
+                })
                 return True
             if table == 'backup':
                 _json(handler, 200, {'ok': True, 'data': nexus_db.export_json()})
@@ -310,7 +320,7 @@ def _api_db(handler, path):
                 _json(handler, 200, {'ok': ok})
                 return True
             if table == 'restore-file':
-                # Restore from a .db file backup on disk
+                # Restore from a tar.gz system backup on disk
                 if nexus_backup is None:
                     _json(handler, 503, {'ok': False, 'error': 'Backup module unavailable'})
                     return True
@@ -319,14 +329,12 @@ def _api_db(handler, path):
                     _json(handler, 400, {'ok': False, 'error': 'filename required'})
                     return True
                 try:
-                    # Validate filename is safe
                     safe = os.path.basename(filename)
-                    if not safe.startswith('nexus-db-') or not safe.endswith('.db'):
+                    if not safe.startswith('nexus-backup-') or not safe.endswith('.tar.gz'):
                         raise ValueError('Invalid backup filename')
                     full = os.path.join(nexus_backup.BACKUP_DIR, safe)
                     if not os.path.isfile(full):
                         raise ValueError('Backup file not found')
-                    # Safety copy + restore
                     result = nexus_backup.restore_backup(safe)
                     _json(handler, 200, {'ok': True, 'restored': safe})
                 except Exception as e:
@@ -337,7 +345,8 @@ def _api_db(handler, path):
                     _json(handler, 503, {'ok': False, 'error': 'Backup module unavailable'})
                     return True
                 try:
-                    result = nexus_backup.create_backup()
+                    scope = payload.get('scope', 'full')
+                    result = nexus_backup.create_backup(scope)
                     # Run cleanup automatically
                     nexus_backup.cleanup(nexus_backup.DEFAULT_RETENTION_DAYS)
                     _json(handler, 200, {'ok': True, 'backup': result})

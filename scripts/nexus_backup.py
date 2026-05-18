@@ -1,23 +1,62 @@
 #!/usr/bin/env python3
-"""Nexus Database Backup & Restore
+"""Nexus System Backup & Restore
 
 Usage:
-    python3 nexus-backup.py backup              # create a new DB backup
-    python3 nexus-backup.py list                # list all DB backups
-    python3 nexus-backup.py restore <file>      # restore from a .db backup
-    python3 nexus-backup.py cleanup [--days N]  # delete backups older than N days (default 60)
-    python3 nexus-backup.py auto                # backup + cleanup in one shot (for cron)
+    python3 nexus_backup.py backup [--scope SCOPE]     # create a scoped backup
+    python3 nexus_backup.py list [--scope SCOPE]         # list backups
+    python3 nexus_backup.py restore <file_or_index>     # restore from archive
+    python3 nexus_backup.py cleanup [--days N]           # delete old backups
+    python3 nexus_backup.py auto                         # full backup + cleanup (cron)
 
-Backups are stored in ~/.hermes/backups/db/ with rotational cleanup.
+Scopes: database, docker, brain, assets, metadata, full
+Archives: tar.gz with internal directory structure + manifest.json
 """
-import os, sys, shutil, sqlite3, time, glob, json
+import os, sys, shutil, sqlite3, time, glob, json, tarfile, subprocess, hashlib
 from datetime import datetime, timedelta
 
 # ── Configuration ──────────────────────────────────
 NEXUS_REPO = os.path.expanduser('~/nexus-command-center')
 DB_PATH = os.path.join(NEXUS_REPO, 'data', 'nexus.db')
-BACKUP_DIR = os.path.expanduser('~/.hermes/backups/db')
+BACKUP_DIR = os.path.expanduser('~/.hermes/backups')
 DEFAULT_RETENTION_DAYS = 60
+
+SCOPES = {
+    'database': {'label': 'SQLite Database', 'icon': '💾'},
+    'docker':   {'label': 'Docker Config',   'icon': '🐳'},
+    'brain':    {'label': 'Hermes Brain',    'icon': '🧠'},
+    'assets':   {'label': 'Static Assets',   'icon': '🎨'},
+    'metadata': {'label': 'Project Metadata','icon': '📋'},
+    'full':     {'label': 'Everything',      'icon': '📦'},
+}
+
+# Files per scope ─────────────────────────────────
+SCOPE_FILES = {
+    'docker': [
+        ('docker-compose.yml', 'docker/docker-compose.yml'),
+        ('Dockerfile',         'docker/Dockerfile'),
+        ('nginx.conf',         'docker/nginx.conf'),
+        ('.gitignore',         'docker/.gitignore'),
+    ],
+    'brain': [
+        ('~/.hermes/SOUL.md',                'brain/SOUL.md'),
+        ('~/.hermes/config.yaml',            'brain/config.yaml'),
+        ('~/.hermes/channel_directory.json', 'brain/channel_directory.json'),
+        ('~/.hermes/auth.json',              'brain/auth.json'),
+    ],
+    'assets': [
+        ('public/assets', 'assets/public/assets'),
+        ('public/css',    'assets/public/css'),
+    ],
+    'metadata': [
+        ('manifest.json',     'metadata/manifest.json'),
+        ('PROJECT.md',        'metadata/PROJECT.md'),
+        ('AGENTS.md',         'metadata/AGENTS.md'),
+        ('AGENT_CONTEXT.md',  'metadata/AGENT_CONTEXT.md'),
+        ('AGENT_GUIDELINES.md','metadata/AGENT_GUIDELINES.md'),
+        ('README.md',         'metadata/README.md'),
+        ('WHITEBOARD.md',     'metadata/WHITEBOARD.md'),
+    ],
+}
 
 # ── Helpers ────────────────────────────────────────
 
@@ -27,15 +66,12 @@ def _ensure_dirs():
 def _timestamp():
     return datetime.now().strftime('%Y%m%d-%H%M%S')
 
-def _fmt_size(path):
-    try:
-        b = os.path.getsize(path)
-        if b < 1024: return f"{b} B"
-        if b < 1024**2: return f"{b/1024:.1f} KB"
-        if b < 1024**3: return f"{b/1024**2:.1f} MB"
-        return f"{b/1024**3:.2f} GB"
-    except Exception:
-        return "?"
+def _fmt_size(b):
+    if not isinstance(b, int): b = os.path.getsize(b)
+    if b < 1024: return f"{b} B"
+    if b < 1024**2: return f"{b/1024:.1f} KB"
+    if b < 1024**3: return f"{b/1024**2:.1f} MB"
+    return f"{b/1024**3:.2f} GB"
 
 def _fmt_time(ts):
     try:
@@ -52,122 +88,234 @@ def _fmt_time(ts):
     except Exception:
         return "?"
 
+def _resolve_path(rel_or_home):
+    if rel_or_home.startswith('~/'):
+        return os.path.expanduser(rel_or_home)
+    if rel_or_home.startswith('/'):
+        return rel_or_home
+    return os.path.join(NEXUS_REPO, rel_or_home)
+
+def _git_info():
+    def run(cmd):
+        try:
+            return subprocess.check_output(cmd, cwd=NEXUS_REPO, stderr=subprocess.DEVNULL, text=True).strip()
+        except Exception:
+            return ''
+    return {
+        'branch': run(['git', 'rev-parse', '--abbrev-ref', 'HEAD']),
+        'commit': run(['git', 'log', '-1', '--format=%h']),
+        'message': run(['git', 'log', '-1', '--format=%s']),
+        'dirty': bool(run(['git', 'status', '--porcelain'])),
+    }
+
 # ── Backup ─────────────────────────────────────────
 
-def create_backup():
+def create_backup(scope='full'):
     _ensure_dirs()
-    if not os.path.isfile(DB_PATH):
-        print(f"[ERROR] Database not found: {DB_PATH}")
-        sys.exit(1)
-
     stamp = _timestamp()
-    filename = f"nexus-db-{stamp}.db"
+    filename = f"nexus-backup-{scope}-{stamp}.tar.gz"
     dest = os.path.join(BACKUP_DIR, filename)
 
-    # Atomic copy via VACUUM INTO (SQLite-native, consistent snapshot)
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute(f"VACUUM INTO '{dest}'")
-        conn.close()
-    except Exception as e:
-        print(f"[ERROR] VACUUM INTO failed: {e}")
-        # Fallback: shutil copy (risk of WAL inconsistency but better than nothing)
-        shutil.copy2(DB_PATH, dest)
-        # Also copy WAL if present
+    # Determine which scopes to include
+    if scope == 'full':
+        scopes = list(SCOPES.keys())[:-1]  # all except 'full' itself
+    else:
+        scopes = [scope]
+
+    # Build manifest
+    manifest = {
+        'version': 2,
+        'created': stamp,
+        'scope': scope,
+        'scopes': scopes,
+        'hostname': os.uname().nodename,
+        'git': _git_info(),
+        'files': {},
+    }
+
+    # Collect files into a temp staging dir
+    tmp_dir = os.path.join(BACKUP_DIR, f".staging-{stamp}-{os.urandom(2).hex()}")
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    total_bytes = 0
+    for s in scopes:
+        for src_rel, dest_rel in SCOPE_FILES.get(s, []):
+            src = _resolve_path(src_rel)
+            if not os.path.exists(src):
+                continue
+            dst = os.path.join(tmp_dir, dest_rel)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if os.path.isdir(src):
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+            else:
+                shutil.copy2(src, dst)
+            b = os.path.getsize(dst) if os.path.isfile(dst) else _dir_size(dst)
+            total_bytes += b
+            manifest['files'][dest_rel] = {'source': src_rel, 'size': b}
+
+    # Database special case: VACUUM INTO for atomic consistency
+    if 'database' in scopes and os.path.isfile(DB_PATH):
+        db_dest = os.path.join(tmp_dir, 'database', 'nexus.db')
+        os.makedirs(os.path.dirname(db_dest), exist_ok=True)
+        # Remove any pre-existing copy so VACUUM INTO has a clean target
+        if os.path.isfile(db_dest):
+            os.remove(db_dest)
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            conn.execute(f"VACUUM INTO '{db_dest}'")
+            conn.close()
+            b = os.path.getsize(db_dest)
+            total_bytes += b
+            manifest['files']['database/nexus.db'] = {'source': 'data/nexus.db', 'size': b, 'method': 'vacuum'}
+        except Exception as e:
+            print(f"[WARN] VACUUM INTO failed: {e}, using shutil copy")
+            shutil.copy2(DB_PATH, db_dest)
+            b = os.path.getsize(db_dest)
+            total_bytes += b
+            manifest['files']['database/nexus.db'] = {'source': 'data/nexus.db', 'size': b, 'method': 'copy'}
+        # WAL/SHM
         for suffix in ('-wal', '-shm'):
-            wal = DB_PATH + suffix
-            if os.path.isfile(wal):
-                shutil.copy2(wal, dest + suffix)
+            wal_src = DB_PATH + suffix
+            wal_dst = db_dest + suffix
+            if os.path.isfile(wal_src):
+                if os.path.isfile(wal_dst):
+                    os.remove(wal_dst)
+                shutil.copy2(wal_src, wal_dst)
+                b = os.path.getsize(wal_dst)
+                total_bytes += b
+                manifest['files'][f'database/nexus.db{suffix}'] = {'source': f'data/nexus.db{suffix}', 'size': b}
+
+    # Docker container info
+    if 'docker' in scopes:
+        container_info = {}
+        try:
+            lines = subprocess.check_output(['docker', 'ps', '--filter', 'name=nexus', '--format', '{{json .}}'],
+                                            stderr=subprocess.DEVNULL, text=True, timeout=10).strip()
+            if lines:
+                container_info = json.loads(lines.splitlines()[0])
+        except Exception:
+            pass
+        info_path = os.path.join(tmp_dir, 'docker', 'container-info.json')
+        with open(info_path, 'w') as f:
+            json.dump(container_info, f, indent=2)
+
+    # Write manifest
+    manifest['total_bytes'] = total_bytes
+    manifest_path = os.path.join(tmp_dir, 'manifest.json')
+    with open(manifest_path, 'w') as f:
+        json.dump(manifest, f, indent=2)
+
+    # Create tar.gz
+    with tarfile.open(dest, 'w:gz') as tar:
+        for root, dirs, files in os.walk(tmp_dir):
+            for file in files:
+                fp = os.path.join(root, file)
+                arcname = os.path.relpath(fp, tmp_dir)
+                tar.add(fp, arcname=arcname)
+
+    # Clean staging
+    shutil.rmtree(tmp_dir)
 
     size = _fmt_size(dest)
     mtime = os.path.getmtime(dest)
-    print(f"[OK] Backup created: {filename} ({size})")
+    print(f"[OK] Backup created: {filename} ({size}) — scope: {scope}")
     return {
         'filename': filename,
         'path': dest,
         'size': size,
         'bytes': os.path.getsize(dest),
+        'scope': scope,
         'created': datetime.fromtimestamp(mtime).isoformat(),
         'timestamp': mtime,
     }
 
+def _dir_size(path):
+    total = 0
+    for root, _, files in os.walk(path):
+        for f in files:
+            try:
+                total += os.path.getsize(os.path.join(root, f))
+            except Exception:
+                pass
+    return total
+
 # ── List ───────────────────────────────────────────
 
-def list_backups():
+def list_backups(scope=None):
     _ensure_dirs()
     files = []
-    for fp in sorted(glob.glob(os.path.join(BACKUP_DIR, 'nexus-db-*.db')), reverse=True):
+    pattern = os.path.join(BACKUP_DIR, f"nexus-backup-{'*' if scope is None else scope}-*.tar.gz")
+    for fp in sorted(glob.glob(pattern), reverse=True):
         st = os.stat(fp)
+        # Peek manifest for scope
+        backup_scope = 'unknown'
+        try:
+            with tarfile.open(fp, 'r:gz') as tar:
+                mf = tar.extractfile('manifest.json')
+                if mf:
+                    m = json.loads(mf.read().decode())
+                    backup_scope = m.get('scope', 'unknown')
+        except Exception:
+            pass
         files.append({
             'filename': os.path.basename(fp),
             'path': fp,
             'size': _fmt_size(fp),
             'bytes': st.st_size,
+            'scope': backup_scope,
             'created': datetime.fromtimestamp(st.st_mtime).isoformat(),
             'timestamp': st.st_mtime,
             'age_str': _fmt_time(st.st_mtime),
         })
     return files
 
-def print_backups():
-    backups = list_backups()
+def print_backups(scope=None):
+    backups = list_backups(scope)
     if not backups:
-        print("[INFO] No database backups found.")
+        print(f"[INFO] No backups found{' for scope ' + scope if scope else ''}.")
         return
-    print(f"{'#':<4} {'Filename':<30} {'Size':<12} {'Age':<15}")
-    print("-" * 65)
+    print(f"{'#':<4} {'Scope':<10} {'Filename':<35} {'Size':<12} {'Age':<15}")
+    print("-" * 80)
     for i, b in enumerate(backups, 1):
-        print(f"{i:<4} {b['filename']:<30} {b['size']:<12} {b['age_str']:<15}")
+        print(f"{i:<4} {b['scope']:<10} {b['filename']:<35} {b['size']:<12} {b['age_str']:<15}")
     print(f"\n[INFO] {len(backups)} backup(s) in {BACKUP_DIR}")
 
 # ── Cleanup ──────────────────────────────────────────
 
-def cleanup(days=DEFAULT_RETENTION_DAYS):
+def cleanup(days=DEFAULT_RETENTION_DAYS, scope=None):
     _ensure_dirs()
     cutoff = time.time() - (days * 86400)
+    pattern = os.path.join(BACKUP_DIR, f"nexus-backup-{'*' if scope is None else scope}-*.tar.gz")
     removed = 0
     total_bytes = 0
-    for fp in glob.glob(os.path.join(BACKUP_DIR, 'nexus-db-*.db')):
+    for fp in glob.glob(pattern):
         if os.path.getmtime(fp) < cutoff:
             try:
                 b = os.path.getsize(fp)
                 os.remove(fp)
-                # Clean companion WAL/SHM if any
-                for suffix in ('-wal', '-shm'):
-                    w = fp + suffix
-                    if os.path.isfile(w):
-                        os.remove(w)
                 removed += 1
                 total_bytes += b
             except Exception as e:
                 print(f"[WARN] Failed to remove {fp}: {e}")
-    print(f"[OK] Cleanup: {removed} backup(s) older than {days} days removed ({_fmt_size_from_bytes(total_bytes)} freed)")
+    print(f"[OK] Cleanup: {removed} backup(s) older than {days} days removed ({_fmt_size(total_bytes)} freed)")
     return removed, total_bytes
-
-def _fmt_size_from_bytes(b):
-    if b < 1024: return f"{b} B"
-    if b < 1024**2: return f"{b/1024:.1f} KB"
-    if b < 1024**3: return f"{b/1024**2:.1f} MB"
-    return f"{b/1024**3:.2f} GB"
 
 # ── Restore ────────────────────────────────────────
 
 def restore_backup(filename_or_index):
     _ensure_dirs()
-
-    # Resolve input: index number or filename
     backups = list_backups()
     if not backups:
-        print("[ERROR] No backups available to restore from.")
+        print("[ERROR] No backups available.")
         sys.exit(1)
 
+    # Resolve input
     target = None
     try:
         idx = int(filename_or_index) - 1
         if 0 <= idx < len(backups):
             target = backups[idx]['path']
     except ValueError:
-        # Treat as filename
         if os.path.isfile(filename_or_index):
             target = filename_or_index
         else:
@@ -179,50 +327,127 @@ def restore_backup(filename_or_index):
         print(f"[ERROR] Backup not found: {filename_or_index}")
         sys.exit(1)
 
-    if not os.path.isfile(DB_PATH):
-        print(f"[ERROR] Current database missing: {DB_PATH}")
+    # Extract manifest to understand scope
+    manifest = {}
+    try:
+        with tarfile.open(target, 'r:gz') as tar:
+            mf = tar.extractfile('manifest.json')
+            if mf:
+                manifest = json.loads(mf.read().decode())
+    except Exception as e:
+        print(f"[ERROR] Cannot read manifest: {e}")
         sys.exit(1)
 
-    # Safety: backup current DB before overwriting
-    safety_stamp = _timestamp()
-    safety_path = os.path.join(BACKUP_DIR, f"nexus-db-pre-restore-{safety_stamp}.db")
-    try:
-        shutil.copy2(DB_PATH, safety_path)
-        for suffix in ('-wal', '-shm'):
-            w = DB_PATH + suffix
-            if os.path.isfile(w):
-                shutil.copy2(w, safety_path + suffix)
-        print(f"[OK] Safety copy created: {os.path.basename(safety_path)}")
-    except Exception as e:
-        print(f"[WARN] Safety copy failed: {e}")
+    scopes = manifest.get('scopes', [])
+    print(f"[INFO] Restoring backup: {os.path.basename(target)}")
+    print(f"[INFO] Scope: {manifest.get('scope', 'unknown')} — includes: {', '.join(scopes)}")
 
-    # Overwrite current DB with backup
-    try:
-        # Stop any running server briefly? No — SQLite VACUUM INTO was atomic,
-        # but for restore we should close any open connections. We'll just copy.
-        shutil.copy2(target, DB_PATH)
-        # Restore WAL/SHM if present in backup dir with same stem
-        for suffix in ('-wal', '-shm'):
-            w = target + suffix
-            if os.path.isfile(w):
-                shutil.copy2(w, DB_PATH + suffix)
-            else:
-                # Remove stale WAL/SHM from current DB
-                cw = DB_PATH + suffix
-                if os.path.isfile(cw):
-                    os.remove(cw)
-        print(f"[OK] Database restored from: {os.path.basename(target)}")
-        print(f"[INFO] Restart the Nexus server to ensure clean state.")
-    except Exception as e:
-        print(f"[ERROR] Restore failed: {e}")
-        sys.exit(1)
+    # Extract to temp staging
+    tmp_dir = os.path.join(BACKUP_DIR, f".restore-staging-{int(time.time())}")
+    os.makedirs(tmp_dir, exist_ok=True)
+    with tarfile.open(target, 'r:gz') as tar:
+        tar.extractall(tmp_dir)
+
+    # ── Database restore (with safety copy) ──
+    if 'database' in scopes:
+        if not os.path.isfile(DB_PATH):
+            print(f"[WARN] Current database missing: {DB_PATH}")
+        else:
+            safety_stamp = _timestamp()
+            safety_path = os.path.join(BACKUP_DIR, f"nexus-db-pre-restore-{safety_stamp}.db")
+            try:
+                shutil.copy2(DB_PATH, safety_path)
+                for suffix in ('-wal', '-shm'):
+                    w = DB_PATH + suffix
+                    if os.path.isfile(w):
+                        shutil.copy2(w, safety_path + suffix)
+                print(f"[OK] Safety copy created: {os.path.basename(safety_path)}")
+            except Exception as e:
+                print(f"[WARN] Safety copy failed: {e}")
+
+        db_src = os.path.join(tmp_dir, 'database', 'nexus.db')
+        if os.path.isfile(db_src):
+            try:
+                shutil.copy2(db_src, DB_PATH)
+                for suffix in ('-wal', '-shm'):
+                    w = db_src + suffix
+                    if os.path.isfile(w):
+                        shutil.copy2(w, DB_PATH + suffix)
+                    else:
+                        cw = DB_PATH + suffix
+                        if os.path.isfile(cw):
+                            os.remove(cw)
+                print(f"[OK] Database restored.")
+            except Exception as e:
+                print(f"[ERROR] Database restore failed: {e}")
+
+    # ── Docker files ──
+    if 'docker' in scopes:
+        docker_src = os.path.join(tmp_dir, 'docker')
+        if os.path.isdir(docker_src):
+            for fn in os.listdir(docker_src):
+                if fn == 'container-info.json':
+                    continue  # metadata only
+                src = os.path.join(docker_src, fn)
+                dst = os.path.join(NEXUS_REPO, fn)
+                try:
+                    if os.path.isfile(src):
+                        shutil.copy2(src, dst)
+                        print(f"[OK] Docker config restored: {fn}")
+                except Exception as e:
+                    print(f"[WARN] Failed to restore {fn}: {e}")
+
+    # ── Brain files ──
+    if 'brain' in scopes:
+        brain_src = os.path.join(tmp_dir, 'brain')
+        if os.path.isdir(brain_src):
+            for fn in os.listdir(brain_src):
+                src = os.path.join(brain_src, fn)
+                dst = os.path.expanduser(f'~/.hermes/{fn}')
+                try:
+                    shutil.copy2(src, dst)
+                    print(f"[OK] Brain restored: {fn}")
+                except Exception as e:
+                    print(f"[WARN] Failed to restore {fn}: {e}")
+
+    # ── Assets ──
+    if 'assets' in scopes:
+        assets_src = os.path.join(tmp_dir, 'assets', 'public')
+        if os.path.isdir(assets_src):
+            for sub in os.listdir(assets_src):
+                src = os.path.join(assets_src, sub)
+                dst = os.path.join(NEXUS_REPO, 'public', sub)
+                try:
+                    if os.path.isdir(src):
+                        if os.path.exists(dst):
+                            shutil.rmtree(dst)
+                        shutil.copytree(src, dst)
+                        print(f"[OK] Assets restored: public/{sub}")
+                except Exception as e:
+                    print(f"[WARN] Failed to restore public/{sub}: {e}")
+
+    # ── Metadata ──
+    if 'metadata' in scopes:
+        meta_src = os.path.join(tmp_dir, 'metadata')
+        if os.path.isdir(meta_src):
+            for fn in os.listdir(meta_src):
+                src = os.path.join(meta_src, fn)
+                dst = os.path.join(NEXUS_REPO, fn)
+                try:
+                    shutil.copy2(src, dst)
+                    print(f"[OK] Metadata restored: {fn}")
+                except Exception as e:
+                    print(f"[WARN] Failed to restore {fn}: {e}")
+
+    # Clean staging
+    shutil.rmtree(tmp_dir)
+    print(f"[INFO] Restart the Nexus server to ensure clean state.")
 
 # ── Auto (cron-friendly) ───────────────────────────
 
-def auto_backup():
-    """Create backup then cleanup old ones. Silent unless error."""
-    result = create_backup()
-    removed, freed = cleanup(DEFAULT_RETENTION_DAYS)
+def auto_backup(scope='full'):
+    result = create_backup(scope)
+    removed, freed = cleanup(DEFAULT_RETENTION_DAYS, scope=None)
     return {
         'backup': result,
         'cleanup': { 'removed': removed, 'freed_bytes': freed }
@@ -237,25 +462,35 @@ if __name__ == '__main__':
         sys.exit(0)
 
     cmd = args[0]
+    scope = 'full'
+    # Parse --scope flag
+    if '--scope' in args:
+        idx = args.index('--scope')
+        if idx + 1 < len(args):
+            scope = args[idx + 1]
+        args = [a for i, a in enumerate(args) if i not in (idx, idx + 1)]
+
     if cmd == 'backup':
-        create_backup()
+        create_backup(scope)
     elif cmd == 'list':
-        print_backups()
+        print_backups(scope if scope != 'full' else None)
     elif cmd == 'restore':
         if len(args) < 2:
-            print("[ERROR] Usage: nexus-backup.py restore <filename_or_index>")
+            print("[ERROR] Usage: nexus_backup.py restore <file_or_index>")
             sys.exit(1)
         restore_backup(args[1])
     elif cmd == 'cleanup':
         days = DEFAULT_RETENTION_DAYS
-        if len(args) >= 3 and args[1] == '--days':
-            try:
-                days = int(args[2])
-            except ValueError:
-                pass
+        if '--days' in args:
+            idx = args.index('--days')
+            if idx + 1 < len(args):
+                try:
+                    days = int(args[idx + 1])
+                except ValueError:
+                    pass
         cleanup(days)
     elif cmd == 'auto':
-        auto_backup()
+        auto_backup(scope)
     else:
         print(f"[ERROR] Unknown command: {cmd}")
         print(__doc__)
