@@ -201,11 +201,7 @@ body[data-theme="cosmic-drift"] .app-main::after {
 }
 
 /* ── Ensure content sits above particles ── */
-body[data-theme="cosmic-drift"] .app,
-body[data-theme="cosmic-drift"] .app-header,
-body[data-theme="cosmic-drift"] .app-main,
-body[data-theme="cosmic-drift"] .nav-drawer,
-body[data-theme="cosmic-drift"] .modal-overlay {
+body[data-theme="cosmic-drift"] .app-main {
   position: relative;
   z-index: 1;
 }
