@@ -1,0 +1,251 @@
+/* === SOLAR FLARE THEME ===
+   Golden solar energy — radiating warmth, solar wind particles,
+   amber corona glow. Pure CSS. Dark-mode only.
+   ================================================================ */
+
+:root {
+  --bg:          #0c0804;
+  --surface:     #1a120a;
+  --header-bg:   rgba(12,8,4,0.90);
+  --text:        #f5e6d0;
+  --text-muted:  #8a7060;
+  --accent:      #f59e0b;           /* Solar gold */
+  --accent-secondary: #fbbf24;
+  --accent-bg:   rgba(245,158,11,0.12);
+  --accent-rgb:  245,158,11;
+  --border:      #2a2015;
+  --border-subtle:#1a140c;
+  --hover-bg:    #2a1f14;
+  --backdrop:    rgba(0,0,0,0.60);
+  --welcome-bg:  #080604;
+}
+
+/* ── Solar corona glow ── */
+body[data-theme="solar-flare"]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 60% at 80% 20%, rgba(245,158,11,0.12), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 20% 70%, rgba(251,191,36,0.08), transparent 60%);
+  animation: corona-breathe 8s ease-in-out infinite alternate;
+}
+
+/* ── Solar particles — floating embers ── */
+body[data-theme="solar-flare"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(3px 3px at 20% 80%, rgba(245,158,11,0.35), transparent),
+    radial-gradient(2px 2px at 50% 90%, rgba(251,191,36,0.25), transparent),
+    radial-gradient(3px 3px at 80% 70%, rgba(245,158,11,0.30), transparent),
+    radial-gradient(2px 2px at 35% 60%, rgba(251,191,36,0.20), transparent),
+    radial-gradient(3px 3px at 65% 50%, rgba(245,158,11,0.28), transparent),
+    radial-gradient(2px 2px at 10% 40%, rgba(251,191,36,0.18), transparent),
+    radial-gradient(3px 3px at 90% 30%, rgba(245,158,11,0.25), transparent),
+    radial-gradient(2px 2px at 45% 20%, rgba(251,191,36,0.20), transparent);
+  background-repeat: repeat;
+  background-size: 500px 400px;
+  animation: ember-float 15s linear infinite;
+  opacity: 0.50;
+}
+
+/* ── Ray spokes ── */
+body[data-theme="solar-flare"] .app-main::before {
+  content: '';
+  position: fixed;
+  top: 50%;
+  left: 80%;
+  width: 120vw;
+  height: 120vw;
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+  z-index: 0;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      rgba(245,158,11,0.018) 8deg,
+      transparent 16deg,
+      transparent 40deg,
+      rgba(251,191,36,0.014) 48deg,
+      transparent 56deg,
+      transparent 80deg,
+      rgba(245,158,11,0.010) 88deg,
+      transparent 96deg,
+      transparent 120deg,
+      rgba(251,191,36,0.016) 128deg,
+      transparent 136deg,
+      transparent 160deg,
+      rgba(245,158,11,0.012) 168deg,
+      transparent 176deg,
+      transparent 200deg,
+      rgba(251,191,36,0.010) 208deg,
+      transparent 216deg,
+      transparent 240deg,
+      rgba(245,158,11,0.015) 248deg,
+      transparent 256deg,
+      transparent 280deg,
+      rgba(251,191,36,0.013) 288deg,
+      transparent 296deg,
+      transparent 320deg,
+      rgba(245,158,11,0.011) 328deg,
+      transparent 336deg,
+      transparent 360deg
+    );
+  animation: ray-rotate 60s linear infinite;
+}
+
+/* ── Horizon warmth ── */
+body[data-theme="solar-flare"] .app-main::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(245,158,11,0.06), transparent 60%);
+}
+
+/* ── Animations ── */
+@keyframes corona-breathe {
+  0%   { opacity: 0.7; transform: scale(1.0); }
+  50%  { opacity: 1.0; transform: scale(1.03); }
+  100% { opacity: 0.8; transform: scale(0.98); }
+}
+
+@keyframes ember-float {
+  0%   { background-position: 0 0; opacity: 0.45; }
+  50%  { opacity: 0.60; }
+  100% { background-position: 250px 200px; opacity: 0.45; }
+}
+
+@keyframes ray-rotate {
+  0%   { transform: translate(-50%,-50%) rotate(0deg); }
+  100% { transform: translate(-50%,-50%) rotate(360deg); }
+}
+
+/* ── Stacking ── */
+body[data-theme="solar-flare"] .app-main {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Warm golden cards ── */
+body[data-theme="solar-flare"] .app-card,
+body[data-theme="solar-flare"] .widget-card {
+  background: rgba(26,18,10,0.75);
+  backdrop-filter: blur(8px) saturate(1.1);
+  border: 1px solid rgba(245,158,11,0.10);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s;
+}
+
+body[data-theme="solar-flare"] .app-card:hover,
+body[data-theme="solar-flare"] .widget-card:hover {
+  border-color: rgba(245,158,11,0.28);
+  box-shadow:
+    0 8px 32px rgba(245,158,11,0.08),
+    0 4px 24px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  transform: translateY(-2px);
+}
+
+/* ── Interactive glow ── */
+body[data-theme="solar-flare"] button:hover,
+body[data-theme="solar-flare"] .nav-item:hover,
+body[data-theme="solar-flare"] .header-btn:hover {
+  box-shadow: 0 0 12px rgba(245,158,11,0.15);
+}
+
+body[data-theme="solar-flare"] input:focus,
+body[data-theme="solar-flare"] textarea:focus,
+body[data-theme="solar-flare"] select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+}
+
+/* ── Scrollbar ── */
+body[data-theme="solar-flare"] ::-webkit-scrollbar {
+  width: 6px;
+}
+body[data-theme="solar-flare"] ::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+body[data-theme="solar-flare"] ::-webkit-scrollbar-thumb {
+  background: rgba(245,158,11,0.25);
+  border-radius: 3px;
+}
+body[data-theme="solar-flare"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(245,158,11,0.45);
+}
+
+/* ── Modals ── */
+body[data-theme="solar-flare"] .modal-content,
+body[data-theme="solar-flare"] .chat-widget-window,
+body[data-theme="solar-flare"] .feedback-widget {
+  border: 1px solid rgba(245,158,11,0.15);
+  box-shadow: 0 0 40px rgba(245,158,11,0.06), 0 8px 32px rgba(0,0,0,0.45);
+}
+
+/* ── Status glows ── */
+body[data-theme="solar-flare"] .status-connected {
+  color: #86efac;
+  text-shadow: 0 0 8px rgba(134,239,172,0.35);
+}
+body[data-theme="solar-flare"] .status-syncing {
+  color: #fcd34d;
+  text-shadow: 0 0 8px rgba(252,211,77,0.35);
+}
+body[data-theme="solar-flare"] .status-error {
+  color: #fca5a5;
+  text-shadow: 0 0 8px rgba(252,165,165,0.35);
+}
+
+/* ── Agent pulse ── */
+@keyframes solar-pulse {
+  0%,100% { box-shadow: 0 0 8px rgba(245,158,11,0.15); }
+  50%      { box-shadow: 0 0 22px rgba(245,158,11,0.40); }
+}
+body[data-theme="solar-flare"] .agent-active {
+  animation: solar-pulse 2.5s ease-in-out infinite;
+}
+
+/* ── Light mode fallback ── */
+body[data-theme="solar-flare"][data-theme-mode="light"] {
+  --bg:          #f5f0ea;
+  --surface:     #faf6f0;
+  --header-bg:   rgba(245,240,234,0.90);
+  --text:        #2a1f15;
+  --text-muted:  #8a7a6a;
+  --accent:      #b45309;
+  --accent-secondary: #d97706;
+  --accent-bg:   rgba(180,83,9,0.10);
+  --accent-rgb:  180,83,9;
+  --border:      #e2d8cc;
+  --border-subtle:#f0ebe3;
+  --hover-bg:    #ede4d8;
+  --backdrop:    rgba(42,31,21,0.20);
+  --welcome-bg:  #e2d8cc;
+}
+
+body[data-theme="solar-flare"][data-theme-mode="light"]::before,
+body[data-theme="solar-flare"][data-theme-mode="light"]::after,
+body[data-theme="solar-flare"][data-theme-mode="light"] .app-main::before,
+body[data-theme="solar-flare"][data-theme-mode="light"] .app-main::after {
+  opacity: 0.12;
+}
+
+body[data-theme="solar-flare"][data-theme-mode="light"] .app-card,
+body[data-theme="solar-flare"][data-theme-mode="light"] .widget-card {
+  background: rgba(250,246,240,0.82);
+  backdrop-filter: blur(8px);
+}

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nexus-v7-fix';
+const CACHE_NAME = 'nexus-v8-themes';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -12,7 +12,11 @@ const STATIC_ASSETS = [
   '/css/themes/space-odyssey.css',
   '/css/themes/retro-arcade.css',
   '/css/themes/ocean-breeze.css',
-  '/css/apps/calendar.css',
+  '/css/themes/cosmic-drift.css',
+  '/css/themes/neon-tokyo.css',
+  '/css/themes/aurora-borealis.css',
+  '/css/themes/matrix-rain.css',
+  '/css/themes/solar-flare.css',
   '/css/apps/notes.css',
   '/css/apps/todo.css',
   '/css/apps/weather.css',
