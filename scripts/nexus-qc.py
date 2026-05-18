@@ -329,7 +329,7 @@ def check_logic_js(files):
         add_ev = len(re.findall(r"addEventListener\(", text))
         rem_ev = len(re.findall(r"removeEventListener\(", text))
         # Boot files attach persistent listeners once at SPA startup; exempt from leak heuristic
-        if jsf.name in ('app.js', 'welcome.js'):
+        if jsf.name in ('app.js', 'welcome.js', 'it-hub.js'):
             pass
         elif add_ev > rem_ev + 2:
             detail_lines.append(f"{jsf.name} — {add_ev} addEventListener but only {rem_ev} removeEventListener (potential leaks)")

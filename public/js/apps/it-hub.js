@@ -29,8 +29,9 @@ export function initITHub() {
   renderCards(grid);
   refreshAll();
 
-  // Auto-refresh
-  setInterval(refreshAll, REFRESH_INTERVAL);
+  // Auto-refresh (clear any existing to avoid leaks on re-init)
+  if (window.__itHubInterval) clearInterval(window.__itHubInterval);
+  window.__itHubInterval = setInterval(refreshAll, REFRESH_INTERVAL);
 }
 
 function renderCards(grid) {
