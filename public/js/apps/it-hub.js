@@ -41,6 +41,7 @@ function renderCards(grid) {
     { id: 'it-deps',   title: 'Service Matrix', icon: '🔗' },
     { id: 'it-logs',   title: 'Logs & Debug', icon: '📋' },
     { id: 'it-auth',   title: 'Auth & Session', icon: '🔐' },
+    { id: 'it-db',     title: 'Database Backups', icon: '💾' },
   ];
   grid.innerHTML = '\
     <div class="it-hub-actions">\
@@ -87,7 +88,7 @@ function renderCards(grid) {
 }
 
 function refreshAll() {
-  ['it-server', 'it-health', 'it-network', 'it-deps', 'it-logs', 'it-auth'].forEach(refreshCard);
+  ['it-server', 'it-health', 'it-network', 'it-deps', 'it-logs', 'it-auth', 'it-db'].forEach(refreshCard);
 }
 
 /* ── Network / Tailscale ───────────────────— */
@@ -143,6 +144,7 @@ async function refreshCard(id) {
     else if (id === 'it-logs') await loadLogs(dot, rows);
     else if (id === 'it-auth') await loadAuth(dot, rows);
     else if (id === 'it-network') await loadNetwork(dot, rows);
+    else if (id === 'it-db') await loadDbBackups(dot, rows);
   } catch (e) {
     dot.className = 'it-status-dot red';
     rows.innerHTML = `<div class="it-card-placeholder">Error: ${esc(e.message)}</div>`;
@@ -227,7 +229,7 @@ function esc(s) {
 }
 
 function copyStatusReport() {
-  const cards = ['it-server','it-health','it-network','it-deps','it-logs','it-auth'];
+  const cards = ['it-server','it-health','it-network','it-deps','it-logs','it-auth','it-db'];
   let markdown = '| Card | Key | Value |\n|------|-----|-------|\n';
   cards.forEach(id => {
     const dot = document.getElementById(`${id}-dot`);
@@ -254,5 +256,115 @@ function copyStatusReport() {
     document.execCommand('copy');
     document.body.removeChild(ta);
     if (typeof toast !== 'undefined') toast('Status report copied');
+  });
+}
+
+/* ── Database Backups Card ──────────────────── */
+async function loadDbBackups(dot, rows) {
+  try {
+    const data = await fetchJson('/api/db/backups');
+    const backups = data.backups || [];
+    const ok = backups.length > 0;
+    dot.className = ok ? 'it-status-dot green' : 'it-status-dot amber';
+
+    let html = '';
+    if (!ok) {
+      html = `
+        <div class="it-row"><span class="it-label">Status</span><span class="it-value">No backups yet</span></div>
+        <div class="it-row"><span class="it-label">Action</span><span class="it-value"><button id="it-db-trigger" class="it-hub-refresh" style="margin:0">Trigger Backup</button></span></div>
+      `;
+    } else {
+      const latest = backups[0];
+      const total = backups.length;
+      const totalSize = backups.reduce((a, b) => a + (b.bytes || 0), 0);
+      const sizeStr = totalSize < 1024**2 ? `${(totalSize/1024).toFixed(1)} KB` : `${(totalSize/1024**2).toFixed(1)} MB`;
+      html = `
+        <div class="it-row"><span class="it-label">Backups</span><span class="it-value">${total} (${sizeStr})</span></div>
+        <div class="it-row"><span class="it-label">Latest</span><span class="it-value">${esc(latest.age_str)} • ${esc(latest.size)}</span></div>
+        <div class="it-row"><span class="it-label">File</span><span class="it-value" style="font-size:0.75rem">${esc(latest.filename)}</span></div>
+        <div class="it-row"><span class="it-label">Actions</span><span class="it-value"><button id="it-db-trigger" class="it-hub-refresh" style="margin:0 4px 0 0">New</button><button id="it-db-restore" class="it-hub-refresh" style="margin:0">Restore...</button></span></div>
+      `;
+    }
+    rows.innerHTML = html;
+
+    // Wire buttons
+    rows.querySelector('#it-db-trigger')?.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/db/trigger-backup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+        const j = await res.json();
+        if (j.ok) { if (typeof toast !== 'undefined') toast('Backup created'); refreshCard('it-db'); }
+        else { if (typeof toast !== 'undefined') toast(j.error || 'Backup failed', 'error'); }
+      } catch (e) { if (typeof toast !== 'undefined') toast(e.message, 'error'); }
+    });
+    rows.querySelector('#it-db-restore')?.addEventListener('click', () => showRestoreDialog(backups));
+  } catch (e) {
+    dot.className = 'it-status-dot red';
+    rows.innerHTML = `
+      <div class="it-row"><span class="it-label">Error</span><span class="it-value">${esc(e.message)}</span></div>
+      <div class="it-row"><span class="it-label">Action</span><span class="it-value"><button id="it-db-trigger" class="it-hub-refresh" style="margin:0">Trigger Backup</button></span></div>
+    `;
+    rows.querySelector('#it-db-trigger')?.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/db/trigger-backup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+        const j = await res.json();
+        if (j.ok) { if (typeof toast !== 'undefined') toast('Backup created'); refreshCard('it-db'); }
+      } catch (err) {}
+    });
+  }
+}
+
+function showRestoreDialog(backups) {
+  if (!backups || !backups.length) return;
+  // Remove existing
+  document.getElementById('it-db-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'it-db-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);';
+  modal.innerHTML = `
+    <div style="background:var(--surface-1,#11111a);border:1px solid var(--border,#1f1f2e);border-radius:12px;padding:1.5rem;max-width:420px;width:90%;max-height:80vh;overflow:auto;">
+      <h3 style="margin:0 0 1rem;color:var(--accent,#39d0f2);">↩️ Restore Database</h3>
+      <p style="margin:0 0 1rem;color:#888;font-size:0.9rem;">⚠️ This will overwrite the current database with a backup copy. A safety backup of the current DB will be created first.</p>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;">
+        ${backups.slice(0,10).map((b,i) => `
+          <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;background:var(--surface-0,#0a0a0f);border-radius:8px;cursor:pointer;border:2px solid ${i===0?'var(--accent,#39d0f2)':'transparent'};">
+            <input type="radio" name="it-db-restore-pick" value="${esc(b.filename)}" ${i===0?'checked':''} style="accent-color:var(--accent,#39d0f2);">
+            <div style="flex:1">
+              <div style="font-size:0.85rem;color:#e2e8f0;">${esc(b.filename)}</div>
+              <div style="font-size:0.75rem;color:#64748b;">${esc(b.size)} • ${esc(b.age_str)}</div>
+            </div>
+          </label>
+        `).join('')}
+      </div>
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+        <button id="it-db-cancel" class="it-hub-refresh">Cancel</button>
+        <button id="it-db-confirm" class="it-hub-refresh" style="background:var(--accent,#39d0f2);color:#000;font-weight:600;">Restore Now</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal.querySelector('#it-db-cancel')?.addEventListener('click', () => modal.remove());
+  modal.querySelector('#it-db-confirm')?.addEventListener('click', async () => {
+    const pick = modal.querySelector('input[name="it-db-restore-pick"]:checked');
+    if (!pick) { if (typeof toast !== 'undefined') toast('Select a backup', 'error'); return; }
+    const filename = pick.value;
+    modal.remove();
+    if (typeof toast !== 'undefined') toast('Restoring...');
+    try {
+      const res = await fetch('/api/db/restore-file', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ filename })
+      });
+      const j = await res.json();
+      if (j.ok) {
+        if (typeof toast !== 'undefined') toast(`Restored ${esc(filename)}. Restart server to ensure clean state.`);
+        refreshCard('it-db');
+      } else {
+        if (typeof toast !== 'undefined') toast(j.error || 'Restore failed', 'error');
+      }
+    } catch (e) { if (typeof toast !== 'undefined') toast(e.message, 'error'); }
   });
 }

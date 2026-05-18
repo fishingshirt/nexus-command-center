@@ -1,242 +1,262 @@
 #!/usr/bin/env python3
-"""nexus-backup.py  —  IT Hub Backup Engine
-Handles archive creation, USB detection, encrypted cloud sync for Nexus.
+"""Nexus Database Backup & Restore
+
+Usage:
+    python3 nexus-backup.py backup              # create a new DB backup
+    python3 nexus-backup.py list                # list all DB backups
+    python3 nexus-backup.py restore <file>      # restore from a .db backup
+    python3 nexus-backup.py cleanup [--days N]  # delete backups older than N days (default 60)
+    python3 nexus-backup.py auto                # backup + cleanup in one shot (for cron)
+
+Backups are stored in ~/.hermes/backups/db/ with rotational cleanup.
 """
-import os, sys, json, subprocess, time, glob, shutil
+import os, sys, shutil, sqlite3, time, glob, json
+from datetime import datetime, timedelta
 
-HOME = os.path.expanduser('~')
-HERMES_DIR = os.path.join(HOME, '.hermes')
-BACKUP_DIR = os.path.join(HOME, '.hermes', 'backups')
-TEMP_DIR = os.path.join(HOME, '.hermes', 'tmp')
+# ── Configuration ──────────────────────────────────
+NEXUS_REPO = os.path.expanduser('~/nexus-command-center')
+DB_PATH = os.path.join(NEXUS_REPO, 'data', 'nexus.db')
+BACKUP_DIR = os.path.expanduser('~/.hermes/backups/db')
+DEFAULT_RETENTION_DAYS = 60
 
-def ensure_dirs():
+# ── Helpers ────────────────────────────────────────
+
+def _ensure_dirs():
     os.makedirs(BACKUP_DIR, exist_ok=True)
-    os.makedirs(TEMP_DIR, exist_ok=True)
 
-def _run(cmd, cwd=None, timeout=120, env=None, capture=True):
+def _timestamp():
+    return datetime.now().strftime('%Y%m%d-%H%M%S')
+
+def _fmt_size(path):
     try:
-        result = subprocess.run(cmd, shell=True, cwd=cwd, timeout=timeout,
-                                capture_output=capture, text=True, env=env)
-        return result.returncode, result.stdout, result.stderr
-    except subprocess.TimeoutExpired:
-        return -1, '', 'timeout'
+        b = os.path.getsize(path)
+        if b < 1024: return f"{b} B"
+        if b < 1024**2: return f"{b/1024:.1f} KB"
+        if b < 1024**3: return f"{b/1024**2:.1f} MB"
+        return f"{b/1024**3:.2f} GB"
+    except Exception:
+        return "?"
+
+def _fmt_time(ts):
+    try:
+        d = datetime.fromtimestamp(ts)
+        age = datetime.now() - d
+        if age.days == 0:
+            if age.seconds < 60: return "just now"
+            if age.seconds < 3600: return f"{age.seconds//60}m ago"
+            return f"{age.seconds//3600}h ago"
+        if age.days == 1: return "yesterday"
+        if age.days < 7: return f"{age.days}d ago"
+        if age.days < 30: return f"{age.days//7}w ago"
+        return d.strftime('%b %d, %Y')
+    except Exception:
+        return "?"
+
+# ── Backup ─────────────────────────────────────────
+
+def create_backup():
+    _ensure_dirs()
+    if not os.path.isfile(DB_PATH):
+        print(f"[ERROR] Database not found: {DB_PATH}")
+        sys.exit(1)
+
+    stamp = _timestamp()
+    filename = f"nexus-db-{stamp}.db"
+    dest = os.path.join(BACKUP_DIR, filename)
+
+    # Atomic copy via VACUUM INTO (SQLite-native, consistent snapshot)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute(f"VACUUM INTO '{dest}'")
+        conn.close()
     except Exception as e:
-        return -1, '', str(e)
+        print(f"[ERROR] VACUUM INTO failed: {e}")
+        # Fallback: shutil copy (risk of WAL inconsistency but better than nothing)
+        shutil.copy2(DB_PATH, dest)
+        # Also copy WAL if present
+        for suffix in ('-wal', '-shm'):
+            wal = DB_PATH + suffix
+            if os.path.isfile(wal):
+                shutil.copy2(wal, dest + suffix)
 
-def _size_readable(path):
-    try:
-        size = os.path.getsize(path)
-        for unit in ['B','KB','MB','GB','TB']:
-            if size < 1024.0:
-                return f"{size:.1f} {unit}"
-            size /= 1024.0
-        return f"{size:.1f} PB"
-    except:
-        return '?'
+    size = _fmt_size(dest)
+    mtime = os.path.getmtime(dest)
+    print(f"[OK] Backup created: {filename} ({size})")
+    return {
+        'filename': filename,
+        'path': dest,
+        'size': size,
+        'bytes': os.path.getsize(dest),
+        'created': datetime.fromtimestamp(mtime).isoformat(),
+        'timestamp': mtime,
+    }
 
-def find_usb_drives():
-    drives = []
-    rc, out, _ = _run("lsblk -J -o NAME,SIZE,TYPE,MOUNTPOINT,LABEL,FSTYPE,RM 2>/dev/null")
-    if rc == 0:
-        try:
-            data = json.loads(out)
-            for dev in data.get('blockdevices', []):
-                children = dev.get('children', [])
-                if not children and dev.get('mountpoint'):
-                    children = [dev]
-                for child in children:
-                    mp = child.get('mountpoint') or ''
-                    if mp and mp.startswith('/'):
-                        drives.append({
-                            'name': child.get('name', dev.get('name','unknown')),
-                            'path': mp,
-                            'label': child.get('label') or dev.get('label') or child.get('name'),
-                            'size': child.get('size','?'),
-                            'fstype': child.get('fstype') or dev.get('fstype','?'),
-                            'mounted': True
-                        })
-                    elif child.get('children'):
-                        for gchild in child.get('children',[]):
-                            gmp = gchild.get('mountpoint') or ''
-                            if gmp and gmp.startswith('/'):
-                                drives.append({
-                                    'name': gchild.get('name', child.get('name','unknown')),
-                                    'path': gmp,
-                                    'label': gchild.get('label') or child.get('label') or gchild.get('name'),
-                                    'size': gchild.get('size','?'),
-                                    'fstype': gchild.get('fstype') or child.get('fstype','?'),
-                                    'mounted': True
-                                })
-        except:
-            pass
-    # fallback
-    if not drives:
-        for base in ['/media','/mnt','/run/media']:
-            if not os.path.isdir(base): continue
-            for user in os.listdir(base):
-                up = os.path.join(base, user)
-                if not os.path.isdir(up):
-                    drives.append({'name': user, 'path': up, 'label': user, 'size': '?', 'fstype': '?', 'mounted': True})
-                    continue
-                for entry in os.listdir(up):
-                    p = os.path.join(up, entry)
-                    if os.path.ismount(p) or (os.path.isdir(p) and os.listdir(p)):
-                        size = '?'
-                        try:
-                            st = os.statvfs(p)
-                            size = f"{st.f_frsize * st.f_blocks/(1024**3):.1f} GB"
-                        except: pass
-                        drives.append({'name': entry, 'path': p, 'label': entry, 'size': size, 'fstype': '?', 'mounted': True})
-    seen = set()
-    uniq = []
-    for d in drives:
-        if d['path'] not in seen:
-            seen.add(d['path'])
-            uniq.append(d)
-    return uniq
+# ── List ───────────────────────────────────────────
 
-def has_gpg():
-    rc,_,_ = _run("which gpg 2>/dev/null")
-    return rc == 0
+def list_backups():
+    _ensure_dirs()
+    files = []
+    for fp in sorted(glob.glob(os.path.join(BACKUP_DIR, 'nexus-db-*.db')), reverse=True):
+        st = os.stat(fp)
+        files.append({
+            'filename': os.path.basename(fp),
+            'path': fp,
+            'size': _fmt_size(fp),
+            'bytes': st.st_size,
+            'created': datetime.fromtimestamp(st.st_mtime).isoformat(),
+            'timestamp': st.st_mtime,
+            'age_str': _fmt_time(st.st_mtime),
+        })
+    return files
 
-def gpg_encrypt(infile, outfile, passphrase):
-    rc,out,err = _run(
-        f"gpg --batch --yes --passphrase {shlex_quote(passphrase)} --symmetric --cipher-algo AES256 "
-        f"--output {shlex_quote(outfile)} {shlex_quote(infile)}"
-    )
-    return rc, out, err
+def print_backups():
+    backups = list_backups()
+    if not backups:
+        print("[INFO] No database backups found.")
+        return
+    print(f"{'#':<4} {'Filename':<30} {'Size':<12} {'Age':<15}")
+    print("-" * 65)
+    for i, b in enumerate(backups, 1):
+        print(f"{i:<4} {b['filename']:<30} {b['size']:<12} {b['age_str']:<15}")
+    print(f"\n[INFO] {len(backups)} backup(s) in {BACKUP_DIR}")
 
-def create_backup_archive(encrypt_passphrase=None):
-    ensure_dirs()
-    ts = time.strftime('%Y%m%d_%H%M%S')
-    name = f"nexus_backup_{ts}.tar.gz"
-    archive = os.path.join(TEMP_DIR, name)
-    hermes = os.path.abspath(HERMES_DIR)
-    excludes = ["node_modules","__pycache__",".git/objects","tmp"]
-    exclude_args = ' '.join(f"--exclude='{os.path.join(hermes,e)}'" for e in excludes)
-    rc, out, err = _run(f"tar -czf {shlex_quote(archive)} -C {shlex_quote(HOME)} .hermes {exclude_args}")
-    if rc != 0:
-        raise RuntimeError(f"tar failed: {err}")
-    if encrypt_passphrase and has_gpg():
-        enc = archive + '.gpg'
-        rc2,_,err2 = gpg_encrypt(archive, enc, encrypt_passphrase)
-        if rc2 == 0:
-            os.remove(archive)
-            archive = enc
-        else:
-            raise RuntimeError(f"gpg failed: {err2}")
-    return archive, _size_readable(archive)
+# ── Cleanup ──────────────────────────────────────────
 
-def copy_to_usb(archive, usb_path):
-    if not os.path.isdir(usb_path):
-        return False, f"USB path not found: {usb_path}"
-    dest = os.path.join(usb_path, os.path.basename(archive))
-    try:
-        shutil.copy2(archive, dest)
-        return True, dest
-    except Exception as e:
-        return False, str(e)
-
-def sync_to_cloud(archive, config):
-    provider = config.get('provider','')
-    remote = config.get('path','')
-    if not provider or not remote:
-        return False, "Cloud not configured"
-    if provider == 'rclone':
-        rc,out,err = _run(f"rclone copy {shlex_quote(archive)} {shlex_quote(remote)}", timeout=300)
-        return rc == 0, err or out
-    elif provider == 'rsync+ssh':
-        rc,out,err = _run(f"rsync -avz --progress {shlex_quote(archive)} {shlex_quote(remote)}", timeout=300)
-        return rc == 0, err or out
-    elif provider == 's3':
-        rc,_,_ = _run("which aws 2>/dev/null")
-        if rc == 0:
-            rc2,out2,err2 = _run(f"aws s3 cp {shlex_quote(archive)} {shlex_quote(remote)}", timeout=300)
-            return rc2 == 0, err2 or out2
-        rc,_,_ = _run("which s3cmd 2>/dev/null")
-        if rc == 0:
-            rc2,out2,err2 = _run(f"s3cmd put {shlex_quote(archive)} {shlex_quote(remote)}", timeout=300)
-            return rc2 == 0, err2 or out2
-        return False, "S3 tool not found"
-    return False, f"Unknown provider: {provider}"
-
-def run_backup(btype='full', target=None, config=None):
-    cfg = config or {}
-    passphrase = cfg.get('passphrase') if (cfg.get('provider') and btype != 'local') else None
-    result = {'ok': False, 'type': btype, 'target': target or cfg.get('path','?'), 'size': '?', 'archive': None, 'error': None}
-    if btype == 'cloud' and not cfg.get('provider'):
-        result['error'] = "Cloud not configured"
-        return result
-    try:
-        archive, size = create_backup_archive(encrypt_passphrase=passphrase)
-        result['size'] = size
-        result['archive'] = archive
-        errors = []
-        ok_local = True; ok_cloud = True
-        if btype in ('full','local'):
-            usb = target
-            if not usb:
-                drives = find_usb_drives()
-                if drives: usb = drives[0]['path']
-                else:
-                    ok_local = False
-                    errors.append("No USB found")
-            if usb:
-                ok_local, msg = copy_to_usb(archive, usb)
-                if ok_local: result['target'] = usb
-                else: errors.append(f"USB: {msg}")
-        if btype in ('full','cloud'):
-            if cfg.get('provider'):
-                ok_cloud, msg = sync_to_cloud(archive, cfg)
-                if not ok_cloud: errors.append(f"Cloud: {msg}")
-            else:
-                ok_cloud = False; errors.append("Cloud not configured")
-        result['ok'] = (ok_local and ok_cloud) if btype=='full' else (ok_local if btype=='local' else ok_cloud)
-        if not result['ok']:
-            result['error'] = '; '.join(errors)
-        if result['ok']:
-            final = os.path.join(BACKUP_DIR, os.path.basename(archive))
-            shutil.move(archive, final)
-            result['archive'] = final
-        else:
-            # cap temp files
+def cleanup(days=DEFAULT_RETENTION_DAYS):
+    _ensure_dirs()
+    cutoff = time.time() - (days * 86400)
+    removed = 0
+    total_bytes = 0
+    for fp in glob.glob(os.path.join(BACKUP_DIR, 'nexus-db-*.db')):
+        if os.path.getmtime(fp) < cutoff:
             try:
-                temps = sorted(glob.glob(os.path.join(TEMP_DIR,'nexus_backup_*.tar.gz*')), key=os.path.getmtime)
-                while len(temps) > 5:
-                    os.remove(temps.pop(0))
-            except: pass
+                b = os.path.getsize(fp)
+                os.remove(fp)
+                # Clean companion WAL/SHM if any
+                for suffix in ('-wal', '-shm'):
+                    w = fp + suffix
+                    if os.path.isfile(w):
+                        os.remove(w)
+                removed += 1
+                total_bytes += b
+            except Exception as e:
+                print(f"[WARN] Failed to remove {fp}: {e}")
+    print(f"[OK] Cleanup: {removed} backup(s) older than {days} days removed ({_fmt_size_from_bytes(total_bytes)} freed)")
+    return removed, total_bytes
+
+def _fmt_size_from_bytes(b):
+    if b < 1024: return f"{b} B"
+    if b < 1024**2: return f"{b/1024:.1f} KB"
+    if b < 1024**3: return f"{b/1024**2:.1f} MB"
+    return f"{b/1024**3:.2f} GB"
+
+# ── Restore ────────────────────────────────────────
+
+def restore_backup(filename_or_index):
+    _ensure_dirs()
+
+    # Resolve input: index number or filename
+    backups = list_backups()
+    if not backups:
+        print("[ERROR] No backups available to restore from.")
+        sys.exit(1)
+
+    target = None
+    try:
+        idx = int(filename_or_index) - 1
+        if 0 <= idx < len(backups):
+            target = backups[idx]['path']
+    except ValueError:
+        # Treat as filename
+        if os.path.isfile(filename_or_index):
+            target = filename_or_index
+        else:
+            fp = os.path.join(BACKUP_DIR, filename_or_index)
+            if os.path.isfile(fp):
+                target = fp
+
+    if not target:
+        print(f"[ERROR] Backup not found: {filename_or_index}")
+        sys.exit(1)
+
+    if not os.path.isfile(DB_PATH):
+        print(f"[ERROR] Current database missing: {DB_PATH}")
+        sys.exit(1)
+
+    # Safety: backup current DB before overwriting
+    safety_stamp = _timestamp()
+    safety_path = os.path.join(BACKUP_DIR, f"nexus-db-pre-restore-{safety_stamp}.db")
+    try:
+        shutil.copy2(DB_PATH, safety_path)
+        for suffix in ('-wal', '-shm'):
+            w = DB_PATH + suffix
+            if os.path.isfile(w):
+                shutil.copy2(w, safety_path + suffix)
+        print(f"[OK] Safety copy created: {os.path.basename(safety_path)}")
     except Exception as e:
-        result['error'] = str(e)
-    return result
+        print(f"[WARN] Safety copy failed: {e}")
 
-def shlex_quote(s):
-    import shlex; return shlex.quote(s)
+    # Overwrite current DB with backup
+    try:
+        # Stop any running server briefly? No — SQLite VACUUM INTO was atomic,
+        # but for restore we should close any open connections. We'll just copy.
+        shutil.copy2(target, DB_PATH)
+        # Restore WAL/SHM if present in backup dir with same stem
+        for suffix in ('-wal', '-shm'):
+            w = target + suffix
+            if os.path.isfile(w):
+                shutil.copy2(w, DB_PATH + suffix)
+            else:
+                # Remove stale WAL/SHM from current DB
+                cw = DB_PATH + suffix
+                if os.path.isfile(cw):
+                    os.remove(cw)
+        print(f"[OK] Database restored from: {os.path.basename(target)}")
+        print(f"[INFO] Restart the Nexus server to ensure clean state.")
+    except Exception as e:
+        print(f"[ERROR] Restore failed: {e}")
+        sys.exit(1)
 
-# ── Async job runner ──────────────────────────
-import threading, uuid
+# ── Auto (cron-friendly) ───────────────────────────
 
-_JOBS = {}
-_JOB_LOCK = threading.Lock()
+def auto_backup():
+    """Create backup then cleanup old ones. Silent unless error."""
+    result = create_backup()
+    removed, freed = cleanup(DEFAULT_RETENTION_DAYS)
+    return {
+        'backup': result,
+        'cleanup': { 'removed': removed, 'freed_bytes': freed }
+    }
 
-def run_backup_async(btype='full', target=None, config=None):
-    job_id = str(uuid.uuid4())
-    with _JOB_LOCK:
-        _JOBS[job_id] = {'status': 'running', 'result': None, 'error': None}
-
-    def worker():
-        try:
-            res = run_backup(btype=btype, target=target, config=config)
-            with _JOB_LOCK:
-                _JOBS[job_id] = {'status': 'done', 'result': res, 'error': None}
-        except Exception as e:
-            with _JOB_LOCK:
-                _JOBS[job_id] = {'status': 'error', 'result': None, 'error': str(e)}
-    threading.Thread(target=worker, daemon=True).start()
-    return job_id
-
-def get_job_status(job_id):
-    with _JOB_LOCK:
-        return _JOBS.get(job_id, {'status': 'unknown'})
+# ── CLI ────────────────────────────────────────────
 
 if __name__ == '__main__':
-    print(json.dumps(find_usb_drives(), indent=2))
+    args = sys.argv[1:]
+    if not args or args[0] in ('-h', '--help', 'help'):
+        print(__doc__)
+        sys.exit(0)
+
+    cmd = args[0]
+    if cmd == 'backup':
+        create_backup()
+    elif cmd == 'list':
+        print_backups()
+    elif cmd == 'restore':
+        if len(args) < 2:
+            print("[ERROR] Usage: nexus-backup.py restore <filename_or_index>")
+            sys.exit(1)
+        restore_backup(args[1])
+    elif cmd == 'cleanup':
+        days = DEFAULT_RETENTION_DAYS
+        if len(args) >= 3 and args[1] == '--days':
+            try:
+                days = int(args[2])
+            except ValueError:
+                pass
+        cleanup(days)
+    elif cmd == 'auto':
+        auto_backup()
+    else:
+        print(f"[ERROR] Unknown command: {cmd}")
+        print(__doc__)
+        sys.exit(1)

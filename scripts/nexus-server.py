@@ -11,11 +11,16 @@ import email.utils
 from pathlib import Path
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-# -- Local SQLite database --
+# -- Local SQLite database + backup --
 try:
     import nexus_db
 except Exception:
     nexus_db = None
+
+try:
+    import nexus_backup
+except Exception:
+    nexus_backup = None
 
 _html_mod = html
 
@@ -255,6 +260,17 @@ def _api_db(handler, path):
             if table == 'stats':
                 _json(handler, 200, {'ok': True, 'stats': nexus_db.db_stats()})
                 return True
+            if table == 'backups':
+                # Database file backups (from nexus-backup.py)
+                if nexus_backup is None:
+                    _json(handler, 503, {'ok': False, 'error': 'Backup module unavailable'})
+                    return True
+                try:
+                    backups = nexus_backup.list_backups()
+                    _json(handler, 200, {'ok': True, 'backups': backups})
+                except Exception as e:
+                    _json(handler, 500, {'ok': False, 'error': str(e)})
+                return True
             if table == 'backup':
                 _json(handler, 200, {'ok': True, 'data': nexus_db.export_json()})
                 return True
@@ -292,6 +308,41 @@ def _api_db(handler, path):
                 wipe = payload.get('wipe', False)
                 ok = nexus_db.import_json(data, wipe=wipe)
                 _json(handler, 200, {'ok': ok})
+                return True
+            if table == 'restore-file':
+                # Restore from a .db file backup on disk
+                if nexus_backup is None:
+                    _json(handler, 503, {'ok': False, 'error': 'Backup module unavailable'})
+                    return True
+                filename = payload.get('filename', '')
+                if not filename:
+                    _json(handler, 400, {'ok': False, 'error': 'filename required'})
+                    return True
+                try:
+                    # Validate filename is safe
+                    safe = os.path.basename(filename)
+                    if not safe.startswith('nexus-db-') or not safe.endswith('.db'):
+                        raise ValueError('Invalid backup filename')
+                    full = os.path.join(nexus_backup.BACKUP_DIR, safe)
+                    if not os.path.isfile(full):
+                        raise ValueError('Backup file not found')
+                    # Safety copy + restore
+                    result = nexus_backup.restore_backup(safe)
+                    _json(handler, 200, {'ok': True, 'restored': safe})
+                except Exception as e:
+                    _json(handler, 500, {'ok': False, 'error': str(e)})
+                return True
+            if table == 'trigger-backup':
+                if nexus_backup is None:
+                    _json(handler, 503, {'ok': False, 'error': 'Backup module unavailable'})
+                    return True
+                try:
+                    result = nexus_backup.create_backup()
+                    # Run cleanup automatically
+                    nexus_backup.cleanup(nexus_backup.DEFAULT_RETENTION_DAYS)
+                    _json(handler, 200, {'ok': True, 'backup': result})
+                except Exception as e:
+                    _json(handler, 500, {'ok': False, 'error': str(e)})
                 return True
             if isinstance(payload, list):
                 ids = nexus_db.bulk_upsert(table, payload)
