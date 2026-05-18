@@ -21,7 +21,8 @@ VALID_TABLES = {
     'events', 'notes', 'todos', 'recipes', 'wishlist_items',
     'bookmarks', 'finance_transactions', 'finance_accounts',
     'chat_messages', 'feedback_items', 'usage_sessions',
-    'focus_sessions', 'app_settings', 'system_meta'
+    'focus_sessions', 'app_settings', 'system_meta',
+    'weather_locations', 'worldclock_cities',
 }
 
 JSON_COLUMNS = {
@@ -35,6 +36,8 @@ JSON_COLUMNS = {
     'chat_messages': ['metadata'],
     'feedback_items': ['metadata'],
     'app_settings': ['value'],
+    'weather_locations': ['current', 'forecast'],
+    'worldclock_cities': [],
 }
 
 # ── Connection ─────────────────────────────────────
@@ -213,6 +216,29 @@ CREATE TABLE IF NOT EXISTS app_settings (
 CREATE TABLE IF NOT EXISTS system_meta (
     key         TEXT PRIMARY KEY,
     value       TEXT
+);
+
+CREATE TABLE IF NOT EXISTS weather_locations (
+    id          TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    lat         REAL,
+    lon         REAL,
+    country     TEXT,
+    is_home     INTEGER DEFAULT 0,
+    current     TEXT,
+    forecast    TEXT,
+    updated     INTEGER,
+    added_at    INTEGER,
+    sort_order  INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS worldclock_cities (
+    id          TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    country     TEXT,
+    tz          TEXT NOT NULL,
+    label       TEXT,
+    sort_order  INTEGER DEFAULT 0
 );
 """
 

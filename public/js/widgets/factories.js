@@ -19,7 +19,7 @@ export function weatherWidget(config = {}) {
     return el;
   }
   el.innerHTML = `
-    <span class="widget-metric__value">${data.temp !== undefined ? data.temp : '--'}°</span>
+    <span class="widget-metric__value">${data.temp !== undefined ? Math.round(data.temp) : '--'}°</span>
     <span class="widget-metric__label">${esc(data.city)} ${data.icon || '🌤️'}</span>
   `;
   return el;

@@ -32,59 +32,87 @@
 .clock-pill-time { font-weight: 600; font-variant-numeric: tabular-nums; }
 .clock-pill-name { color: var(--text-muted); font-size: 0.75rem; }
 
-/* Search */
-.clock-search-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 480px;
+/* Tabs */
+.clock-tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-2);
 }
-.clock-search-wrap input {
-  width: 100%;
-  padding: 0.6rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+.clock-tab-btn {
   background: var(--surface);
-  color: var(--text);
-  font-size: clamp(16px, 1rem, 18px);
-  outline: none;
-}
-.clock-search-wrap input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-bg);
-}
-.clock-results {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  max-height: 220px;
-  overflow-y: auto;
-  z-index: 50;
-  display: none;
+  color: var(--text);
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  appearance: none;
+  -webkit-appearance: none;
 }
-.clock-result-item {
+.clock-tab-btn:hover { border-color: var(--accent); }
+.clock-tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.clock-tab-icon { font-size: 0.9rem; }
+
+/* Tab panels */
+.clock-tab-contents { min-height: 200px; }
+.clock-tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: fadeIn var(--transition-fast) ease;
+}
+.clock-tab-panel.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Add tab search */
+.clock-add-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 520px;
+  overflow-y: auto;
+}
+.clock-add-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--space-6);
+  font-size: var(--font-size-sm);
+}
+.clock-add-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  padding: 0.55rem 0.85rem;
-  border: none;
-  background: transparent;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   color: var(--text);
+  font-size: 0.9rem;
   cursor: pointer;
   text-align: left;
-  font-size: 0.9rem;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform .08s ease;
+  appearance: none;
+  -webkit-appearance: none;
 }
-.clock-result-item:hover, .clock-result-item:focus {
-  background: var(--hover-bg);
-  outline: none;
+.clock-add-item:hover {
+  background: var(--surface-hover, rgba(255,255,255,0.04));
+  border-color: var(--accent);
+  transform: translateY(-1px);
 }
-.clock-result-name { font-weight: 500; }
-.clock-result-country { color: var(--text-muted); font-size: 0.8rem; }
+.clock-add-name { font-weight: 500; flex: 1; }
+.clock-add-country { color: var(--text-muted); font-size: 0.75rem; }
+.clock-add-offset { color: var(--accent); font-weight: 600; font-size: 0.8rem; }
 
 /* Settings row */
 .clock-settings-row {
@@ -101,6 +129,7 @@
   border-radius: var(--radius-md);
   font-size: 0.8rem;
   cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 .clock-settings-row button:hover { border-color: var(--accent); }
 
@@ -136,6 +165,7 @@
   font-size: 0.85rem;
   padding: 0.15rem 0.35rem;
   border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 .clock-del:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 
@@ -177,4 +207,7 @@
 @media (max-width: 480px) {
   .clock-grid { grid-template-columns: repeat(2, 1fr); }
   .clock-card-time { font-size: 1.3rem; }
+  .clock-add-item { padding: var(--space-2); }
+  .clock-tabs { gap: 0.25rem; }
+  .clock-tab-btn { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
 }

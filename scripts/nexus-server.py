@@ -292,9 +292,12 @@ def _api_db(handler, path):
                     _json(handler, 200, {'ok': True, 'data': row})
                 return True
             filters = {}
-            for k in ('folder', 'list_name', 'category', 'priority', 'status', 'type', 'app', 'role', 'completed'):
-                if k in qs:
-                    filters[k] = qs[k][0]
+            if table == 'app_settings' and 'key' in qs:
+                filters['key'] = qs['key'][0]
+            else:
+                for k in ('folder', 'list_name', 'category', 'priority', 'status', 'type', 'app', 'role', 'completed'):
+                    if k in qs:
+                        filters[k] = qs[k][0]
             search = qs.get('search', [''])[0] or None
             sort = qs.get('sort', ['created_at'])[0]
             order = qs.get('order', ['desc'])[0]

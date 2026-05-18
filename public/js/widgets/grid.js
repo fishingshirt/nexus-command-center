@@ -187,15 +187,28 @@ export class WidgetGrid {
   }
 
   _renderWeatherWidget(el) {
-    const s = localStorage.getItem('ncc-weather-data');
-    let html = '<span class="widget-placeholder">No data</span>';
-    if (s) {
-      try {
-        const data = JSON.parse(s);
-        html = `<div class="widget-metric"><span class="widget-metric__value">${data.temp ?? '--'}°</span><span class="widget-metric__label">${data.city ?? 'Local'}</span></div>`;
-      } catch { /* ignore */ }
+    el.innerHTML = '<span class="widget-placeholder">Loading weather…</span>';
+    if (typeof NexusDB !== 'undefined') {
+      NexusDB.list('weather_locations', { sort: 'sort_order', order: 'asc' }).then(res => {
+        const locs = res.data || [];
+        const loc = locs.find(l => l.is_home) || locs[0];
+        if (loc && loc.current) {
+          const t = Math.round(loc.current.temp ?? 0);
+          const nameEl = document.createElement('div');
+          nameEl.className = 'widget-metric';
+          nameEl.innerHTML = `<span class="widget-metric__value">${t}°</span><span class="widget-metric__label"></span>`;
+          nameEl.querySelector('.widget-metric__label').textContent = loc.name;
+          el.innerHTML = '';
+          el.appendChild(nameEl);
+        } else {
+          el.innerHTML = '<span class="widget-placeholder">No weather data</span>';
+        }
+      }).catch(() => {
+        el.innerHTML = '<span class="widget-placeholder">No weather data</span>';
+      });
+    } else {
+      el.innerHTML = '<span class="widget-placeholder">No weather data</span>';
     }
-    el.innerHTML = html;
   }
 
   _renderCalendarWidget(el) {

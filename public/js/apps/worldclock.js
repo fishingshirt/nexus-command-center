@@ -102,26 +102,106 @@ const CITY_DB = [
   { name: 'Winnipeg', country: 'Canada', tz: 'America/Winnipeg' }
 ];
 
-function loadData() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
-  catch { return {}; }
+const _MIGRATED_WC = { done: false };
+
+// ── Persistence helpers ───────────────────────────
+
+async function _migrateWorldClock() {
+  if (_MIGRATED_WC.done) return;
+  if (typeof NexusDB === 'undefined') { _MIGRATED_WC.done = true; return; }
+  try {
+    const res = await NexusDB.list('worldclock_cities');
+    if (res.data && res.data.length > 0) { _MIGRATED_WC.done = true; return; }
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) { _MIGRATED_WC.done = true; return; }
+    const d = JSON.parse(raw);
+    const cities = d.cities || [];
+    if (!cities.length) { _MIGRATED_WC.done = true; return; }
+    for (let i = 0; i < cities.length; i++) {
+      const c = cities[i];
+      await NexusDB.create('worldclock_cities', {
+        id: c.id || ('c_' + Date.now().toString(36) + '_' + i),
+        name: c.name, country: c.country || '', tz: c.tz, label: c.label || c.name,
+        sort_order: i
+      });
+    }
+  } catch (e) { /* silent */ }
+  _MIGRATED_WC.done = true;
 }
-function saveData(patch) {
-  const d = loadData();
-  localStorage.setItem(LS_KEY, JSON.stringify({ ...d, ...patch }));
-}
-function ensureDefault() {
-  const d = loadData();
-  if (!d.cities) {
-    d.cities = [
-      { id: 'ny', name: 'New York', country: 'USA', tz: 'America/New_York', label: 'NYC' },
-      { id: 'ldn', name: 'London', country: 'UK', tz: 'Europe/London', label: 'London' },
-      { id: 'tyo', name: 'Tokyo', country: 'Japan', tz: 'Asia/Tokyo', label: 'Tokyo' },
-      { id: 'dxb', name: 'Dubai', country: 'UAE', tz: 'Asia/Dubai', label: 'Dubai' }
-    ];
-    saveData(d);
+
+async function loadClockCities() {
+  await _migrateWorldClock();
+  if (typeof NexusDB !== 'undefined') {
+    try {
+      const res = await NexusDB.list('worldclock_cities', { sort: 'sort_order', order: 'asc' });
+      if (res.data && res.data.length) {
+        return res.data.map(r => ({
+          id: r.id, name: r.name, country: r.country || '', tz: r.tz, label: r.label || r.name
+        }));
+      }
+    } catch (e) { /* fall through */ }
   }
-  return d;
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    const d = JSON.parse(raw);
+    return d.cities || [];
+  } catch { return []; }
+}
+
+async function saveClockCities(cities) {
+  if (typeof NexusDB !== 'undefined') {
+    try {
+      const res = await NexusDB.list('worldclock_cities');
+      const existing = new Set((res.data || []).map(r => r.id));
+      for (let i = 0; i < cities.length; i++) {
+        const c = cities[i];
+        const row = { id: c.id, name: c.name, country: c.country || '', tz: c.tz, label: c.label || c.name, sort_order: i };
+        if (existing.has(c.id)) await NexusDB.update('worldclock_cities', c.id, row);
+        else await NexusDB.create('worldclock_cities', row);
+      }
+      const keep = new Set(cities.map(c => c.id));
+      for (const r of (res.data || [])) {
+        if (!keep.has(r.id)) await NexusDB.delete('worldclock_cities', r.id);
+      }
+    } catch (e) { /* fall through */ }
+  }
+  localStorage.setItem(LS_KEY, JSON.stringify({
+    cities, format24: false, showDate: true, showSeconds: false
+  }));
+}
+
+async function loadClockPrefs() {
+  try {
+    if (typeof NexusDB !== 'undefined') {
+      try {
+        const fmt = await NexusDB.settings.get('worldclock_format24', false);
+        const date = await NexusDB.settings.get('worldclock_showDate', true);
+        const sec = await NexusDB.settings.get('worldclock_showSeconds', false);
+        return { format24: fmt, showDate: date, showSeconds: sec };
+      } catch (e) { /* fall through */ }
+    }
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return {};
+    const d = JSON.parse(raw);
+    return { format24: d.format24, showDate: d.showDate, showSeconds: d.showSeconds };
+  } catch { return {}; }
+}
+
+async function saveClockPrefs(prefs) {
+  try {
+    if (typeof NexusDB !== 'undefined') {
+      for (const [k, v] of Object.entries(prefs)) {
+        await NexusDB.settings.set('worldclock_' + k, v);
+      }
+    }
+  } catch (e) { /* fall through */ }
+  const d = { ...loadClockData(), ...prefs };
+  localStorage.setItem(LS_KEY, JSON.stringify(d));
+}
+
+function loadClockData() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
 }
 
 function nowFor(tz) {
@@ -157,168 +237,239 @@ function formatDate(tz) {
   });
 }
 
-export function initWorldClock() {
-  const data = ensureDefault();
-  const fmt24 = data.format24 === true;
-  const showDate = data.showDate !== false;
-  const showSeconds = data.showSeconds === true;
-
-  const pillRow = document.getElementById('clock-pill-row');
-  const viewBody = document.querySelector('.worldclock-view-body');
-  const search = document.getElementById('clock-search');
-  const results = document.getElementById('clock-results');
-  const fmtBtn = document.getElementById('clock-fmt-btn');
-  const dateBtn = document.getElementById('clock-date-btn');
-  const secBtn = document.getElementById('clock-sec-btn');
-
-  // Settings buttons
-  if (fmtBtn) {
-    fmtBtn.textContent = fmt24 ? '24h' : '12h';
-    fmtBtn.addEventListener('click', () => { saveData({ format24: !fmt24 }); refresh(); });
-  }
-  if (dateBtn) {
-    dateBtn.textContent = showDate ? 'Date ✓' : 'Date';
-    dateBtn.addEventListener('click', () => { saveData({ showDate: !showDate }); refresh(); });
-  }
-  if (secBtn) {
-    secBtn.textContent = showSeconds ? 'Sec ✓' : 'Sec';
-    secBtn.addEventListener('click', () => { saveData({ showSeconds: !showSeconds }); refresh(); });
-  }
-
-  // Initial render
-  renderAll();
-
-  // Search
-  if (search) {
-    search.addEventListener('input', () => {
-      const q = search.value.trim().toLowerCase();
-      if (!q) { results.innerHTML = ''; results.style.display = 'none'; return; }
-      const matches = CITY_DB.filter(c => c.name.toLowerCase().includes(q) || c.country.toLowerCase().includes(q)).slice(0, 8);
-      results.innerHTML = matches.map(c => `
-        <button class="clock-result-item" data-name="${escapeHtml(c.name)}" data-country="${escapeHtml(c.country)}" data-tz="${escapeHtml(c.tz)}">
-          <span class="clock-result-name">${escapeHtml(c.name)}</span>
-          <span class="clock-result-country">${escapeHtml(c.country)}</span>
-        </button>`).join('');
-      results.style.display = matches.length ? 'block' : 'none';
-    });
-    results.addEventListener('click', e => {
-      const btn = e.target.closest('.clock-result-item');
-      if (!btn) return;
-      addCity(btn.dataset.name, btn.dataset.country, btn.dataset.tz);
-      search.value = '';
-      results.innerHTML = '';
-      results.style.display = 'none';
-    });
-  }
-
-  // Delegate delete from view body
-  if (viewBody) {
-    viewBody.addEventListener('click', e => {
-      const del = e.target.closest('.clock-del');
-      if (del) {
-        const id = del.dataset.id;
-        const d = loadData();
-        d.cities = (d.cities || []).filter(c => c.id !== id);
-        saveData(d);
-        renderAll();
-      }
-    });
-  }
-
-  // Tick every minute (or every second if showSeconds)
-  const tickMs = showSeconds ? 1000 : 60000;
-  const timer = setInterval(renderAll, tickMs);
-
-  // Cleanup on page hide if needed (SPA doesn't destroy, but good citizen)
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) renderAll();
-  });
-
-  function refresh() {
-    // re-read stored prefs
-    initWorldClock();
-  }
-
-  function renderAll() {
-    const d = loadData();
-    const cities = d.cities || [];
-    renderPills(cities);
-    renderCards(cities);
-  }
-
-  function renderPills(cities) {
-    if (!pillRow) return;
-    pillRow.innerHTML = cities.map(c => {
-      const day = isDayTime(c.tz);
-      const icon = day ? '☀️' : '🌙';
-      const t = formatTime(c.tz, loadData().format24 === true);
-      return `<span class="clock-pill" title="${escapeHtml(c.name)}, ${escapeHtml(c.country)}">
-        <span class="clock-pill-icon">${icon}</span>
-        <span class="clock-pill-time">${escapeHtml(t)}</span>
-        <span class="clock-pill-name">${escapeHtml(c.label || c.name)}</span>
-      </span>`;
-    }).join('');
-  }
-
-  function renderCards(cities) {
-    if (!viewBody) return;
-    // Keep the search section, only replace the grid part
-    const grid = viewBody.querySelector('.clock-grid');
-    if (!grid) return;
-    grid.innerHTML = cities.map(c => {
-      const day = isDayTime(c.tz);
-      const icon = day ? '☀️' : '🌙';
-      const t = formatTime(c.tz, loadData().format24 === true);
-      const dt = formatDate(c.tz);
-      const off = offsetText(c.tz);
-      const d = loadData();
-      return `
-        <div class="clock-card">
-          <div class="clock-card-header">
-            <span class="clock-card-icon">${icon}</span>
-            <button class="clock-del" data-id="${escapeHtml(c.id)}" aria-label="Remove ${escapeHtml(c.name)}">✕</button>
-          </div>
-          <div class="clock-card-time">${escapeHtml(t)}</div>
-          <div class="clock-card-name">${escapeHtml(c.label || c.name)}</div>
-          <div class="clock-card-meta">
-            <span>${escapeHtml(c.country)}</span>
-            ${d.showDate !== false ? `<span>${escapeHtml(dt)}</span>` : ''}
-          </div>
-          <div class="clock-card-offset">${escapeHtml(off)}</div>
-        </div>`;
-    }).join('');
-  }
-
-  function addCity(name, country, tz) {
-    const d = loadData();
-    const cities = d.cities || [];
-    if (cities.length >= 8) {
-      toastClock('Max 8 cities reached');
-      return;
-    }
-    if (cities.some(c => c.tz === tz && c.name === name)) {
-      toastClock('City already added');
-      return;
-    }
-    const id = 'c_' + Date.now().toString(36);
-    cities.push({ id, name, country, tz, label: name });
-    saveData({ cities });
-    renderAll();
-    toastClock(`Added ${name}`);
-  }
-
-  function toastClock(msg) {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const el = document.createElement('div');
-    el.className = 'toast';
-    el.textContent = msg;
-    container.appendChild(el);
-    requestAnimationFrame(() => el.classList.add('show'));
-    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2500);
-  }
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
-function escapeHtml(s) {
-  return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+export function initWorldClock() {
+  const viewBody = document.querySelector('.worldclock-view-body');
+  if (!viewBody) return;
+
+  (async () => {
+    const data = await loadClockPrefs();
+    let fmt24 = data.format24 === true;
+    let showDate = data.showDate !== false;
+    let showSeconds = data.showSeconds === true;
+    let activeTab = 'clocks';
+
+    // Build tabs + tab panels if missing
+    let tabBar = viewBody.querySelector('.clock-tabs');
+    let content = viewBody.querySelector('.clock-tab-contents');
+    if (!tabBar) {
+      viewBody.innerHTML = '';
+      tabBar = document.createElement('div');
+      tabBar.className = 'clock-tabs';
+      tabBar.innerHTML = `
+        <button class="clock-tab-btn active" data-tab="clocks"><span class="clock-tab-icon">🕐</span> Clocks</button>
+        <button class="clock-tab-btn" data-tab="add"><span class="clock-tab-icon">+</span> Add</button>
+      `;
+      content = document.createElement('div');
+      content.className = 'clock-tab-contents';
+      content.innerHTML = `
+        <div class="clock-tab-panel active" data-panel="clocks">
+          <div class="clock-settings-row">
+            <button id="clock-fmt-btn">${fmt24 ? '24h' : '12h'}</button>
+            <button id="clock-date-btn">${showDate ? 'Date ✓' : 'Date'}</button>
+            <button id="clock-sec-btn">${showSeconds ? 'Sec ✓' : 'Sec'}</button>
+          </div>
+          <div class="clock-grid" id="clock-grid"></div>
+        </div>
+        <div class="clock-tab-panel" data-panel="add">
+          <div class="clock-search-wrap">
+            <input type="text" id="clock-add-search" placeholder="Search city (e.g. Dubai, Tokyo)..." aria-label="Search city">
+          </div>
+          <div class="clock-add-list" id="clock-add-list">
+          <div class="clock-add-empty">All cities already added.</div>
+          </div>
+        </div>
+      `;
+      viewBody.appendChild(tabBar);
+      viewBody.appendChild(content);
+    }
+
+    const pillRow = document.getElementById('clock-pill-row');
+    const grid = document.getElementById('clock-grid');
+    const fmtBtn = document.getElementById('clock-fmt-btn');
+    const dateBtn = document.getElementById('clock-date-btn');
+    const secBtn = document.getElementById('clock-sec-btn');
+    const addSearch = document.getElementById('clock-add-search');
+    const addList = document.getElementById('clock-add-list');
+
+    function switchTab(tab) {
+      activeTab = tab;
+      tabBar.querySelectorAll('.clock-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      content.querySelectorAll('.clock-tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+      if (tab === 'add') renderAddList(addSearch?.value?.trim().toLowerCase() || '');
+    }
+
+    tabBar.addEventListener('click', e => {
+      const btn = e.target.closest('.clock-tab-btn');
+      if (btn) switchTab(btn.dataset.tab);
+    });
+
+    if (fmtBtn) {
+      fmtBtn.addEventListener('click', async () => {
+        fmt24 = !fmt24;
+        await saveClockPrefs({ format24: fmt24 });
+        fmtBtn.textContent = fmt24 ? '24h' : '12h';
+        renderAll();
+      });
+    }
+    if (dateBtn) {
+      dateBtn.addEventListener('click', async () => {
+        showDate = !showDate;
+        await saveClockPrefs({ showDate });
+        dateBtn.textContent = showDate ? 'Date ✓' : 'Date';
+        renderAll();
+      });
+    }
+    if (secBtn) {
+      secBtn.addEventListener('click', async () => {
+        showSeconds = !showSeconds;
+        await saveClockPrefs({ showSeconds });
+        secBtn.textContent = showSeconds ? 'Sec ✓' : 'Sec';
+        restartTick();
+      });
+    }
+
+    // Add tab search
+    if (addSearch) {
+      addSearch.addEventListener('input', () => {
+        renderAddList(addSearch.value.trim().toLowerCase());
+      });
+    }
+    if (addList) {
+      addList.addEventListener('click', async e => {
+        const btn = e.target.closest('.clock-add-item');
+        if (!btn) return;
+        await addCity(btn.dataset.name, btn.dataset.country, btn.dataset.tz);
+        renderAddList(addSearch?.value?.trim().toLowerCase() || '');
+      });
+    }
+
+    // Delete from grid (event delegation on grid)
+    if (grid) {
+      grid.addEventListener('click', async e => {
+        const del = e.target.closest('.clock-del');
+        if (del) {
+          const id = del.dataset.id;
+          await removeCity(id);
+        }
+      });
+    }
+
+    // Render
+    renderAll();
+    switchTab('clocks');
+
+    let _tickTimer = null;
+    function restartTick() {
+      if (_tickTimer) clearInterval(_tickTimer);
+      const tickMs = showSeconds ? 1000 : 60000;
+      _tickTimer = setInterval(renderAll, tickMs);
+    }
+    restartTick();
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) renderAll();
+    });
+
+    async function renderAll() {
+      const cities = await loadClockCities();
+      renderPills(cities);
+      renderCards(cities);
+    }
+
+    function renderPills(cities) {
+      if (!pillRow) return;
+      pillRow.innerHTML = cities.map(c => {
+        const day = isDayTime(c.tz);
+        const icon = day ? '☀️' : '🌙';
+        const t = formatTime(c.tz, fmt24);
+        return `<span class="clock-pill" title="${escapeHtml(c.name)}, ${escapeHtml(c.country)}">
+          <span class="clock-pill-icon">${icon}</span>
+          <span class="clock-pill-time">${escapeHtml(t)}</span>
+          <span class="clock-pill-name">${escapeHtml(c.label || c.name)}</span>
+        </span>`;
+      }).join('');
+    }
+
+    function renderCards(cities) {
+      if (!grid) return;
+      grid.innerHTML = cities.map(c => {
+        const day = isDayTime(c.tz);
+        const icon = day ? '☀️' : '🌙';
+        const t = formatTime(c.tz, fmt24);
+        const dt = formatDate(c.tz);
+        const off = offsetText(c.tz);
+        return `
+          <div class="clock-card">
+            <div class="clock-card-header">
+              <span class="clock-card-icon">${icon}</span>
+              <button class="clock-del" data-id="${escapeHtml(c.id)}" aria-label="Remove ${escapeHtml(c.name)}">✕</button>
+            </div>
+            <div class="clock-card-time">${escapeHtml(t)}</div>
+            <div class="clock-card-name">${escapeHtml(c.label || c.name)}</div>
+            <div class="clock-card-meta">
+              <span>${escapeHtml(c.country)}</span>
+              ${showDate ? `<span>${escapeHtml(dt)}</span>` : ''}
+            </div>
+            <div class="clock-card-offset">${escapeHtml(off)}</div>
+          </div>`;
+      }).join('');
+    }
+
+    async function renderAddList(q) {
+      if (!addList) return;
+      const cities = await loadClockCities();
+      const added = new Set(cities.map(c => c.tz + '|' + c.name));
+      let list = CITY_DB.filter(c => !added.has(c.tz + '|' + c.name));
+      if (q) {
+        list = list.filter(c => c.name.toLowerCase().includes(q) || c.country.toLowerCase().includes(q));
+      }
+      if (!list.length) {
+        addList.innerHTML = '<div class="clock-add-empty">All matching cities already added.</div>';
+        return;
+      }
+      addList.innerHTML = list.map(c => {
+        const off = offsetText(c.tz);
+        return `
+          <button class="clock-add-item" data-name="${escapeHtml(c.name)}" data-country="${escapeHtml(c.country)}" data-tz="${escapeHtml(c.tz)}">
+            <span class="clock-add-name">${escapeHtml(c.name)}</span>
+            <span class="clock-add-country">${escapeHtml(c.country)}</span>
+            <span class="clock-add-offset">${escapeHtml(off)}</span>
+          </button>`;
+      }).join('');
+    }
+
+    async function addCity(name, country, tz) {
+      const cities = await loadClockCities();
+      if (cities.length >= 8) { toastClock('Max 8 cities reached'); return; }
+      if (cities.some(c => c.tz === tz && c.name === name)) { toastClock('City already added'); return; }
+      const id = 'c_' + Date.now().toString(36);
+      cities.push({ id, name, country, tz, label: name });
+      await saveClockCities(cities);
+      renderAll();
+      toastClock(`Added ${name}`);
+    }
+
+    async function removeCity(id) {
+      const cities = (await loadClockCities()).filter(c => c.id !== id);
+      await saveClockCities(cities);
+      renderAll();
+      if (activeTab === 'add') renderAddList(addSearch?.value?.trim().toLowerCase() || '');
+      toastClock('Removed city');
+    }
+  })();
+}
+
+function toastClock(msg) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2500);
 }
