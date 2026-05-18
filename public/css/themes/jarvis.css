@@ -109,7 +109,7 @@ body[data-theme="jarvis"] .app-card:hover {
 }
 
 /* ── Chat widget ── */
-body[data-theme="jarvis"] .chat-widget {
+body[data-theme="jarvis"] .chat-widget-window {
   border: 1px solid var(--border-hover);
   box-shadow: var(--shadow-lg);
   background: var(--bg-surface);
