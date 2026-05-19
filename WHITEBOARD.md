@@ -8,36 +8,18 @@
 
 - **Project phase:** Agent Task System
 - **Last updated:** 2026-05-14 17:45 UTC
-- **Active tasks:** 3 (1 pending, 0 in-progress, 2 blocked, 17 done)
-- **Completed tasks:** 35 shown below
-- **Quality system:** QC/QA pipeline (T-060) DONE — all sub-tasks complete, system operational
-- **Agent state:** PAUSED — awaiting user review
+- **Active tasks:** 1 (1 pending, 0 in-progress, 2 blocked)
+- **Completed tasks:** 38+ shown below
+- **Agent state:** ACTIVE — wake cycle running every 30min
 
 ## 🎯 Active Tasks
+| MEDIUM | `T-065` | Calendar Dark Mode Bug | `PENDING` | Auto-generated from feedback |
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|
-| HIGH | `T-052` | Project completion sentinel (pause agent, notify user) | **DONE** — Agent paused, dashboard updated | [`tasks/T-052.md`](tasks/T-052.md) |
 | MEDIUM | `T-017-a` | Spotify Integration OAuth + playback shell | `BLOCKED` | Missing SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in ~/.hermes/.env |
 | MEDIUM | `T-063` | Calendar Service Email Integration | `BLOCKED` | Awaiting user API credentials + calendar permissions | [`tasks/T-063.md`](tasks/T-063.md) |
 | LOW | `T-064` | Agent Virtual Office (pixel-art game view) | `PENDING` | User request — do not start yet | [`tasks/T-064.md`](tasks/T-064.md) |
-| MEDIUM | `T-020` | AI task suggester | `DONE` | Decomposed: T-020-a, T-020-b, T-020-c, T-020-d (all DONE) |
-| MEDIUM | `T-020-c` | AI Suggester — Server API endpoint | `DONE` | [`tasks/T-020-c.md`](tasks/T-020-c.md) |
-|| MEDIUM | `T-040-a-2` | Widget Grid dashboard wiring + widget stubs | `DONE` | [`tasks/T-040-a-2.md`](tasks/T-040-a-2.md) |
-|| LOW | `T-049` | File attachments for notes & calendar | `DONE` | [`tasks/T-049.md`](tasks/T-049.md) |
-| MEDIUM | `T-054` | App Launcher Customization (hide/show/reorder apps) | `DONE` | [`tasks/T-054.md`](tasks/T-054.md) |
-| MEDIUM | `T-055-c` | Feedback Pipeline agent integration + settings | `DONE` | [`tasks/T-055-c.md`](tasks/T-055-c.md) |
-| HIGH | `T-059` | Hermes Chat Bridge Replies Never Arrive | `DONE` | [`tasks/T-059.md`](tasks/T-059.md) |
-| LOW    | `T-020-b` | AI Suggester — CSS module | `DONE` | [`tasks/T-020-b.md`](tasks/T-020-b.md) |
-| LOW    | `T-020-d` | AI Suggester — Settings integration | `DONE` | [`tasks/T-020-d.md`](tasks/T-020-d.md) |
-|| LOW    | `T-040-c` | Widget factories (Weather, Calendar, To-Do, Agent Stats) | `DONE` | [`tasks/T-040-c.md`](tasks/T-040-c.md) |
-| LOW    | `T-043-c` | Quick Capture voice memo recording + storage | `DONE` | [`tasks/T-043-c.md`](tasks/T-043-c.md) |
-| LOW    | `T-043-d` | Quick Capture agent command queue + integration | `DONE` | [`tasks/T-043-d.md`](tasks/T-043-d.md) |
-| LOW    | `T-046-a` | Auto dark mode CSS transitions + matchMedia listener | `DONE` | [`tasks/T-046-a.md`](tasks/T-046-a.md) |
-| LOW    | `T-046-b` | Auto dark mode settings panel + per-app override | `DONE` | [`tasks/T-046-b.md`](tasks/T-046-b.md) |
-| LOW | `T-048` | Usage analytics & screen time | `DONE` | [`tasks/T-048.md`](tasks/T-048.md) |
-| LOW | `T-050` | Bookmark manager | `DONE` | [`tasks/T-050.md`](tasks/T-050.md) |
-| LOW | `T-025` | Smart PDF Editor | `DONE` | [`tasks/T-025.md`](tasks/T-025.md) |
 
 
 ## ✅ Recently Done

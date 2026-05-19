@@ -8,6 +8,23 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FEEDBACK_PATH = os.path.join(REPO, 'data', 'feedback-queue.jsonl')
 TASKS_DIR = os.path.join(REPO, 'tasks')
 WHITEBOARD_PATH = os.path.join(REPO, 'WHITEBOARD.md')
+CONFIG_PATH = os.path.expanduser('~/.hermes/nexus-feedback-config.json')
+
+def load_feedback_config():
+    """Load feedback pipeline config from server-side JSON."""
+    defaults = {
+        'auto_generate': True,
+        'notify_on_process': True,
+        'min_desc_length': 40,
+    }
+    try:
+        if os.path.isfile(CONFIG_PATH):
+            with open(CONFIG_PATH, 'r') as f:
+                saved = json.load(f)
+            defaults.update(saved)
+    except Exception:
+        pass
+    return defaults
 
 
 def load_feedback():
@@ -43,11 +60,17 @@ def next_task_id():
     return f'T-{n:03d}'
 
 
-def classify(entry):
+def classify(entry, config=None):
     desc = entry.get('description', '')
     title = entry.get('title', '')
     t = entry.get('type', 'other')
     priority = entry.get('priority', 'nice')
+    if config is None:
+        config = load_feedback_config()
+
+    # If auto-generate is OFF, everything goes to review
+    if not config.get('auto_generate', True):
+        return 'review', t
 
     # Bug → always auto-generate
     if t == 'bug':
@@ -56,7 +79,8 @@ def classify(entry):
     if t == 'theme' and any(k in desc.lower() for k in ['color', 'palette', 'dark', 'light', 'vibe', 'mood', 'style']):
         return 'auto', 'theme'
     # Feature/improvement with enough detail and priority
-    if len(desc) >= 40 and priority in ('must', 'should'):
+    min_len = config.get('min_desc_length', 40)
+    if len(desc) >= min_len and priority in ('must', 'should'):
         return 'auto', t
     return 'review', t
 
@@ -171,11 +195,12 @@ def main():
     args = p.parse_args()
 
     items = load_feedback()
+    cfg = load_feedback_config()
     changed = False
     for it in items:
         if it.get('status') != 'pending':
             continue
-        action, category = classify(it)
+        action, category = classify(it, config=cfg)
         if action == 'review':
             it['status'] = 'review'
             it['note'] = 'Needs human review — too vague or low priority.'

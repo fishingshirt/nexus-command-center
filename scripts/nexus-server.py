@@ -2214,7 +2214,7 @@ def _api_store_post(handler, path):
 def _api_feedback(handler, raw_path):
     import urllib.parse, datetime
     path = raw_path.split('?')[0]
-    repo = os.path.dirname(os.path.abspath(handler.args_dir))
+    repo = os.path.abspath(handler.args_dir)
     fp = os.path.join(repo, 'data', 'feedback-queue.jsonl')
     os.makedirs(os.path.dirname(fp), exist_ok=True)
     if not os.path.exists(fp):
@@ -2249,6 +2249,34 @@ def _api_feedback(handler, raw_path):
             items = [it for it in items if it.get('status') == status_filter]
         _json(handler, 200, {'items': items, 'total': len(items)})
         return True
+
+    # GET/POST /api/feedback/config — must be before /:id catch-all
+    if path == '/api/feedback/config':
+        CONFIG_PATH = os.path.expanduser('~/.hermes/nexus-feedback-config.json')
+        if handler.command == 'GET':
+            cfg = {}
+            try:
+                if os.path.isfile(CONFIG_PATH):
+                    with open(CONFIG_PATH, 'r') as f:
+                        cfg = json.load(f)
+            except Exception:
+                pass
+            _json(handler, 200, {'ok': True, 'config': cfg})
+            return True
+        if handler.command == 'POST':
+            try:
+                length = int(handler.headers.get('Content-Length', 0))
+                body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+                req = json.loads(body)
+            except Exception:
+                _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+                return True
+            cfg = req.get('config', {})
+            os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+            with open(CONFIG_PATH, 'w') as f:
+                json.dump(cfg, f, indent=2)
+            _json(handler, 200, {'ok': True, 'config': cfg})
+            return True
 
     # GET /api/feedback/:id
     if path.startswith('/api/feedback/') and handler.command == 'GET':
@@ -3354,6 +3382,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith('/api/feedback/'):
             return _api_feedback(self, self.path)
 
+        if path == '/api/feedback':
+            return _api_feedback(self, self.path)
+
         if path == '/api/fetch-link':
             return _api_fetch_link(self, self.path)
 
@@ -3471,6 +3502,9 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                 if _api_email(self, self.path):
                     return
             if path.startswith('/api/feedback/'):
+                if _api_feedback(self, self.path):
+                    return
+            if path == '/api/feedback' or path == '/api/feedback/':
                 if _api_feedback(self, self.path):
                     return
             if path.startswith('/api/vault/'):

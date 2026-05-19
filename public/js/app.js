@@ -636,6 +636,8 @@ function initSettings() {
         const cur = loadSettings();
         const next = { ...(cur.feedbackPipeline || {}), autoGenerate: autoEl.checked };
         saveSettings({ feedbackPipeline: next });
+        // Also save to server config so feedback-agent respects it
+        saveFeedbackConfigToServer({ auto_generate: autoEl.checked });
         toast(autoEl.checked ? 'Auto-generate from feedback enabled' : 'Auto-generate from feedback disabled');
       });
     }
@@ -645,6 +647,7 @@ function initSettings() {
         const cur = loadSettings();
         const next = { ...(cur.feedbackPipeline || {}), notifyProcessed: notifyEl.checked };
         saveSettings({ feedbackPipeline: next });
+        saveFeedbackConfigToServer({ notify_on_process: notifyEl.checked });
       });
     }
   })();
@@ -2124,6 +2127,22 @@ function parseWhiteboard(md) {
 
 function escapeHtml(str) {
   return (str || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+async function saveFeedbackConfigToServer(patch) {
+  try {
+    const r = await fetch('/api/feedback/config');
+    const d = await r.json();
+    const existing = (d.ok ? d.config : {}) || {};
+    const merged = { ...existing, ...patch };
+    await fetch('/api/feedback/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: merged })
+    });
+  } catch (e) {
+    // silent — server config is a bonus, not critical
+  }
 }
 
 function fmtDate(iso) {
