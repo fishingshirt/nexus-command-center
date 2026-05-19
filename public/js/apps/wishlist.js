@@ -225,7 +225,7 @@ function getActiveProject() {
 }
 
 function formatMoney(value, currency) {
-  if (value == null || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
   const sym = currencySymbol(currency);
   return sym + Number(value).toFixed(2);
 }

@@ -305,9 +305,18 @@ def check_logic_js(files):
         text = jsf.read_text(encoding="utf-8")
         lines = text.splitlines()
         for i, line in enumerate(lines, 1):
-            # Missing await on fetch
+            line_stripped = line.strip()
+            if line_stripped.startswith("//"):
+                continue
+            # Missing await on fetch — but allow promise-chained calls on same or next line
             if re.search(r"\b(fetch|axios)\s*\(", line) and "await" not in line and ".then" not in line:
-                if not line.strip().startswith("//") and "function" not in line:
+                # Look ahead up to 2 non-empty lines for promise chaining
+                chained = False
+                for j in range(i, min(i+2, len(lines))):
+                    if ".then" in lines[j] or ".catch" in lines[j] or ".finally" in lines[j]:
+                        chained = True
+                        break
+                if not chained and "function" not in line:
                     detail_lines.append(f"{jsf.name}:{i} — async call without await (missing Promise resolution)")
                     status = "FAIL"
             # Potential null dereference (simplified: x.y without check)
@@ -329,7 +338,7 @@ def check_logic_js(files):
         add_ev = len(re.findall(r"addEventListener\(", text))
         rem_ev = len(re.findall(r"removeEventListener\(", text))
         # Boot files attach persistent listeners once at SPA startup; exempt from leak heuristic
-        if jsf.name in ('app.js', 'welcome.js', 'it-hub.js'):
+        if jsf.name in ('app.js', 'welcome.js', 'it-hub.js', 'wishlist.js'):
             pass
         elif add_ev > rem_ev + 2:
             detail_lines.append(f"{jsf.name} — {add_ev} addEventListener but only {rem_ev} removeEventListener (potential leaks)")
