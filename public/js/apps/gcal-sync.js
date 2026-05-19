@@ -3,14 +3,26 @@ const saveSettings = window.saveSettings || (() => {});
 const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 import { flushOutboundQueue } from './gcal-outbound.js';
 
-/* ===== GOOGLE CALENDAR SYNC ENGINE ===== */
-// Inbound sync via backend proxy (OAuth-based). No API-key logic.
+/* ===== GOOGLE CALENDAR SYNC ENGINE =====
+   Dual-mode: OAuth (legacy) ↔ Service Account (new).
+   Service account is preferred when available; falls back to OAuth tokens.
+   Settings key: calendarSync.mode = 'service_account' | 'oauth' | null
+*/
 
 export function initGoogleSync() {
   const STORAGE_KEY = 'ncc-calendar-events';
   let syncTimer = null;
 
-  // Manual sync button listener
+  // Detect which mode we're in
+  function getSyncMode() {
+    const s = loadSettings().calendarSync || {};
+    if (s.mode) return s.mode;
+    if (s.access_token || s.status) return 'oauth';
+    return 'service_account'; // default to trying service account
+  }
+
+  function isServiceAccount() { return getSyncMode() === 'service_account'; }
+
   document.getElementById('btn-sync-now')?.addEventListener('click', async () => {
     await doSync();
   });
@@ -21,7 +33,6 @@ export function initGoogleSync() {
 
   // Poll agent calendar commands on focus
   window.addEventListener('focus', pollAgentEvents);
-  // Poll once at startup
   pollAgentEvents();
 
   function startAutoSync() {
@@ -69,6 +80,15 @@ export function initGoogleSync() {
   }
 
   async function doSync() {
+    if (isServiceAccount()) {
+      await doServiceAccountSync();
+    } else {
+      await doOAuthSync();
+    }
+  }
+
+  // ── OAuth legacy sync ──────────────────────
+  async function doOAuthSync() {
     try {
       saveStatus('syncing', null, 'inbound');
       const res = await fetch('/api/calendar/sync');
@@ -81,10 +101,7 @@ export function initGoogleSync() {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
       const imported = mergeEvents(data.events || []);
-      // Don't set 'synced' yet — wait for outbound flush to finish
       saveStatus('syncing', imported, 'inbound');
-
-      // Now flush any pending outbound mutations → when done, show synced
       const flushRes = await flushOutboundQueue();
       if (flushRes && flushRes.remaining) {
         saveStatus('syncing', imported, 'outbound');
@@ -93,6 +110,41 @@ export function initGoogleSync() {
       }
     } catch (err) {
       saveStatus('error', null);
+    }
+  }
+
+  // ── Service account sync ─────────────────
+  async function doServiceAccountSync() {
+    try {
+      saveStatus('syncing', null, 'inbound');
+      const now = new Date();
+      const timeMin = new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, -1) + 'Z';
+      const timeMax = new Date(now.getTime() + 90 * 86400000).toISOString().slice(0, -1) + 'Z';
+      const res = await fetch(`/api/calendar/gcal/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (!data.ok) {
+        if (data.error?.includes('not_found') || data.error?.includes('calendarId')) {
+          saveStatus('error', null);
+          toast('Calendar not found. Make sure the service account email has been shared your calendar.', 'error');
+          return;
+        }
+        throw new Error(data.error || 'Unknown error');
+      }
+      const imported = mergeEvents(data.events || []);
+      saveStatus('syncing', imported, 'inbound');
+      const flushRes = await flushOutboundQueue();
+      if (flushRes && flushRes.remaining) {
+        saveStatus('syncing', imported, 'outbound');
+      } else {
+        saveStatus('synced', imported, 'outbound');
+      }
+    } catch (err) {
+      saveStatus('error', null);
+      toast(`Service account sync failed: ${err.message}`, 'error');
     }
   }
 
@@ -161,7 +213,6 @@ export function initGoogleSync() {
 
   function saveStatus(status, importResult, phase) {
     const c = loadSettings().calendarSync || {};
-    // Don't downgrade an existing 'error' back to 'syncing'
     if (c.status === 'error' && status === 'syncing') {
       c.lastStatusAt = new Date().toISOString();
       saveSettings({ calendarSync: c });
@@ -169,6 +220,8 @@ export function initGoogleSync() {
     }
     c.status = status;
     c.lastStatusAt = new Date().toISOString();
+    // Set mode if it hasn't been explicitly chosen yet
+    if (!c.mode) c.mode = 'service_account';
     if (status === 'synced') c.lastSynced = new Date().toISOString();
     saveSettings({ calendarSync: c });
 
@@ -176,7 +229,7 @@ export function initGoogleSync() {
     const dot = document.getElementById('calendar-sync-dot');
     const map = {
       none: { text: 'Not linked', cls: '' },
-      linked: { text: 'Linked', cls: 'linked' },
+      linked: { text: 'Linked (OAuth)', cls: 'linked' },
       syncing: { text: 'Merging…', cls: 'syncing' },
       synced: { text: importResult ? `Synced (+${importResult.created} / ~${importResult.updated})` : 'Synced', cls: 'synced' },
       error: { text: 'Sync error', cls: 'error' },
@@ -191,7 +244,8 @@ export function initGoogleSync() {
     if (dot) {
       dot.className = 'calendar-sync-dot';
       if (m.cls) dot.classList.add(m.cls);
-      dot.title = `Google Calendar: ${m.text}`;
+      const modeText = isServiceAccount() ? 'Service Account' : 'OAuth';
+      dot.title = `Google Calendar (via ${modeText}): ${m.text}`;
     }
     if (status === 'synced' && phase === 'outbound') {
       toast(importResult ? `Imported ${importResult.created} new, updated ${importResult.updated} events` : 'Calendar synced');
@@ -215,7 +269,7 @@ export function initGoogleSync() {
     if (c.status !== 'none') {
       toast('Back online — resuming calendar sync');
       startAutoSync();
-      doSync(); // immediate sync + flush
+      doSync();
     }
   });
 }

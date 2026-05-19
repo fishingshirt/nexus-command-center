@@ -31,7 +31,14 @@ function buildBody(payload) {
 }
 
 export async function syncEventToGoogle(payload, action) {
+  // Prefer service account if available, fallback to OAuth
+  const s = loadSettings().calendarSync || {};
+  const useSvc = s.mode === 'service_account' || (!s.access_token && !s.status);
+  if (useSvc) {
+    return syncEventToServiceAccount(payload, action);
+  }
   if (!isLinkedWritable()) return { ok: true, skipped: true };
+
   const path = action === 'create'
     ? '/api/calendar/events'
     : `/api/calendar/events/${encodeURIComponent(payload.gcalId || '')}`;
@@ -52,10 +59,50 @@ export async function syncEventToGoogle(payload, action) {
   }
 }
 
+async function syncEventToServiceAccount(payload, action) {
+  const path = action === 'create'
+    ? '/api/calendar/gcal/events'
+    : `/api/calendar/gcal/events/${encodeURIComponent(payload.gcalId || '')}`;
+  const method = action === 'create' ? 'POST' : (action === 'delete' ? 'DELETE' : 'PATCH');
+  try {
+    const res = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: method === 'DELETE' ? undefined : JSON.stringify(buildBody(payload)),
+    });
+    const data = await res.json();
+    if (data.ok) return { ok: true, gcalId: data.eventId || payload.gcalId };
+    throw new Error(data.error || `HTTP ${res.status}`);
+  } catch (err) {
+    queueMutation({ action, payload, timestamp: Date.now() });
+    toast('Offline — event queued for sync', 'warning');
+    return { ok: false, queued: true, error: err.message };
+  }
+}
+
 export async function deleteEventFromGoogle(gcalId) {
-  if (!gcalId || !isLinkedWritable()) return { ok: true, skipped: true };
+  if (!gcalId) return { ok: true, skipped: true };
+  const s = loadSettings().calendarSync || {};
+  const useSvc = s.mode === 'service_account' || (!s.access_token && !s.status);
+  if (useSvc) {
+    return deleteEventFromServiceAccount(gcalId);
+  }
+  if (!isLinkedWritable()) return { ok: true, skipped: true };
   try {
     const res = await fetch(`/api/calendar/events/${encodeURIComponent(gcalId)}`, { method: 'DELETE' });
+    if (res.ok) return { ok: true };
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `HTTP ${res.status}`);
+  } catch (err) {
+    queueMutation({ action: 'delete', payload: { gcalId }, timestamp: Date.now() });
+    toast('Offline — delete queued for sync', 'warning');
+    return { ok: false, queued: true, error: err.message };
+  }
+}
+
+async function deleteEventFromServiceAccount(gcalId) {
+  try {
+    const res = await fetch(`/api/calendar/gcal/events/${encodeURIComponent(gcalId)}`, { method: 'DELETE' });
     if (res.ok) return { ok: true };
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || `HTTP ${res.status}`);

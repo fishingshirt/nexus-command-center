@@ -1407,12 +1407,21 @@
               <span class="sync-status-badge" id="sync-status-badge">Not linked</span>
             </div>
             <div class="settings-row">
-              <label for="sync-client-id">Client ID</label>
-              <input type="text" id="sync-client-id" placeholder="From Google Cloud Console" autocomplete="off">
+              <label for="gcal-sync-mode">Authentication mode</label>
+              <select id="gcal-sync-mode">
+                <option value="service_account">Service Account (recommended)</option>
+                <option value="oauth">OAuth 2.0</option>
+              </select>
             </div>
-            <div class="settings-row">
-              <label for="sync-client-secret">Client Secret</label>
-              <input type="text" id="sync-client-secret" placeholder="From Google Cloud Console" autocomplete="off">
+            <div id="gcal-oauth-fields">
+              <div class="settings-row">
+                <label for="sync-client-id">Client ID</label>
+                <input type="text" id="sync-client-id" placeholder="From Google Cloud Console" autocomplete="off">
+              </div>
+              <div class="settings-row">
+                <label for="sync-client-secret">Client Secret</label>
+                <input type="text" id="sync-client-secret" placeholder="From Google Cloud Console" autocomplete="off">
+              </div>
             </div>
             <div class="settings-row sync-actions">
               <button class="btn-primary" id="btn-sync-connect" style="display:none;">
@@ -1429,7 +1438,7 @@
                 Re-authorize for full access
               </button>
             </div>
-            <p class="settings-hint" id="sync-hint">Google Calendar sync uses OAuth 2.0 for full read/write access. Enter your Client ID and Client Secret, then click Connect.</p>
+            <p class="settings-hint" id="sync-hint">Service Account mode uses a pre-configured key for instant read/write access. OAuth mode requires entering your own Client ID/Secret.</p>
           </section>
 
           <section class="settings-section">

@@ -21,3 +21,5 @@ data/nexus.db*
 *.db-journal
 *.db-shm
 *.db-wal
+# Service account keys — never commit credentials
+service-accounts/

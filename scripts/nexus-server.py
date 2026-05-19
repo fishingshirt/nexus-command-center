@@ -1603,6 +1603,126 @@ def _api_email(handler, raw_path):
 def _api_calendar(handler, raw_path):
     import urllib.parse, urllib.request, datetime
     path = raw_path.split('?')[0]
+
+    # ── SERVICE ACCOUNT BRIDGE ──────────────────
+    # New endpoints using nexus_gcal_bridge.py (service account auth)
+    # These are checked first; legacy OAuth endpoints remain for fallback.
+
+    def _svc_account_path(p):
+        return p.startswith('/api/calendar/gcal/')
+
+    if _svc_account_path(path):
+        import nexus_gcal_bridge
+        CALENDAR_ID = os.environ.get('GOOGLE_CALENDAR_ID', 'primary')
+        bridge = nexus_gcal_bridge.GCalBridge(calendar_id=CALENDAR_ID)
+
+        # GET /api/calendar/gcal/status
+        if path == '/api/calendar/gcal/status':
+            try:
+                cfg = bridge.get_config()
+                _json(handler, 200, {'ok': True, 'linked': cfg['ready'], 'config': cfg})
+            except Exception as e:
+                _json(handler, 200, {'ok': True, 'linked': False, 'error': str(e)})
+            return True
+
+        # GET /api/calendar/gcal/calendars
+        if path == '/api/calendar/gcal/calendars':
+            try:
+                cals = bridge.list_calendars()
+                _json(handler, 200, {'ok': True, 'calendars': [
+                    {'id': c['id'], 'summary': c['summary'], 'accessRole': c.get('accessRole'),
+                     'primary': c.get('primary', False)}
+                    for c in cals
+                ]})
+            except Exception as e:
+                _json(handler, 500, {'ok': False, 'error': str(e)})
+            return True
+
+        # GET /api/calendar/gcal/events
+        import re
+        if path == '/api/calendar/gcal/events' and handler.command == 'GET':
+            try:
+                qs = urllib.parse.parse_qs(raw_path.split('?', 1)[1]) if '?' in raw_path else {}
+                time_min = qs.get('timeMin', [''])[0] or None
+                time_max = qs.get('timeMax', [''])[0] or None
+                max_results = int(qs.get('maxResults', ['250'])[0])
+                q = qs.get('q', [''])[0] or None
+                events = bridge.list_events(
+                    time_min=time_min,
+                    time_max=time_max,
+                    max_results=max_results,
+                    q=q
+                )
+                _json(handler, 200, {'ok': True, 'events': events, 'count': len(events)})
+            except Exception as e:
+                _json(handler, 500, {'ok': False, 'error': str(e)})
+            return True
+
+        # POST /api/calendar/gcal/events
+        if path == '/api/calendar/gcal/events' and handler.command == 'POST':
+            try:
+                length = int(handler.headers.get('Content-Length', 0))
+                body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+                req = json.loads(body)
+            except Exception:
+                _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+                return True
+            try:
+                ev = bridge.create_event(req)
+                _json(handler, 200, {'ok': True, 'event': ev, 'eventId': ev.get('id')})
+            except Exception as e:
+                _json(handler, 500, {'ok': False, 'error': str(e)})
+            return True
+
+        # GET/PUT/PATCH/DELETE /api/calendar/gcal/events/<id>
+        m = re.match(r'^/api/calendar/gcal/events/(.+)$', path)
+        if m:
+            event_id = urllib.parse.unquote(m.group(1))
+            if handler.command == 'GET':
+                try:
+                    ev = bridge.get_event(event_id)
+                    _json(handler, 200, {'ok': True, 'event': ev})
+                except Exception as e:
+                    _json(handler, 500, {'ok': False, 'error': str(e)})
+                return True
+            if handler.command == 'PUT':
+                try:
+                    length = int(handler.headers.get('Content-Length', 0))
+                    body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+                    req = json.loads(body)
+                except Exception:
+                    _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+                    return True
+                try:
+                    ev = bridge.update_event(event_id, req)
+                    _json(handler, 200, {'ok': True, 'event': ev, 'eventId': ev.get('id')})
+                except Exception as e:
+                    _json(handler, 500, {'ok': False, 'error': str(e)})
+                return True
+            if handler.command == 'PATCH':
+                try:
+                    length = int(handler.headers.get('Content-Length', 0))
+                    body = handler.rfile.read(length).decode('utf-8') if length else '{}'
+                    req = json.loads(body)
+                except Exception:
+                    _json(handler, 400, {'ok': False, 'error': 'Invalid JSON'})
+                    return True
+                try:
+                    ev = bridge.patch_event(event_id, req)
+                    _json(handler, 200, {'ok': True, 'event': ev, 'eventId': ev.get('id')})
+                except Exception as e:
+                    _json(handler, 500, {'ok': False, 'error': str(e)})
+                return True
+            if handler.command == 'DELETE':
+                try:
+                    bridge.delete_event(event_id)
+                    _json(handler, 200, {'ok': True})
+                except Exception as e:
+                    _json(handler, 500, {'ok': False, 'error': str(e)})
+                return True
+
+    # ── LEGACY OAUTH ENDPOINTS (unchanged) ──────
+
     if path == '/api/calendar/oauth/start':
         cid = os.environ.get('GOOGLE_CLIENT_ID', '')
         if not cid:

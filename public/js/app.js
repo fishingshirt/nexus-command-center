@@ -768,6 +768,8 @@ function initSettings() {
 
 /* ===== CALENDAR SYNC ===== */
 function initCalendarSync() {
+  const modeSelect = document.getElementById('gcal-sync-mode');
+  const oauthFields = document.getElementById('gcal-oauth-fields');
   const clientIdEl = document.getElementById('sync-client-id');
   const clientSecretEl = document.getElementById('sync-client-secret');
   const badge = document.getElementById('sync-status-badge');
@@ -779,14 +781,34 @@ function initCalendarSync() {
 
   const settings = loadSettings();
   const sync = settings.calendarSync || {};
+
+  // Mode selector state
+  const mode = sync.mode || 'service_account';
+  if (modeSelect) modeSelect.value = mode;
+  if (oauthFields) oauthFields.style.display = mode === 'oauth' ? 'block' : 'none';
+
+  modeSelect?.addEventListener('change', () => {
+    const m = modeSelect.value;
+    if (oauthFields) oauthFields.style.display = m === 'oauth' ? 'block' : 'none';
+    saveSettings({ calendarSync: { ...(loadSettings().calendarSync || {}), mode: m } });
+    if (hint) {
+      if (m === 'service_account') {
+        hint.textContent = 'Service Account mode reads from ~/.hermes/service-accounts/. Ensure the calendar is shared with the service email.';
+      } else {
+        hint.textContent = 'OAuth 2.0 mode requires a Client ID and Client Secret from Google Cloud Console.';
+      }
+    }
+    updateBadge((loadSettings().calendarSync || {}).status || 'none');
+  });
+
   if (clientIdEl) clientIdEl.value = sync.clientId || '';
   if (clientSecretEl) clientSecretEl.value = sync.clientSecret || '';
 
   function persist() {
     const next = {
+      ...(loadSettings().calendarSync || {}),
       clientId: clientIdEl?.value.trim() || '',
       clientSecret: clientSecretEl?.value.trim() || '',
-      status: (loadSettings().calendarSync || {}).status || 'none'
     };
     saveSettings({ calendarSync: next });
     toggleConnect();
@@ -801,9 +823,10 @@ function initCalendarSync() {
   function updateBadge(status, extra) {
     if (!badge) return;
     badge.className = 'sync-status-badge';
+    const curMode = (loadSettings().calendarSync || {}).mode || 'service_account';
     const map = {
       none: { text: 'Not linked', cls: '' },
-      linked: { text: 'Linked', cls: 'linked' },
+      linked: { text: curMode === 'service_account' ? 'Linked (Service Account)' : 'Linked', cls: 'linked' },
       syncing: { text: 'Syncing…', cls: 'syncing' },
       synced: { text: extra ? `Synced (${extra})` : 'Synced', cls: 'synced' },
       error: { text: 'Error', cls: 'error' }
@@ -815,18 +838,22 @@ function initCalendarSync() {
     if (dot) {
       dot.className = 'calendar-sync-dot';
       if (m.cls) dot.classList.add(m.cls);
-      dot.title = `Google Calendar: ${m.text}`;
+      dot.title = `Google Calendar (${curMode === 'service_account' ? 'Svc Acct' : 'OAuth'}): ${m.text}`;
     }
     if (unlinkBtn) unlinkBtn.style.display = (status !== 'none' && status !== 'error') ? 'inline-flex' : 'none';
     if (reauthBtn) reauthBtn.style.display = (status === 'linked' && extra === 'read-only') ? 'inline-flex' : 'none';
     if (hint) {
-      if (status === 'linked') {
-        hint.textContent = 'Connected with full read/write access via OAuth 2.0.';
-        if (extra === 'read-only') hint.textContent = 'Scope is read-only. Re-authorize for full access.';
-      } else if (status === 'synced') {
-        hint.textContent = 'Connected with full read/write access via OAuth 2.0.';
+      if (status === 'linked' || status === 'synced') {
+        if (curMode === 'service_account') {
+          hint.textContent = 'Connected via service account. Read/write access to shared calendar.';
+        } else {
+          hint.textContent = 'Connected with full read/write access via OAuth 2.0.';
+          if (extra === 'read-only') hint.textContent = 'Scope is read-only. Re-authorize for full access.';
+        }
       } else if (status === 'error') {
-        hint.textContent = 'Connection failed. Check credentials or re-authorize.';
+        hint.textContent = 'Connection failed. Check server logs or credentials.';
+      } else if (curMode === 'service_account') {
+        hint.textContent = 'Service Account mode reads from ~/.hermes/service-accounts/. Ensure the calendar is shared with the service email.';
       } else {
         hint.textContent = 'Enter your Client ID and Client Secret, then click Connect.';
       }
@@ -834,6 +861,22 @@ function initCalendarSync() {
   }
 
   async function checkStatus() {
+    const curMode = (loadSettings().calendarSync || {}).mode || 'service_account';
+    if (curMode === 'service_account') {
+      try {
+        const res = await fetch('/api/calendar/gcal/status');
+        const data = await res.json();
+        if (data.linked) {
+          updateBadge('synced', 'ready');
+        } else {
+          updateBadge('none');
+        }
+      } catch {
+        updateBadge('none');
+      }
+      return;
+    }
+    // OAuth legacy check
     try {
       const res = await fetch('/api/calendar/status');
       const data = await res.json();
@@ -865,12 +908,13 @@ function initCalendarSync() {
 
   syncNowBtn?.addEventListener('click', async () => {
     updateBadge('syncing');
+    const curMode = (loadSettings().calendarSync || {}).mode || 'service_account';
+    const endpoint = curMode === 'service_account' ? '/api/calendar/gcal/events?timeMin=' + new Date(Date.now() - 30 * 86400000).toISOString() : '/api/calendar/sync';
     try {
-      const res = await fetch('/api/calendar/sync');
+      const res = await fetch(endpoint);
       const data = await res.json();
       if (data.ok) {
         updateBadge('synced', `${data.events?.length || 0} events`);
-        // Merge into local calendar via gcal-sync engine
         document.dispatchEvent(new CustomEvent('calendarSyncChanged'));
         toast(`Calendar synced — ${data.events?.length || 0} events fetched`);
       } else {
