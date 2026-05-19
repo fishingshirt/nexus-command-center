@@ -269,7 +269,7 @@ def check_server_routes(files):
     if not js_files:
         js_files = list(JS_DIR.rglob("*.js"))
 
-    skip_exact = {'/api/store'}  # base path used with concatenation, not a direct route
+    skip_exact = {'/api/store', '/api/db'}  # base paths used with concatenation or not direct routes
     missing = []
     for jsf in js_files:
         text = jsf.read_text(encoding="utf-8")
