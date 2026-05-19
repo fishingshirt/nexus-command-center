@@ -13,7 +13,6 @@
 - **Agent state:** ACTIVE — wake cycle running every 30min
 
 ## 🎯 Active Tasks
-| MEDIUM | `T-065` | Calendar Dark Mode Bug | `PENDING` | Auto-generated from feedback |
 
 | Priority | ID | Task | Status | Details |
 |----------|----|------|--------|---------|

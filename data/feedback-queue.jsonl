@@ -1,1 +1,1 @@
-{"id": "fb-1779225075706", "type": "bug", "title": "Calendar Dark Mode Bug", "description": "Calendar event text is invisible in dark mode. The text color should switch to light on dark background. This happens on every event every day.", "priority": "must", "answers": [], "userId": null, "timestamp": "2026-05-19T21:11:15.706839", "status": "tasked", "linkedTask": "T-065", "note": null}
+
