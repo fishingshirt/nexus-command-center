@@ -243,7 +243,21 @@ export class WidgetGrid {
   }
 
   _renderAgentWidget(el) {
-    el.innerHTML = '<div class="widget-metric"><span class="widget-metric__value">●</span><span class="widget-metric__label">Agent awake</span></div>';
+    el.innerHTML = '<div class="widget-metric"><span class="widget-metric__value">●</span><span class="widget-metric__label">Loading…</span></div>';
+    fetch('/api/whiteboard/live')
+      .then(r => r.json())
+      .then(data => {
+        const pending = data.pending_tasks ?? 0;
+        const total = data.total_tasks ?? 0;
+        el.innerHTML = `
+          <div class="widget-metric">
+            <span class="widget-metric__value">${pending}</span>
+            <span class="widget-metric__label">Active tasks · ${total} total</span>
+          </div>`;
+      })
+      .catch(() => {
+        el.innerHTML = '<div class="widget-metric"><span class="widget-metric__value">●</span><span class="widget-metric__label">Agent awake</span></div>';
+      });
   }
 
   addWidget(typeConfig) {

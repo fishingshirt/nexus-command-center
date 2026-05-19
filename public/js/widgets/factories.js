@@ -69,22 +69,20 @@ export function agentStatsWidget(config = {}) {
   const el = document.createElement('div');
   el.className = 'widget-metric';
   el.dataset.widgetType = 'agent-stats';
-  let data = null;
-  try {
-    const raw = localStorage.getItem('ncc-whiteboard-cache');
-    const wb = raw ? JSON.parse(raw) : {};
-    const pending = (wb.tasks || []).filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').length;
-    const total = (wb.tasks || []).length;
-    data = { pendingTasks: pending, totalTasks: total };
-  } catch {}
-  if (!data) {
-    el.innerHTML = '<span class="widget-placeholder">Agent ready</span>';
-    return el;
-  }
-  el.innerHTML = `
-    <span class="widget-metric__value">${data.pendingTasks}</span>
-    <span class="widget-metric__label">Active tasks · ${data.totalTasks} total</span>
-  `;
+  el.innerHTML = '<span class="widget-placeholder">Agent ready</span>';
+  fetch('/api/whiteboard/live')
+    .then(r => r.json())
+    .then(data => {
+      const pending = data.pending_tasks ?? 0;
+      const total = data.total_tasks ?? 0;
+      el.innerHTML = `
+        <span class="widget-metric__value">${pending}</span>
+        <span class="widget-metric__label">Active tasks · ${total} total</span>
+      `;
+    })
+    .catch(() => {
+      el.innerHTML = '<span class="widget-placeholder">Agent ready</span>';
+    });
   return el;
 }
 

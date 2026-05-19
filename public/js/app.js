@@ -1030,8 +1030,47 @@ function initChat() {
     if (e.key === 'Enter') sendFromFullpage();
   });
 
-  // Load persisted history (skip bot messages if bridge responses)
-  const history = JSON.parse(localStorage.getItem('ncc-chat-history') || '[]');
+  // Session-scoped helper
+  const currentSessionId = (() => {
+    let sid = localStorage.getItem('ncc_chat_session_id');
+    if (!sid) {
+      sid = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(36).slice(2));
+      localStorage.setItem('ncc_chat_session_id', sid);
+    }
+    return sid;
+  })();
+
+  // New-session buttons (full-page + widget)
+  const newPageBtn = document.getElementById('chat-new-session-btn');
+  const newWidgetBtn = document.getElementById('chat-widget-new');
+  function _startNewChatSession() {
+    const id = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(36).slice(2));
+    localStorage.setItem('ncc_chat_session_id', id);
+    return id;
+  }
+  if (newPageBtn) {
+    newPageBtn.addEventListener('click', () => {
+      localStorage.removeItem(`ncc-chat-history-${currentSessionId}`);
+      localStorage.removeItem(`ncc-hermes-seen-${currentSessionId}`);
+      localStorage.removeItem(`ncc-hermes-chat-ids-${currentSessionId}`);
+      _startNewChatSession();
+      fpHistory.innerHTML = '';
+      addMessage(fpHistory, 'New session started. How can I help?', 'bot', false);
+    });
+  }
+  if (newWidgetBtn) {
+    newWidgetBtn.addEventListener('click', () => {
+      localStorage.removeItem(`ncc-chat-history-${currentSessionId}`);
+      localStorage.removeItem(`ncc-hermes-seen-${currentSessionId}`);
+      localStorage.removeItem(`ncc-hermes-chat-ids-${currentSessionId}`);
+      _startNewChatSession();
+      wMessages.innerHTML = '';
+      addMessage(wMessages, 'New session started. How can I help?', 'bot', false);
+    });
+  }
+
+  // Load persisted history for the current session only (never leak cross-session)
+  const history = JSON.parse(localStorage.getItem(`ncc-chat-history-${currentSessionId}`) || '[]');
   history.forEach(msg => {
     const target = msg.source === 'widget' ? wMessages : fpHistory;
     // Avoid double-rendering bot placeholder messages after bridge build
@@ -1049,11 +1088,13 @@ function addMessage(container, text, role, persist = true) {
   container.scrollTop = container.scrollHeight;
 
   if (persist) {
-    const history = JSON.parse(localStorage.getItem('ncc-chat-history') || '[]');
+    const sessionId = localStorage.getItem('ncc_chat_session_id') || 'default';
+    const key = `ncc-chat-history-${sessionId}`;
+    const history = JSON.parse(localStorage.getItem(key) || '[]');
     history.push({ text, role, source: container.id === 'chat-widget-messages' ? 'widget' : 'fullpage', time: Date.now() });
     // Keep last 200 messages
     if (history.length > 200) history.shift();
-    localStorage.setItem('ncc-chat-history', JSON.stringify(history));
+    localStorage.setItem(key, JSON.stringify(history));
   }
 }
 
@@ -1067,9 +1108,10 @@ async function hermesSend(text) {
     const data = await res.json();
     if (data.ok && data.chat_id) {
       // Remember numeric chat id so our own polls match
-      const set = new Set(JSON.parse(localStorage.getItem('ncc-hermes-chat-ids') || '[]'));
+      const sid = localStorage.getItem('ncc_chat_session_id') || 'default';
+      const set = new Set(JSON.parse(localStorage.getItem(`ncc-hermes-chat-ids-${sid}`) || '[]'));
       set.add(String(data.chat_id));
-      localStorage.setItem('ncc-hermes-chat-ids', JSON.stringify(Array.from(set)));
+      localStorage.setItem(`ncc-hermes-chat-ids-${sid}`, JSON.stringify(Array.from(set)));
     }
     return { ok: data.ok, message_id: data.message_id, error: data.error };
   } catch (e) {
@@ -1081,14 +1123,16 @@ let _pollTimer = null;
 let _pollFailCount = 0;
 
 function getSeenIds() {
-  try { return new Set(JSON.parse(localStorage.getItem('ncc-hermes-seen') || '[]')); }
+  const sid = localStorage.getItem('ncc_chat_session_id') || 'default';
+  try { return new Set(JSON.parse(localStorage.getItem(`ncc-hermes-seen-${sid}`) || '[]')); }
   catch { return new Set(); }
 }
 function addSeenId(id) {
   if (!id) return;
+  const sid = localStorage.getItem('ncc_chat_session_id') || 'default';
   const s = getSeenIds();
   s.add(String(id));
-  localStorage.setItem('ncc-hermes-seen', JSON.stringify(Array.from(s).slice(-500)));
+  localStorage.setItem(`ncc-hermes-seen-${sid}`, JSON.stringify(Array.from(s).slice(-500)));
 }
 
 function updateBridgeBanner(status, message) {
@@ -1180,13 +1224,17 @@ function stopHermesPolling() {
 function handleCommand(text, container) {
   const lower = text.toLowerCase().trim();
   if (lower === '/new') {
-    localStorage.removeItem('ncc-chat-history');
-    localStorage.removeItem('ncc-hermes-seen');
-    localStorage.removeItem('ncc-hermes-chat-ids');
+    const sid = localStorage.getItem('ncc_chat_session_id') || 'default';
+    localStorage.removeItem(`ncc-chat-history-${sid}`);
+    localStorage.removeItem(`ncc-hermes-seen-${sid}`);
+    localStorage.removeItem(`ncc-hermes-chat-ids-${sid}`);
+    // Generate a new session ID to guarantee complete isolation
+    const newId = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(36).slice(2));
+    localStorage.setItem('ncc_chat_session_id', newId);
     container.innerHTML = '';
     stopHermesPolling();
     setTimeout(() => {
-      addMessage(container, 'Fresh start. What can I do for you?', 'bot');
+      addMessage(container, 'New session started. What can I do for you?', 'bot');
     }, 300);
     return;
   }
@@ -1698,38 +1746,52 @@ export function initAgentStats() {
     indicator.style.background = '#94a3b8';   // gray = no heartbeat yet
   }
 
-  // Pull stats from settings or whiteboard fallback
-  const settings = loadSettings();
-  const stats = settings.agentStats || {};
-
-  setStat('agent-stat-tasks', stats.tasksDone || 0);
-  setStat('agent-stat-bugs', stats.bugsFixed || 0);
-  setStat('agent-stat-commits', stats.commits || 0);
-  setStat('agent-stat-wakes', stats.wakeCycles || 0);
-
-  const lastRun = stats.lastRun ? fmtDate(stats.lastRun) : 'Never';
-  const nextRun = stats.nextRun ? fmtDate(stats.nextRun) : '—';
-  document.getElementById('agent-stat-last-run').textContent = lastRun;
-  document.getElementById('agent-stat-next-run').textContent = nextRun;
-
-  // Upcoming tasks (read from localStorage or show placeholder)
-  const upcomingList = document.getElementById('agent-upcoming-list');
-  if (upcomingList) {
-    const whiteboard = localStorage.getItem('ncc-whiteboard-cache');
-    if (whiteboard) {
-      try {
-        const wb = JSON.parse(whiteboard);
-        const tasks = (wb.tasks || []).filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').slice(0, 6);
-        if (tasks.length) {
-          upcomingList.innerHTML = tasks.map(t => `<li>${escapeHtml(t.title || t.id)}</li>`).join('');
-        } else {
-          upcomingList.innerHTML = '<li class="agent-upcoming-empty">No upcoming tasks from whiteboard cache</li>';
-        }
-      } catch {
-        upcomingList.innerHTML = '<li class="agent-upcoming-empty">Open Settings → Refresh Whiteboard to sync</li>';
-      }
+  // Fetch live data from server every 30s
+  async function refresh() {
+    try {
+      const res = await fetch('/api/whiteboard/live');
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      if (!data.ok) throw new Error('not ok');
+      render(data);
+    } catch {
+      // Keep whatever is already rendered on screen
     }
   }
+
+  function render(data) {
+    const stats = data.stats || {};
+    setStat('agent-stat-tasks', stats.tasksDone || 0);
+    setStat('agent-stat-bugs', stats.bugsFixed || 0);
+    setStat('agent-stat-commits', stats.commits || 0);
+    setStat('agent-stat-wakes', stats.wakeCycles || 0);
+
+    const lastRun = stats.lastRun ? fmtDate(stats.lastRun) : 'Never';
+    const nextRun = stats.nextRun ? fmtDate(stats.nextRun) : '—';
+    const lastEl = document.getElementById('agent-stat-last-run');
+    const nextEl = document.getElementById('agent-stat-next-run');
+    if (lastEl) lastEl.textContent = lastRun;
+    if (nextEl) nextEl.textContent = nextRun;
+
+    const upcomingList = document.getElementById('agent-upcoming-list');
+    if (upcomingList) {
+      const tasks = (data.tasks || [ ]).filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').slice(0, 6);
+      if (tasks.length) {
+        upcomingList.innerHTML = tasks.map(t => `<li>${escapeHtml(t.title || t.id)}</li>`).join('');
+      } else {
+        upcomingList.innerHTML = '<li class="agent-upcoming-empty">No upcoming tasks</li>';
+      }
+    }
+
+    // Also cache for offline/fallback
+    try {
+      localStorage.setItem('ncc-whiteboard-cache', JSON.stringify(data));
+    } catch {}
+  }
+
+  refresh();
+  const timer = setInterval(refresh, 30000);
+  window.addEventListener('beforeunload', () => clearInterval(timer));
 
   // Refresh button
   const btn = document.getElementById('btn-sync-whiteboard');

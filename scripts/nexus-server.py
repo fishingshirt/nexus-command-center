@@ -724,50 +724,10 @@ def _api_hermes(handler, path):
                     if not is_me:
                         messages.append({'text': txt, 'from': sender.get('first_name', 'Hermes'),
                                          'time': msg.get('date'), 'message_id': msg.get('message_id')})
-        # ── Strategy B: fallback to Hermes session files if poll is empty ──
-        if not messages:
-            try:
-                import glob, hashlib, re
-                sessions_dir = os.path.expanduser('~/.hermes/sessions')
-                files = sorted(glob.glob(os.path.join(sessions_dir, '*.jsonl')), key=os.path.getmtime, reverse=True)[:3]
-                outbound = st.get('outbound', [])
-                cutoff = outbound[-1]['time'] if outbound else (time.time() - 3600)
-                for f in files:
-                    try:
-                        with open(f, 'r') as fh:
-                            lines = fh.readlines()
-                    except Exception:
-                        continue
-                    for line in lines:
-                        try:
-                            obj = json.loads(line)
-                        except Exception:
-                            continue
-                        if obj.get('role') != 'assistant':
-                            continue
-                        ts_str = obj.get('timestamp', '')
-                        ts = 0
-                        try:
-                            # ISO 8601 with optional fractional seconds and optional timezone
-                            m = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?', ts_str)
-                            if m:
-                                ts = time.mktime(time.strptime(m.group(1), '%Y-%m-%dT%H:%M:%S'))
-                        except Exception:
-                            continue
-                        if ts < cutoff:
-                            continue
-                        body_text = obj.get('content', '')
-                        if not body_text or not body_text.strip():
-                            continue
-                        h = hashlib.md5(body_text.encode()).hexdigest()
-                        if h in seen:
-                            continue
-                        seen.add(h)
-                        messages.append({'text': body_text.strip(), 'from': 'Hermes',
-                                         'time': int(ts), 'message_id': h})
-                        break
-            except Exception:
-                pass
+        # ── Strategy B: Nexus-isolated message queue ──
+        # We no longer pull from ~/.hermes/sessions to prevent cross-platform
+        # leakage (Discord/Telegram session history leaking into Nexus chat).
+        # Replies must come exclusively from Telegram polling or webhooks.
         # ── Strategy C: serve pending webhook-pushed messages ──
         pending = st.get('pending', [])
         for m in pending:
@@ -955,6 +915,38 @@ def agent_pause(paused_flag):
     with open(path, 'w') as f:
         json.dump(data, f)
     return data
+
+def _parse_whiteboard(md):
+    tasks = []
+    bugs = []
+    in_tasks = False
+    in_bugs = False
+    for line in md.split('\n'):
+        if '## 🎯 Active Tasks' in line or '## 🎯 TASK BOARD' in line or '## Active Tasks' in line:
+            in_tasks = True
+            in_bugs = False
+        elif '## 🔍 BUG TRACKER' in line or '## Bug Tracker' in line:
+            in_tasks = False
+            in_bugs = True
+        elif line.startswith('## '):
+            in_tasks = False
+            in_bugs = False
+        # Match: | HIGH | `T-052` | Task Title | Status | Details |
+        task_match = re.match(r"\|\s*[^|]+\|\s*`?(T-\d+)`?\s*\|\s*([^|]+)\|\s*([^|]+)\|", line)
+        if task_match and in_tasks:
+            raw_status = task_match[3].strip().upper()
+            # Normalize status: extract DONE/IN_PROGRESS/PENDING/BLOCKED from noise
+            status = 'UNKNOWN'
+            for candidate in ('DONE', 'IN_PROGRESS', 'PENDING', 'BLOCKED'):
+                if candidate in raw_status:
+                    status = candidate
+                    break
+            tasks.append({
+                'id': task_match[1],
+                'title': task_match[2].strip(),
+                'status': status
+            })
+    return {'tasks': tasks, 'bugs': bugs}
 
 # ── PIN Auth helpers ──────────────────────────
 AUTH_FILE = os.path.expanduser('~/.hermes/nexus-auth.json')
@@ -3135,6 +3127,35 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             except Exception:
                 pass
             _json(self, 200, {'notifications': queue[-50:]})
+            return True
+
+        # ── Live Whiteboard API ──
+        if path == '/api/whiteboard/live':
+            wb_path = os.path.join(os.path.dirname(os.path.abspath(self.args_dir)), 'WHITEBOARD.md')
+            parsed = {'tasks': [], 'bugs': []}
+            try:
+                with open(wb_path, 'r', encoding='utf-8') as f:
+                    parsed = _parse_whiteboard(f.read())
+            except FileNotFoundError:
+                pass
+            except Exception:
+                pass
+            stats = {}
+            try:
+                with open(os.path.expanduser('~/.hermes/nexus-agent-stats.json')) as f:
+                    stats = json.load(f)
+            except FileNotFoundError:
+                pass
+            except ValueError:
+                pass
+            _json(self, 200, {
+                'ok': True,
+                'tasks': parsed['tasks'],
+                'bugs': parsed['bugs'],
+                'stats': stats,
+                'pending_tasks': len([t for t in parsed['tasks'] if t.get('status') in ('PENDING', 'IN_PROGRESS')]),
+                'total_tasks': len(parsed['tasks'])
+            })
             return True
 
         if path == '/api/backup/':
