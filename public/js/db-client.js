@@ -81,7 +81,15 @@
       if (!row) return defaultVal;
       try { return JSON.parse(row.value); } catch { return row.value; }
     },
-    set: (key, value) => NexusDB.create('app_settings', { key, value }),
+    set: async (key, value) => {
+      const strVal = typeof value === 'string' ? value : JSON.stringify(value);
+      try {
+        return await NexusDB.update('app_settings', key, { value: strVal });
+      } catch (e) {
+        // If update fails (row doesn't exist), create it
+        return await NexusDB.create('app_settings', { key, value: strVal });
+      }
+    },
   };
 
   global.NexusDB = NexusDB;

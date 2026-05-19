@@ -229,7 +229,9 @@ CREATE TABLE IF NOT EXISTS weather_locations (
     forecast    TEXT,
     updated     INTEGER,
     added_at    INTEGER,
-    sort_order  INTEGER DEFAULT 0
+    sort_order  INTEGER DEFAULT 0,
+    created_at  TEXT DEFAULT (datetime('now')),
+    updated_at  TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS worldclock_cities (
@@ -238,7 +240,9 @@ CREATE TABLE IF NOT EXISTS worldclock_cities (
     country     TEXT,
     tz          TEXT NOT NULL,
     label       TEXT,
-    sort_order  INTEGER DEFAULT 0
+    sort_order  INTEGER DEFAULT 0,
+    created_at  TEXT DEFAULT (datetime('now')),
+    updated_at  TEXT DEFAULT (datetime('now'))
 );
 """
 
