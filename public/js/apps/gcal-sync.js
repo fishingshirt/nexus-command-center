@@ -23,17 +23,40 @@ export function initGoogleSync() {
 
   function isServiceAccount() { return getSyncMode() === 'service_account'; }
 
-  document.getElementById('btn-sync-now')?.addEventListener('click', async () => {
-    await doSync();
-  });
+  async function onSyncNowClick() { await doSync(); }
+  document.getElementById('btn-sync-now')?.addEventListener('click', onSyncNowClick);
 
   // Auto-sync every 30 min if linked
   startAutoSync();
-  window.addEventListener('beforeunload', stopAutoSync);
+
+  function onBeforeUnload() { stopAutoSync(); }
+  window.addEventListener('beforeunload', onBeforeUnload);
 
   // Poll agent calendar commands on focus
   window.addEventListener('focus', pollAgentEvents);
   pollAgentEvents();
+
+  const onNexusOffline = () => {
+    stopAutoSync();
+    const c = loadSettings().calendarSync || {};
+    if (c.status !== 'none') {
+      c.status = 'paused-offline';
+      saveSettings({ calendarSync: c });
+      toast('Calendar sync paused — offline');
+    }
+  };
+
+  const onNexusOnline = () => {
+    const c = loadSettings().calendarSync || {};
+    if (c.status !== 'none') {
+      toast('Back online — resuming calendar sync');
+      startAutoSync();
+      doSync();
+    }
+  };
+
+  window.addEventListener('nexusOffline', onNexusOffline);
+  window.addEventListener('nexusOnline', onNexusOnline);
 
   function startAutoSync() {
     stopAutoSync();
@@ -254,22 +277,15 @@ export function initGoogleSync() {
     }
   }
 
-  window.addEventListener('nexusOffline', () => {
+  function cleanup() {
+    document.getElementById('btn-sync-now')?.removeEventListener('click', onSyncNowClick);
+    window.removeEventListener('beforeunload', onBeforeUnload);
+    window.removeEventListener('focus', pollAgentEvents);
+    window.removeEventListener('nexusOffline', onNexusOffline);
+    window.removeEventListener('nexusOnline', onNexusOnline);
     stopAutoSync();
-    const c = loadSettings().calendarSync || {};
-    if (c.status !== 'none') {
-      c.status = 'paused-offline';
-      saveSettings({ calendarSync: c });
-      toast('Calendar sync paused — offline');
-    }
-  });
+  }
 
-  window.addEventListener('nexusOnline', () => {
-    const c = loadSettings().calendarSync || {};
-    if (c.status !== 'none') {
-      toast('Back online — resuming calendar sync');
-      startAutoSync();
-      doSync();
-    }
-  });
+  // Expose cleanup for testing / QC parity
+  window.__gcalSyncCleanup = cleanup;
 }
