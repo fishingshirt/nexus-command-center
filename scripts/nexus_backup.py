@@ -18,7 +18,56 @@ from datetime import datetime, timedelta
 NEXUS_REPO = os.path.expanduser('~/nexus-command-center')
 DB_PATH = os.path.join(NEXUS_REPO, 'data', 'nexus.db')
 BACKUP_DIR = os.path.expanduser('~/.hermes/backups')
+CONFIG_PATH = os.path.expanduser('~/.hermes/nexus-backup-config.json')
 DEFAULT_RETENTION_DAYS = 60
+
+DEFAULT_CONFIG = {
+    'retention_days': 60,
+    'enabled_scopes': ['database', 'docker', 'brain', 'metadata'],
+    'encryption': {
+        'enabled': False,
+        'passphrase': '',
+    },
+    'auto_backup': {
+        'enabled': False,
+        'hour': 3,        # 3 AM
+    },
+    'cloud': {
+        'provider': '',
+        'path': '',
+        'auto_sync': False,
+    },
+    'notifications': {
+        'health_warn_days': 7,   # warn if no backup in N days
+        'health_crit_days': 30,  # critical if no backup in N days
+    },
+}
+
+def load_config():
+    """Load backup config from disk, merging defaults for missing keys."""
+    cfg = dict(DEFAULT_CONFIG)
+    try:
+        if os.path.isfile(CONFIG_PATH):
+            with open(CONFIG_PATH, 'r') as f:
+                saved = json.load(f)
+            _deep_merge(cfg, saved)
+    except Exception:
+        pass
+    return cfg
+
+def save_config(cfg):
+    """Persist backup config to disk."""
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(cfg, f, indent=2)
+
+def _deep_merge(base, override):
+    """Merge override dict into base dict recursively."""
+    for k, v in override.items():
+        if k in base and isinstance(base[k], dict) and isinstance(v, dict):
+            _deep_merge(base[k], v)
+        else:
+            base[k] = v
 
 SCOPES = {
     'database': {'label': 'SQLite Database', 'icon': '💾'},
@@ -117,8 +166,9 @@ def create_backup(scope='full'):
     dest = os.path.join(BACKUP_DIR, filename)
 
     # Determine which scopes to include
+    cfg = load_config()
     if scope == 'full':
-        scopes = list(SCOPES.keys())[:-1]  # all except 'full' itself
+        scopes = cfg.get('enabled_scopes', list(SCOPES.keys())[:-1])
     else:
         scopes = [scope]
 
@@ -446,8 +496,10 @@ def restore_backup(filename_or_index):
 # ── Auto (cron-friendly) ───────────────────────────
 
 def auto_backup(scope='full'):
+    cfg = load_config()
     result = create_backup(scope)
-    removed, freed = cleanup(DEFAULT_RETENTION_DAYS, scope=None)
+    retention = cfg.get('retention_days', DEFAULT_RETENTION_DAYS)
+    removed, freed = cleanup(retention, scope=None)
     return {
         'backup': result,
         'cleanup': { 'removed': removed, 'freed_bytes': freed }

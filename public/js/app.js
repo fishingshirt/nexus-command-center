@@ -764,6 +764,176 @@ function initSettings() {
       setTimeout(() => location.reload(), 1200);
     }
   });
+
+  // ── Backup Settings ────────────────────────────
+  (function wireBackupSettings() {
+    const saveBtn = document.getElementById('btn-backup-config-save');
+    const runNowBtn = document.getElementById('btn-backup-run-now');
+    const statusEl = document.getElementById('backup-config-status');
+    const lastInfoEl = document.getElementById('backup-last-info');
+
+    const retentionEl = document.getElementById('backup-retention');
+    const autoEnabledEl = document.getElementById('backup-auto-enabled');
+    const autoTimeRow = document.getElementById('backup-auto-time-row');
+    const autoHourEl = document.getElementById('backup-auto-hour');
+    const encryptEnabledEl = document.getElementById('backup-encrypt-enabled');
+    const encryptDetail = document.getElementById('backup-encrypt-detail');
+    const passphraseEl = document.getElementById('backup-encrypt-passphrase');
+
+    if (!saveBtn) return;
+
+    // Load current server config
+    let cachedCfg = null;
+    async function loadServerConfig() {
+      try {
+        const r = await fetch('/api/db/backup-config');
+        const d = await r.json();
+        if (d.ok) {
+          cachedCfg = d.config;
+          applyConfigToUI(cachedCfg);
+        }
+      } catch (e) {
+        if (lastInfoEl) lastInfoEl.textContent = 'Cannot reach server for backup config';
+      }
+    }
+
+    function applyConfigToUI(cfg) {
+      if (retentionEl) retentionEl.value = cfg.retention_days || 60;
+      if (autoEnabledEl) {
+        autoEnabledEl.checked = !!(cfg.auto_backup && cfg.auto_backup.enabled);
+        if (autoTimeRow) autoTimeRow.style.display = autoEnabledEl.checked ? '' : 'none';
+      }
+      if (autoHourEl) autoHourEl.value = (cfg.auto_backup && cfg.auto_backup.hour) || 3;
+
+      // Scopes
+      const enabledScopes = cfg.enabled_scopes || ['database','docker','brain','metadata'];
+      document.querySelectorAll('#backup-scope-list input[type="checkbox"]').forEach(cb => {
+        cb.checked = enabledScopes.includes(cb.value);
+      });
+
+      if (encryptEnabledEl) {
+        encryptEnabledEl.checked = !!(cfg.encryption && cfg.encryption.enabled);
+        if (encryptDetail) encryptDetail.style.display = encryptEnabledEl.checked ? '' : 'none';
+      }
+      if (passphraseEl && cfg.encryption) {
+        passphraseEl.value = '';
+        passphraseEl.placeholder = cfg.encryption.passphrase ? '(saved — type to change)' : 'Min 8 characters';
+      }
+
+      // Load last backup info
+      fetchLastBackupInfo();
+    }
+
+    async function fetchLastBackupInfo() {
+      if (!lastInfoEl) return;
+      try {
+        const r = await fetch('/api/db/backups?limit=1');
+        const d = await r.json();
+        if (d.ok && d.backups && d.backups.length) {
+          const b = d.backups[0];
+          lastInfoEl.textContent = `Last backup: ${b.age_str} — ${b.size} — ${b.scope || 'unknown'} scope`;
+        } else {
+          lastInfoEl.textContent = 'No backups yet. Run one now!';
+        }
+      } catch (e) {
+        lastInfoEl.textContent = 'Cannot fetch backup history from server';
+      }
+    }
+
+    // Auto-enabled toggle
+    if (autoEnabledEl) {
+      autoEnabledEl.addEventListener('change', () => {
+        if (autoTimeRow) autoTimeRow.style.display = autoEnabledEl.checked ? '' : 'none';
+      });
+    }
+
+    // Encrypt toggle
+    if (encryptEnabledEl) {
+      encryptEnabledEl.addEventListener('change', () => {
+        if (encryptDetail) encryptDetail.style.display = encryptEnabledEl.checked ? '' : 'none';
+      });
+    }
+
+    // Save button
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      if (statusEl) statusEl.textContent = 'Saving...';
+
+      const scopes = Array.from(
+        document.querySelectorAll('#backup-scope-list input[type="checkbox"]:checked')
+      ).map(cb => cb.value);
+
+      const passphrase = passphraseEl ? passphraseEl.value : '';
+      const encEnabled = encryptEnabledEl ? encryptEnabledEl.checked : false;
+
+      const newCfg = {
+        retention_days: parseInt(retentionEl?.value || '60', 10),
+        enabled_scopes: scopes,
+        auto_backup: {
+          enabled: autoEnabledEl ? autoEnabledEl.checked : false,
+          hour: parseInt(autoHourEl?.value || '3', 10)
+        },
+        encryption: {
+          enabled: encEnabled,
+          passphrase: passphrase || ''
+        },
+        notifications: cachedCfg ? cachedCfg.notifications : { health_warn_days: 7, health_crit_days: 30 }
+      };
+
+      // Don't overwrite passphrase if encryption is disabled or passphrase not changed
+      if (!encEnabled) {
+        newCfg.encryption.passphrase = '';
+      } else if (!passphrase && cachedCfg && cachedCfg.encryption && cachedCfg.encryption.passphrase) {
+        delete newCfg.encryption.passphrase; // keep existing
+      }
+
+      try {
+        const r = await fetch('/api/db/backup-config', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config: newCfg })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          if (statusEl) statusEl.innerHTML = '✓ Saved!';
+          cachedCfg = d.config;
+          fetchLastBackupInfo();
+          setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+        } else {
+          if (statusEl) statusEl.innerHTML = '✗ Error: ' + (d.error || 'unknown');
+        }
+      } catch (e) {
+        if (statusEl) statusEl.innerHTML = '✗ ' + e.message;
+      }
+      saveBtn.disabled = false;
+    });
+
+    // Run Now button
+    if (runNowBtn) {
+      runNowBtn.addEventListener('click', async () => {
+        runNowBtn.disabled = true;
+        runNowBtn.textContent = 'Backing up...';
+        try {
+          const r = await fetch('/api/db/trigger-backup', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scope: 'full' })
+          });
+          const d = await r.json();
+          if (d.ok) {
+            toast(`Backup created: ${d.backup.filename} (${d.backup.size})`);
+            fetchLastBackupInfo();
+          } else {
+            toast(`Backup failed: ${d.error}`, 'error');
+          }
+        } catch (e) {
+          toast(`Backup error: ${e.message}`, 'error');
+        }
+        runNowBtn.disabled = false;
+        runNowBtn.textContent = 'Backup Now';
+      });
+    }
+
+    loadServerConfig();
+  })();
 }
 
 /* ===== CALENDAR SYNC ===== */

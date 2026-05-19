@@ -281,6 +281,13 @@ def _api_db(handler, path):
                     } if nexus_backup else {}
                 })
                 return True
+            if table == 'backup-config':
+                cfg = nexus_backup.load_config() if nexus_backup else {}
+                # Never return encryption passphrase to the frontend
+                if 'encryption' in cfg and 'passphrase' in cfg.get('encryption', {}):
+                    cfg['encryption']['passphrase'] = '••••••••' if cfg['encryption']['passphrase'] else ''
+                _json(handler, 200, {'ok': True, 'config': cfg})
+                return True
             if table == 'backup':
                 _json(handler, 200, {'ok': True, 'data': nexus_db.export_json()})
                 return True
@@ -350,9 +357,27 @@ def _api_db(handler, path):
                 try:
                     scope = payload.get('scope', 'full')
                     result = nexus_backup.create_backup(scope)
-                    # Run cleanup automatically
-                    nexus_backup.cleanup(nexus_backup.DEFAULT_RETENTION_DAYS)
+                    # Run cleanup with configured retention
+                    cfg = nexus_backup.load_config()
+                    retention = cfg.get('retention_days', nexus_backup.DEFAULT_RETENTION_DAYS)
+                    nexus_backup.cleanup(retention)
                     _json(handler, 200, {'ok': True, 'backup': result})
+                except Exception as e:
+                    _json(handler, 500, {'ok': False, 'error': str(e)})
+                return True
+            if table == 'backup-config':
+                if nexus_backup is None:
+                    _json(handler, 503, {'ok': False, 'error': 'Backup module unavailable'})
+                    return True
+                try:
+                    new_cfg = payload.get('config', {})
+                    cfg = nexus_backup.load_config()
+                    nexus_backup._deep_merge(cfg, new_cfg)
+                    # Preserve passphrase if sent as masked
+                    if 'encryption' in new_cfg and new_cfg['encryption'].get('passphrase') == '••••••••':
+                        cfg['encryption']['passphrase'] = nexus_backup.load_config().get('encryption', {}).get('passphrase', '') if nexus_backup else ''
+                    nexus_backup.save_config(cfg)
+                    _json(handler, 200, {'ok': True, 'config': cfg})
                 except Exception as e:
                     _json(handler, 500, {'ok': False, 'error': str(e)})
                 return True

@@ -164,9 +164,9 @@ function initBackupView() {
   `;
   main.appendChild(view);
 
-  document.getElementById('btn-backup-now').addEventListener('click', () => runBackup('full'));
-  document.getElementById('btn-backup-local').addEventListener('click', () => runBackup('local'));
-  document.getElementById('btn-backup-cloud').addEventListener('click', () => runBackup('cloud'));
+  document.getElementById('btn-backup-now').addEventListener('click', () => runSystemBackup('full'));
+  document.getElementById('btn-backup-local').addEventListener('click', () => runSystemBackup('full'));
+  document.getElementById('btn-backup-cloud').addEventListener('click', () => runSystemBackup('full'));
   document.getElementById('backup-cloud-form').addEventListener('submit', saveCloudConfig);
 
   loadBackupConfig();
@@ -175,50 +175,33 @@ function initBackupView() {
   refreshStatusPanel();
 }
 
-/* ── Backup Logic ──────────────────────────── */
-async function runBackup(type) {
-  const btnId = type === 'full' ? 'btn-backup-now' : type === 'local' ? 'btn-backup-local' : 'btn-backup-cloud';
-  const btn = document.getElementById(btnId);
-  const orig = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `<span class="backup-spinner"></span> Working...`;
-
-  const config = loadBackupConfig();
-
-  // Collect all ncc-* localStorage data
-  const payload = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('ncc-')) {
-      payload[key] = localStorage.getItem(key);
-    }
-  }
-
-  const body = { type, config, data: payload };
-  if (type === 'local') {
-    const sel = document.querySelector('.backup-usb-item.selected');
-    if (sel) body.target = sel.dataset.path;
-  }
+/* ── System Backup Logic (calls nexus_backup.py) ── */
+async function runSystemBackup(scope) {
+  const btns = ['btn-backup-now', 'btn-backup-local', 'btn-backup-cloud'];
+  btns.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
+  const nowBtn = document.getElementById('btn-backup-now');
+  if (nowBtn) nowBtn.innerHTML = '<span class="backup-spinner"></span> Creating system backup...';
 
   try {
-    const resp = await fetch('/api/backup/run', {
+    const resp = await fetch('/api/db/trigger-backup', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ scope })
     });
     const data = await resp.json();
     if (data.ok) {
-      _toast(`Backup: ${data.summary || 'completed'}`);
-      addBackupLog({ type, target: data.target || type, size: data.size, time: new Date().toISOString(), status: 'ok' });
+      _toast(`System backup created: ${data.backup.filename} (${data.backup.size})`);
+      addBackupLog({ type: 'system', target: data.backup.scope, size: data.backup.size, time: new Date().toISOString(), status: 'ok' });
     } else {
       _toast(`Backup failed: ${data.error || 'unknown'}`, 'error');
-      addBackupLog({ type, target: type, time: new Date().toISOString(), status: 'error', error: data.error });
+      addBackupLog({ type: 'system', target: scope, time: new Date().toISOString(), status: 'error', error: data.error });
     }
   } catch (e) {
     _toast(`Backup error: ${e.message}`, 'error');
-    addBackupLog({ type, target: type, time: new Date().toISOString(), status: 'error', error: e.message });
+    addBackupLog({ type: 'system', target: scope, time: new Date().toISOString(), status: 'error', error: e.message });
   }
 
-  btn.disabled = false; btn.innerHTML = orig;
+  if (nowBtn) nowBtn.innerHTML = 'Backup Now';
+  btns.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = false; });
   loadBackupHistory();
   refreshStatusPanel();
 }
@@ -281,9 +264,20 @@ function saveCloudConfig(e) {
   };
   if (cfg.provider && !cfg.path) { _toast('Remote path required when using cloud', 'error'); return; }
   if (cfg.passphrase && cfg.passphrase.length < 8) { _toast('Passphrase must be at least 8 characters', 'error'); return; }
+  // Save to server config
+  const serverCfg = {
+    cloud: { provider: cfg.provider, path: cfg.path, auto_sync: cfg.autoSync },
+    encryption: { enabled: cfg.passphrase && cfg.passphrase.length >= 8, passphrase: cfg.passphrase || '' }
+  };
+  fetch('/api/db/backup-config', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config: serverCfg })
+  }).then(r => r.json()).then(data => {
+    if (data.ok) { _toast('Backup config saved'); refreshStatusPanel(); }
+    else { _toast('Config save failed: ' + (data.error || 'unknown'), 'error'); }
+  }).catch(e => { _toast('Config save error: ' + e.message, 'error'); });
+  // Also keep a local copy for the UI
   localStorage.setItem(BACKUP_CONFIG_KEY, JSON.stringify(cfg));
-  _toast('Cloud config saved');
-  refreshStatusPanel();
 }
 
 function refreshStatusPanel() {

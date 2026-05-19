@@ -1467,6 +1467,61 @@
           </section>
 
           <section class="settings-section">
+            <h3>🛡️ System Backup</h3>
+            <p class="settings-hint">Backs up database, Docker config, Hermes brain, and project metadata as tar.gz archives. Stored in <code>~/.hermes/backups/</code>.</p>
+
+            <div class="settings-row">
+              <label for="backup-retention">Retention (days)</label>
+              <input type="number" id="backup-retention" min="1" max="365" value="60" style="width:80px;text-align:center;">
+            </div>
+            <p class="settings-hint">Backups older than this are auto-deleted after each new backup.</p>
+
+            <div class="settings-row">
+              <label for="backup-auto-enabled">Daily auto-backup</label>
+              <input type="checkbox" id="backup-auto-enabled" class="toggle">
+            </div>
+
+            <div class="settings-row" id="backup-auto-time-row" style="display:none;">
+              <label for="backup-auto-hour">Run at hour (UTC)</label>
+              <input type="number" id="backup-auto-hour" min="0" max="23" value="3" style="width:80px;text-align:center;">
+              <span style="color:var(--text-secondary);font-size:0.8rem;">(24h format, e.g. 3 = 3 AM)</span>
+            </div>
+
+            <div class="settings-row">
+              <span>Backup scopes</span>
+              <div class="backup-scope-checks" id="backup-scope-list">
+                <label><input type="checkbox" value="database" checked> 💾 Database</label>
+                <label><input type="checkbox" value="docker" checked> 🐳 Docker Config</label>
+                <label><input type="checkbox" value="brain" checked> 🧠 Hermes Brain</label>
+                <label><input type="checkbox" value="metadata" checked> 📋 Metadata</label>
+                <label><input type="checkbox" value="assets"> 🎨 Static Assets</label>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <label for="backup-encrypt-enabled">Encrypt backups (GPG AES-256)</label>
+              <input type="checkbox" id="backup-encrypt-enabled" class="toggle">
+            </div>
+
+            <div id="backup-encrypt-detail" style="display:none;">
+              <div class="settings-row">
+                <label for="backup-encrypt-passphrase">Encryption passphrase</label>
+                <input type="password" id="backup-encrypt-passphrase" placeholder="Min 8 characters" autocomplete="off" style="width:260px;">
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <button class="btn-primary" id="btn-backup-config-save">Save Backup Settings</button>
+              <button class="btn-secondary" id="btn-backup-run-now" style="margin-left:0.5rem;">Backup Now</button>
+              <span id="backup-config-status" style="margin-left:0.75rem;font-size:0.85rem;"></span>
+            </div>
+
+            <div class="settings-row" style="margin-top:0.5rem;">
+              <span class="settings-hint" id="backup-last-info" style="font-size:0.8rem;">Loading backup status...</span>
+            </div>
+          </section>
+
+          <section class="settings-section">
             <h3>App Launcher</h3>
             <div class="settings-row" style="flex-wrap:wrap;gap:.5rem;">
               <span id="app-launcher-count">All apps visible</span>
