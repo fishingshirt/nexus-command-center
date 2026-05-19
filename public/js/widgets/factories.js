@@ -70,19 +70,20 @@ export function agentStatsWidget(config = {}) {
   el.className = 'widget-metric';
   el.dataset.widgetType = 'agent-stats';
   el.innerHTML = '<span class="widget-placeholder">Agent ready</span>';
-  fetch('/api/whiteboard/live')
-    .then(r => r.json())
-    .then(data => {
+  (async () => {
+    try {
+      const r = await fetch('/api/whiteboard/live');
+      const data = await r.json();
       const pending = data.pending_tasks ?? 0;
       const total = data.total_tasks ?? 0;
       el.innerHTML = `
         <span class="widget-metric__value">${pending}</span>
         <span class="widget-metric__label">Active tasks · ${total} total</span>
       `;
-    })
-    .catch(() => {
+    } catch {
       el.innerHTML = '<span class="widget-placeholder">Agent ready</span>';
-    });
+    }
+  })();
   return el;
 }
 
