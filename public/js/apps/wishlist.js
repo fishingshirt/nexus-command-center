@@ -1,3 +1,5 @@
+import { storage } from '../lib/storage-adapter.js';
+
 const LS_KEY = 'ncc-wishlist-v2';
 const LS_KEY_V1 = 'ncc-wishlist-v1';
 
@@ -24,47 +26,70 @@ const STATUS_META = {
 
 function loadData() {
   try {
-    // Attempt migration from v1
-    const v2 = JSON.parse(localStorage.getItem(LS_KEY));
-    if (v2) return v2;
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.warn('[Wishlist] localStorage JSON corrupted, will try server fallback', e.message);
+  }
+  return null; // signal empty → try server or create blank
+}
 
-    const v1 = JSON.parse(localStorage.getItem(LS_KEY_V1));
-    if (v1 && Array.isArray(v1.items)) {
-      const generalId = uuid();
-      const migrated = {
-        projects: [{
-          id: generalId,
-          name: 'General',
-          created: new Date().toISOString(),
-          updated: new Date().toISOString(),
-          pinned: false
-        }],
-        items: v1.items.map(i => ({
-          ...i,
-          projectId: generalId,
-          updated: i.updated || i.created || new Date().toISOString()
-        })),
-        activeProjectId: generalId
-      };
-      saveDataRaw(migrated);
-      localStorage.removeItem(LS_KEY_V1);
-      return migrated;
+function migrateV1() {
+  const raw = localStorage.getItem(LS_KEY_V1);
+  if (!raw) return null;
+  try {
+    const v1 = JSON.parse(raw);
+    if (!Array.isArray(v1.items)) return null;
+    const generalId = uuid();
+    const migrated = {
+      projects: [{
+        id: generalId, name: 'General',
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(), pinned: false
+      }],
+      items: v1.items.map(i => ({
+        ...i,
+        projectId: generalId,
+        updated: i.updated || i.created || new Date().toISOString()
+      })),
+      activeProjectId: generalId
+    };
+    localStorage.removeItem(LS_KEY_V1);
+    return migrated;
+  } catch {}
+  return null;
+}
+
+/** server-first restore; returns truthy if any data was pulled */
+async function restoreFromServer() {
+  try {
+    const data = await storage.read('wishlist'); // fallback to LS if server offline
+    if (data && (data.items?.length || data.projects?.length)) {
+      localStorage.setItem(LS_KEY, JSON.stringify(data));
+      return true;
     }
-    return {};
-  } catch { return {}; }
+  } catch (e) {
+    console.warn('[Wishlist] Server restore failed', e.message);
+  }
+  return false;
 }
 
 function saveDataRaw(data) {
-  localStorage.setItem(LS_KEY, JSON.stringify(data));
-}
-
-function saveData(patch) {
-  const d = loadData();
-  saveDataRaw({ ...d, ...patch });
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  } catch (e) {
+    // QuotaExceededError etc
+    console.warn('[Wishlist] localStorage write failed', e.message);
+  }
+  // Best-effort server sync (fire-and-forget)
+  try {
+    storage.write('wishlist', data).catch(() => {});
+  } catch {}
 }
 
 function ensureData() {
-  const d = loadData();
+  let d = loadData() || migrateV1();
+  if (!d) d = {};
   if (!Array.isArray(d.items)) d.items = [];
   if (!Array.isArray(d.projects)) d.projects = [];
   if (!d.activeProjectId && d.projects.length) d.activeProjectId = d.projects[0].id;
@@ -97,7 +122,11 @@ function ensureData() {
   return d;
 }
 
-export function initWishlist() {
+export async function initWishlist() {
+  // On cold boot: if nothing in localStorage, try server copy
+  if (!localStorage.getItem(LS_KEY)) {
+    await restoreFromServer();
+  }
   ensureData();
   renderWishlist();
   bindEvents();
@@ -173,7 +202,7 @@ function deleteProject(id) {
     return;
   }
   const fallback = d.projects.find(p => p.id !== id)?.id;
-  d.items = d.items.filter(i => i.projectId !== id);
+  // Reassign items BEFORE filtering the project
   d.items.forEach(i => { if (i.projectId === id) i.projectId = fallback; });
   d.projects = d.projects.filter(p => p.id !== id);
   d.activeProjectId = fallback;
