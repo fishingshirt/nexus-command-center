@@ -1,5 +1,6 @@
 const LS_KEY = 'ncc-weather';
 const LOC_KEY = 'ncc-weather-locations';
+import { storage } from '../lib/storage-adapter.js';
 const SETTINGS_KEY = 'ncc-weather-settings';
 const MAX_LOCS = 10;
 const DEFAULT_REFRESH = 15;
@@ -110,6 +111,7 @@ async function loadLocations() {
 }
 
 async function saveLocations(arr) {
+  storage.write('weather-locations', arr).catch(() => {});
   if (typeof NexusDB !== 'undefined') {
     try {
       // Fetch existing rows so we can decide create vs update

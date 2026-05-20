@@ -76,6 +76,27 @@
   gap: 0.4rem;
   position: relative;
   z-index: 1;
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.it-card-rows::-webkit-scrollbar { width: 5px; }
+.it-card-rows::-webkit-scrollbar-track { background: transparent; }
+.it-card-rows::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Logs card gets extra height for readability */
+#it-logs-rows {
+  max-height: 320px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+#it-logs-rows .it-row {
+  font-size: 0.7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .it-row {

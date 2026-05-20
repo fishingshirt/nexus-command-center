@@ -135,9 +135,6 @@ async function refreshCard(id) {
   const rows = document.getElementById(`${id}-rows`);
   if (!dot || !rows) return;
 
-  dot.className = 'it-status-dot amber';
-  rows.innerHTML = '<div class="it-card-placeholder">Loading...</div>';
-
   try {
     if (id === 'it-server') await loadServerStatus(dot, rows);
     else if (id === 'it-health') await loadHealth(dot, rows);

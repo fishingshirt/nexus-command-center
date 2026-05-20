@@ -1,6 +1,7 @@
 const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 
 import { AttachmentStore, attachStrip, wireAttachmentDrop } from '../lib/attachment-store.js';
+import { storage } from '../lib/storage-adapter.js';
 
 const KEY = 'ncc-notes';
 let notes = [];
@@ -12,6 +13,7 @@ function load() {
 }
 function save() {
   localStorage.setItem(KEY, JSON.stringify(notes));
+  storage.write('notes', notes).catch(() => {});
   updateBadge();
 }
 function genId() {
@@ -29,6 +31,7 @@ export function initNotes() {
   if (notes.length) selectNote(notes[0].id);
   // Orphan scan after short delay so other modules have loaded
   setTimeout(() => _runOrphanScan(), 3000);
+  (async()=>{try{const d=await storage.read('notes');if(d&&Array.isArray(d)&&d.length&&!notes.length){notes=d;localStorage.setItem(KEY,JSON.stringify(notes));renderList();updateBadge()}}catch(e){}})();
 }
 
 let els = {};

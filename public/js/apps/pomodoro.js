@@ -1,6 +1,7 @@
 /** Pomodoro / Focus Mode App */
 const LS_KEY = 'ncc-pomodoro';
 const LS_SESSIONS = 'ncc-pomodoro-sessions';
+import { storage } from '../lib/storage-adapter.js';
 
 const MODES = {
   pomodoro: { min: 25, label: 'Focus', sub: 'Stay on task' },
@@ -16,7 +17,9 @@ function loadData() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
 }
 function saveData(patch) {
-  localStorage.setItem(LS_KEY, JSON.stringify({ ...loadData(), ...patch }));
+  const merged = { ...loadData(), ...patch };
+  localStorage.setItem(LS_KEY, JSON.stringify(merged));
+  storage.write('pomodoro', merged).catch(() => {});
 }
 function loadSessions() {
   try { return JSON.parse(localStorage.getItem(LS_SESSIONS) || '[]'); } catch { return []; }

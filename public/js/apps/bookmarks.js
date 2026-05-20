@@ -1,4 +1,5 @@
 const LS_KEY = 'ncc-bookmarks-v1';
+import { storage } from '../lib/storage-adapter.js';
 
 function loadData() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
@@ -6,7 +7,9 @@ function loadData() {
 }
 function saveData(patch) {
   const d = loadData();
-  localStorage.setItem(LS_KEY, JSON.stringify({ ...d, ...patch }));
+  const merged = { ...d, ...patch };
+  localStorage.setItem(LS_KEY, JSON.stringify(merged));
+  storage.write('bookmarks', merged).catch(() => {});
 }
 function ensureData() {
   const d = loadData();
@@ -67,6 +70,7 @@ export function initBookmarks() {
   ensureData();
   renderBookmarks();
   bindEvents();
+  (async()=>{try{const d=await storage.read('bookmarks');if(d&&Object.keys(d).length){localStorage.setItem(LS_KEY,JSON.stringify(d));renderBookmarks()}}catch(e){}})();
 }
 
 function bindEvents() {

@@ -1,5 +1,6 @@
 const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 import { notify } from '../notifications.js';
+import { storage } from '../lib/storage-adapter.js';
 
 const KEY = 'ncc-todo';
 let tasks = [];
@@ -7,7 +8,7 @@ let filter = 'all';
 let _dueReminderTimer = null;
 
 function load() { try { tasks = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { tasks = []; } }
-function save() { localStorage.setItem(KEY, JSON.stringify(tasks)); updateBadge(); }
+function save() { localStorage.setItem(KEY, JSON.stringify(tasks)); storage.write('todo', tasks).catch(() => {}); updateBadge(); }
 function genId() { return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6); }
 
 export function initTodo() {
@@ -19,6 +20,7 @@ export function initTodo() {
   _startDueReminders();
   window.addEventListener('beforeunload', _stopDueReminders);
   _registerTodoWidgetStub();
+  (async()=>{try{const d=await storage.read('todo');if(d&&Array.isArray(d)&&d.length){tasks=d;localStorage.setItem(KEY,JSON.stringify(tasks));render();updateBadge()}}catch(e){}})();
 }
 
 function _startDueReminders() {

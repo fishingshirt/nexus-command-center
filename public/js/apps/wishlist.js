@@ -87,6 +87,16 @@ function saveDataRaw(data) {
   } catch {}
 }
 
+function saveDataLocal(data) {
+  // localStorage ONLY — no server write.
+  // Used by ensureData() to avoid overwriting server data with defaults during init.
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('[Wishlist] localStorage write failed', e.message);
+  }
+}
+
 function ensureData() {
   let d = loadData() || migrateV1();
   if (!d) d = {};
@@ -118,18 +128,30 @@ function ensureData() {
   // Ensure active project is valid
   if (!validIds.has(d.activeProjectId)) d.activeProjectId = d.projects[0]?.id;
 
-  saveDataRaw(d);
+  saveDataLocal(d);  // localStorage only — no server overwrite during init
   return d;
 }
 
 export async function initWishlist() {
-  // On cold boot: if nothing in localStorage, try server copy
-  if (!localStorage.getItem(LS_KEY)) {
-    await restoreFromServer();
-  }
-  ensureData();
-  renderWishlist();
-  bindEvents();
+  // Pull from server FIRST (before local defaults could overwrite server data)
+  restoreFromServer().then(ok => {
+    if (ok) {
+      // Server data loaded — use it
+      ensureData();
+      renderWishlist();
+      bindEvents();
+    } else {
+      // No server data — fall back to local
+      ensureData();
+      renderWishlist();
+      bindEvents();
+    }
+  }).catch(() => {
+    // Server unreachable — fall back to local
+    ensureData();
+    renderWishlist();
+    bindEvents();
+  });
 }
 
 function uuid() {

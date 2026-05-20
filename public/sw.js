@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nexus-v8-themes';
+const CACHE_NAME = 'nexus-v9-sync';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

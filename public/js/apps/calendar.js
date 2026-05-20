@@ -1,5 +1,6 @@
 const toast = (...args) => (window.toast ? window.toast(...args) : undefined);
 import { AttachmentStore, attachStrip, wireAttachmentDrop } from '../lib/attachment-store.js';
+import { storage } from '../lib/storage-adapter.js';
 import { syncEventToGoogle, deleteEventFromGoogle, flushOutboundQueue } from './gcal-outbound.js';
 import { notify } from '../notifications.js';
 
@@ -104,6 +105,7 @@ function getOccurrences(ev, rangeStart, rangeEnd) {
 
 function saveEvents(events) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  storage.write('calendar', events).catch(() => {});
   updateCalendarBadge();
 }
 

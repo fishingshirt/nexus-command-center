@@ -77,17 +77,22 @@ export function initApp() {
     const app = document.getElementById('app');
     if (app) app.classList.add('welcome-ready');
   }
-  /* Safety valve: if overlay is still active after 500ms, force-dismiss */
+  /* Safety valve: if overlay is active but has NO content (genuinely hung/crashed), force-dismiss.
+     Do NOT dismiss when Phase 1 name prompt is rendering — that's a legitimate interactive state. */
   setTimeout(() => {
     const overlay = document.getElementById('welcome-overlay');
-    if (overlay && overlay.classList.contains('active')) {
-      console.warn('[Nexus] Welcome overlay still active after 1s — auto-dismiss');
-      overlay.classList.remove('active');
-      overlay.style.display = 'none';
-      overlay.setAttribute('aria-hidden', 'true');
-      const app = document.getElementById('app');
-      if (app) app.classList.add('welcome-ready');
-    }
+    if (!overlay || !overlay.classList.contains('active')) return;
+    const content = overlay.querySelector('.welcome-content');
+    const hasContent = content && content.innerHTML.trim().length > 0;
+    // If content is populated (phase1 rendering), leave it alone — user is interacting
+    if (hasContent) return;
+    // Otherwise overlay is stuck empty — force-dismiss
+    console.warn('[Nexus] Welcome overlay active but empty after 1s — auto-dismiss');
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+    const app = document.getElementById('app');
+    if (app) app.classList.add('welcome-ready');
   }, 500);
   runMigration();
   initNotifications();
@@ -131,13 +136,18 @@ export function initApp() {
   initShortcuts();
   initAppLauncher();
 
-  /* Keyboard shortcuts */
+  /* Emergency reveal: if #app is still hidden after 2s, check whether welcome is genuinely broken.
+     Only force-reveal if the overlay has no content (hung/crashed).  Leave a legitimate name prompt alone. */
   setTimeout(() => {
     const app = document.getElementById('app');
-    if (app && getComputedStyle(app).display === 'none') {
-      app.classList.add('welcome-ready');
-      console.warn('[Nexus] Emergency reveal triggered — welcome overlay may have failed');
-    }
+    if (!app || getComputedStyle(app).display !== 'none') return;
+    const overlay = document.getElementById('welcome-overlay');
+    const content = overlay?.querySelector('.welcome-content');
+    const hasContent = content && content.innerHTML.trim().length > 0;
+    if (hasContent) return; // welcome is showing a prompt — don't interfere
+    // Overlay is active but empty — force reveal
+    app.classList.add('welcome-ready');
+    console.warn('[Nexus] Emergency reveal triggered — welcome overlay may have failed');
   }, 2000);
 }
 

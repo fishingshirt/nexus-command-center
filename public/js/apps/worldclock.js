@@ -1,4 +1,5 @@
 const LS_KEY = 'ncc-worldclock';
+import { storage } from '../lib/storage-adapter.js';
 
 const CITY_DB = [
   { name: 'New York', country: 'USA', tz: 'America/New_York' },
@@ -150,6 +151,7 @@ async function loadClockCities() {
 }
 
 async function saveClockCities(cities) {
+  storage.write('worldclock-cities', cities).catch(() => {});
   if (typeof NexusDB !== 'undefined') {
     try {
       const res = await NexusDB.list('worldclock_cities');
@@ -189,6 +191,7 @@ async function loadClockPrefs() {
 }
 
 async function saveClockPrefs(prefs) {
+  storage.write('worldclock-prefs', prefs).catch(() => {});
   try {
     if (typeof NexusDB !== 'undefined') {
       for (const [k, v] of Object.entries(prefs)) {

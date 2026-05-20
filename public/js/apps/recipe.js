@@ -3,6 +3,7 @@ import { notify } from '../notifications.js';
 
 const STORAGE_KEY = 'ncc-recipes';
 const PRESETS_KEY = 'ncc-recipe-presets-loaded';
+import { storage } from '../lib/storage-adapter.js';
 
 let recipes = [];
 let editingId = null;
@@ -14,6 +15,7 @@ function loadRecipes() {
 }
 function saveRecipes() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+  storage.write('recipes', recipes).catch(() => {});
 }
 
 /* ─── Helpers ─── */
@@ -282,6 +284,7 @@ export function initRecipe() {
   loadRecipes();
   injectPresets();
   renderRecipes();
+  (async()=>{try{const d=await storage.read('recipes');if(d&&Array.isArray(d)&&d.length&&!recipes.length){recipes=d;localStorage.setItem(STORAGE_KEY,JSON.stringify(recipes));renderRecipes()}}catch(e){}})();
 
   document.getElementById('recipe-add-btn')?.addEventListener('click', () => openRecipeForm());
   document.getElementById('recipe-search')?.addEventListener('input', renderRecipes);
